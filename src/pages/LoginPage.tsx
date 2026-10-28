@@ -7,7 +7,7 @@ import { PasswordInput } from '../components/common/PasswordInput';
 import { Button } from '../components/common/Button';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { Logo } from '../components/common/Logo';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Sparkles } from 'lucide-react';
 
 /**
  * Login Page Component
@@ -20,6 +20,25 @@ export function LoginPage() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
+  const [isDemoLoading, setIsDemoLoading] = useState<boolean>(false);
+
+  const handleDemoLogin = async () => {
+    setFormError('');
+    if (setError) setError(null);
+    setEmail('admin@forgepro.id');
+    setPassword('admin123');
+    setIsDemoLoading(true);
+
+    try {
+      await login('admin@forgepro.id', 'admin123');
+      navigate('/dashboard');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal masuk akun demo.';
+      setFormError(message);
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,26 +64,26 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#F7F5F0] dark:bg-[#0A111C] light:bg-[#FFFFFF] text-content-primary relative overflow-hidden transition-colors duration-200">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-[#F7F5F0] dark:bg-[#0A111C] light:bg-[#FFFFFF] text-content-primary relative overflow-x-hidden lg:overflow-hidden transition-colors duration-200">
       {/* Floating Theme Toggle in top-right */}
       <div className="absolute top-6 right-6 z-30">
         <ThemeToggle />
       </div>
 
       {/* SISI KIRI: Foto Hero 5 Profesional Berjas Sesuai Figma */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0A111C]">
+      <div className="hidden lg:block lg:w-1/2 h-screen relative overflow-hidden bg-[#0A111C]">
         <img
           src={BRAND_CONFIG.logos.loginHero}
           alt="ForgePro.id Professional Team"
-          className="w-full h-full object-cover object-center select-none"
+          className="absolute inset-0 w-full h-full object-cover object-center select-none"
         />
         {/* Subtle vignette/gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0A111C]/30 pointer-events-none" />
       </div>
 
       {/* SISI KANAN: Form Login Admin */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative z-10 bg-surface-main lg:bg-transparent">
-        <div className="w-full max-w-[420px] flex flex-col items-center">
+      <div className="w-full lg:w-1/2 min-h-screen lg:h-screen lg:overflow-y-auto flex flex-col items-center justify-center p-6 sm:p-12 relative z-10 bg-surface-main lg:bg-transparent">
+        <div className="w-full max-w-[420px] flex flex-col items-center my-auto">
           {/* Logo Badge di Atas Kotak Login */}
           <div className="mb-5 flex flex-col items-center">
             <Logo variant="badge" size="xl" className="w-32 h-32 sm:w-32 sm:h-32 rounded-2xl" />
@@ -124,10 +143,11 @@ export function LoginPage() {
                   variant="dark"
                   size="md"
                   fullWidth
-                  isLoading={isLoading}
+                  disabled={isLoading || isDemoLoading}
+                  isLoading={isLoading && !isDemoLoading}
                   className="py-3 font-semibold tracking-wide border-[#2C3B53] hover:border-[#D9B06F]"
                 >
-                  {isLoading
+                  {isLoading && !isDemoLoading
                     ? BRAND_CONFIG.login.submitLoading
                     : BRAND_CONFIG.login.submitButton}
                 </Button>
@@ -135,8 +155,22 @@ export function LoginPage() {
             </form>
 
             {/* Quick Demo Helper */}
-            <div className="mt-6 pt-5 border-t border-border-subtle text-center">
-              <p className="text-[11px] text-content-muted">
+            <div className="mt-6 pt-5 border-t border-border-subtle flex flex-col gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                fullWidth
+                disabled={isLoading || isDemoLoading}
+                isLoading={isDemoLoading}
+                onClick={handleDemoLogin}
+                leftIcon={<Sparkles className="w-4 h-4 text-[#D9B06F]" />}
+                className="py-2.5 text-xs font-semibold tracking-wide border-[#D9B06F]/50 text-[#D9B06F] hover:bg-[#D9B06F]/10 hover:border-[#D9B06F] active:scale-[0.99] transition-all"
+              >
+                {isDemoLoading ? 'Masuk dengan Akun Demo...' : 'Login with demo account'}
+              </Button>
+
+              <p className="text-[11px] text-content-muted text-center">
                 Demo Akun: <span className="text-[#D9B06F] font-medium">admin@forgepro.id</span> / <span className="text-[#D9B06F] font-medium">admin123</span>
               </p>
             </div>

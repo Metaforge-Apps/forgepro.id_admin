@@ -22,7 +22,7 @@ export const BRAND_CONFIG: BrandConfig = {
     // Logo badge bertumpuk (digunakan pada halaman login & favicon)
     badge: '/images/logo-transparent-vertikal.png',
     // Hero image halaman login (5 profesional berjas di kantor)
-    loginHero: '/images/login-hero.jpg',
+    loginHero: '/images/login-hero.png',
   },
 
   // Profil pengguna admin default (simulasi)

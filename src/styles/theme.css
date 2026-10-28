@@ -1,0 +1,56 @@
+/* Central Design Tokens & CSS Custom Properties for Light & Dark Mode */
+
+:root {
+  /* Brand Constants */
+  --brand-gold: #D9B06F;
+  --brand-gold-hover: #E6C68D;
+  --brand-gold-dark: #B88E4F;
+
+  /* Status Colors */
+  --color-status-success: #10B981;
+  --color-status-warning: #F59E0B;
+  --color-status-info: #3B82F6;
+  --color-status-error: #EF4444;
+
+  /* Light Mode Theme */
+  --color-bg-main: #F7F5F0;
+  --color-bg-login: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-sidebar: #FFFFFF;
+  --color-bg-hover: #F1F5F9;
+  --color-bg-active: #F8FAFC;
+  --color-bg-input: #F8FAFC;
+  --color-bg-button: #111A2C;
+  --color-border-subtle: #CBD5E1;
+  --color-border-card: #E2E8F0;
+  --color-border-input: #CBD5E1;
+  --color-border-active: #D9B06F;
+  --color-text-primary: #0A111C;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-accent: #D9B06F;
+  --color-sidebar-icon: #111A2C;
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  /* Dark Mode Theme */
+  --color-bg-main: #0A111C;
+  --color-bg-login: #0A111C;
+  --color-bg-card: #292F45;
+  --color-bg-sidebar: #292F45;
+  --color-bg-hover: rgba(255, 255, 255, 0.05);
+  --color-bg-active: #17243C;
+  --color-bg-input: #1C273E;
+  --color-bg-button: #111A2C;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-card: rgba(255, 255, 255, 0.08);
+  --color-border-input: rgba(255, 255, 255, 0.16);
+  --color-border-active: #D9B06F;
+  --color-text-primary: #F7F5F0;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #8E9BAE;
+  --color-accent: #D9B06F;
+  --color-sidebar-icon: #8E9BAE;
+  --shadow-card: 0 8px 30px -4px rgba(0, 0, 0, 0.45);
+}

@@ -14,69 +14,102 @@ import {
   usePackageController,
   PricingPackageItem,
   PackageStatus,
+  PACKAGE_TIER_LABEL,
+  formatRupiah,
 } from '../controllers/package-controller';
 
 interface EditPackageLocationState {
   pkg?: PricingPackageItem;
 }
 
+const toInt = (value: string): number => {
+  const digits = value.replace(/\D/g, '');
+  return digits === '' ? 0 : parseInt(digits, 10);
+};
+
 export function EditPackagePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { updatePackage, packages } = usePackageController();
+  const { updatePackage, getPackageById, packages } = usePackageController();
 
   const state = location.state as EditPackageLocationState | null;
-  const incomingPkg = state?.pkg;
+  const requestedId = state?.pkg?.id;
+  // Selalu ambil data terbaru dari controller; jika halaman dibuka langsung, pakai paket pertama.
+  const incomingPkg =
+    (requestedId ? getPackageById(requestedId) : undefined) ?? packages[0];
 
-  const [pkgId] = useState<string>(incomingPkg?.id || 'pkg-profesional');
+  const [pkgId] = useState<string>(incomingPkg?.id || '');
+  const tierLabel = incomingPkg ? PACKAGE_TIER_LABEL[incomingPkg.tier] : '-';
   const [packageName, setPackageName] = useState<string>(
-    incomingPkg?.name || 'Profesional'
+    incomingPkg?.name || ''
   );
   const [description, setDescription] = useState<string>(
-    incomingPkg?.description || 'Pilihan lengkap untuk karier Anda.'
+    incomingPkg?.description || ''
   );
   const [photoCount, setPhotoCount] = useState<string>(
-    incomingPkg?.photoCount || '12'
+    String(incomingPkg?.photoCount ?? 12)
   );
-  const [suitChoices, setSuitChoices] = useState<string>(
-    incomingPkg?.suitChoices || '4 gaya jas'
+  const [creditAmount, setCreditAmount] = useState<string>(
+    String(incomingPkg?.creditAmount ?? 60)
+  );
+  const [maxTemplates, setMaxTemplates] = useState<string>(
+    String(incomingPkg?.maxTemplates ?? 1)
   );
   const [extraBenefits, setExtraBenefits] = useState<string>(
-    incomingPkg?.extraBenefits ||
-      'Variasi latar profesional\nUnduhan digital tanpa watermark'
+    incomingPkg?.extraBenefits || ''
   );
   const [accessDuration, setAccessDuration] = useState<string>(
-    incomingPkg?.accessDuration || '30 hari'
+    incomingPkg?.accessDuration || '14 hari'
   );
   const [displayOrder, setDisplayOrder] = useState<string>(
-    incomingPkg?.displayOrder || '2'
+    String(incomingPkg?.displayOrder ?? 1)
   );
   const [status, setStatus] = useState<PackageStatus>(
     incomingPkg?.status || 'Tayang'
   );
+  const [isFeatured, setIsFeatured] = useState<boolean>(
+    Boolean(incomingPkg?.isFeatured)
+  );
 
   // Google Play Billing Fields
-  const [productId, setProductId] = useState<string>(
-    incomingPkg?.sku || 'forgepro_profesional'
-  );
+  const [productId, setProductId] = useState<string>(incomingPkg?.sku || '');
   const [refPrice, setRefPrice] = useState<string>(
-    incomingPkg?.priceRaw || '99.000'
+    String(incomingPkg?.priceValue ?? '')
   );
 
   const [showDeactivateModal, setShowDeactivateModal] = useState<boolean>(false);
 
   const handleSave = () => {
+    if (!pkgId) return;
+    if (!packageName.trim()) {
+      alert('Nama paket wajib diisi.');
+      return;
+    }
+    if (!productId.trim()) {
+      alert('Google Play product ID wajib diisi.');
+      return;
+    }
+    if (toInt(refPrice) <= 0) {
+      alert('Harga referensi harus lebih dari 0.');
+      return;
+    }
+    if (toInt(photoCount) <= 0 || toInt(creditAmount) <= 0 || toInt(maxTemplates) <= 0) {
+      alert('Jumlah foto, kredit AI, dan template jas harus lebih dari 0.');
+      return;
+    }
     updatePackage(pkgId, {
       name: packageName,
       description,
-      photoCount,
-      suitChoices,
+      photoCount: toInt(photoCount),
+      creditAmount: toInt(creditAmount),
+      maxTemplates: toInt(maxTemplates),
       extraBenefits,
       accessDuration,
-      displayOrder,
+      displayOrder: toInt(displayOrder) || 1,
       status,
       sku: productId,
-      priceRaw: refPrice,
+      priceValue: toInt(refPrice),
+      isFeatured,
     });
     navigate('/paket-harga');
   };
@@ -134,6 +167,23 @@ export function EditPackagePage() {
               Informasi &amp; manfaat paket
             </h3>
 
+            {/* Tier Paket (tidak bisa diubah) */}
+            <div className="flex flex-col gap-1.5 text-xs">
+              <label className="font-semibold text-content-primary">
+                Tier paket
+              </label>
+              <input
+                type="text"
+                value={tierLabel}
+                readOnly
+                disabled
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-hover border border-border-subtle text-content-muted cursor-not-allowed"
+              />
+              <span className="text-[11px] text-content-muted">
+                Tier dipakai aplikasi untuk mengenali paket sehingga tidak dapat diubah.
+              </span>
+            </div>
+
             {/* Nama Paket */}
             <div className="flex flex-col gap-1.5 text-xs">
               <label className="font-semibold text-content-primary">
@@ -160,42 +210,53 @@ export function EditPackagePage() {
               />
             </div>
 
-            {/* Row: Jumlah Hasil Foto & Pilihan Gaya Jas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Row: Jumlah Hasil Foto, Kredit AI & Template Jas */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
                   Jumlah hasil foto *
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={photoCount}
                   onChange={(e) => setPhotoCount(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  Hasil foto AI resolusi tinggi
+                  photo_count
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
-                  Pilihan gaya jas *
+                  Kredit AI *
                 </label>
-                <div className="relative">
-                  <select
-                    value={suitChoices}
-                    onChange={(e) => setSuitChoices(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
-                  >
-                    <option value="2 gaya jas">2 gaya jas</option>
-                    <option value="4 gaya jas">4 gaya jas</option>
-                    <option value="5 gaya jas">5 gaya jas</option>
-                    <option value="Seluruh gaya jas">Seluruh gaya jas yang tayang</option>
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
-                </div>
+                <input
+                  type="number"
+                  min={1}
+                  value={creditAmount}
+                  onChange={(e) => setCreditAmount(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
+                />
                 <span className="text-[11px] text-content-muted">
-                  Dari gaya yang berstatus Tayang
+                  5 foto per generate = 10 kredit
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-content-primary">
+                  Maks. template jas *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={maxTemplates}
+                  onChange={(e) => setMaxTemplates(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
+                />
+                <span className="text-[11px] text-content-muted">
+                  max_templates (&gt; 1 = pilih banyak)
                 </span>
               </div>
             </div>
@@ -212,7 +273,7 @@ export function EditPackagePage() {
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors resize-none leading-relaxed"
               />
               <span className="text-[11px] text-content-muted">
-                Satu manfaat per baris. Jumlah foto dan pilihan gaya ditambahkan otomatis.
+                Satu manfaat per baris. Jumlah foto, kredit AI, dan jumlah template ditambahkan otomatis.
               </span>
             </div>
 
@@ -238,7 +299,8 @@ export function EditPackagePage() {
                   Urutan tampilan
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={displayOrder}
                   onChange={(e) => setDisplayOrder(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
@@ -269,6 +331,24 @@ export function EditPackagePage() {
                 Ditawarkan untuk pembelian baru.
               </span>
             </div>
+
+            {/* Direkomendasikan */}
+            <label className="flex items-start gap-3 cursor-pointer select-none text-xs">
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-[#D9B06F] cursor-pointer"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-semibold text-content-primary">
+                  Tandai direkomendasikan
+                </span>
+                <span className="text-[11px] text-content-muted leading-relaxed">
+                  Paket diberi label rekomendasi di aplikasi. Hanya satu paket yang bisa direkomendasikan.
+                </span>
+              </span>
+            </label>
           </Card>
 
           {/* Info Notice Bawah */}
@@ -342,13 +422,14 @@ export function EditPackagePage() {
                   Harga referensi (Rp)
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={refPrice}
                   onChange={(e) => setRefPrice(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  Referensi internal, bukan harga live.
+                  Angka rupiah tanpa titik. Referensi internal, bukan harga live.
                 </span>
               </div>
 
@@ -446,13 +527,13 @@ export function EditPackagePage() {
                 </span>
               </div>
               <p className="text-xs font-semibold text-content-primary">
-                Rp{refPrice} · harga referensi
+                {formatRupiah(toInt(refPrice))} · harga referensi
               </p>
               <p className="text-[11px] text-content-muted mt-1">
                 {productId} · Sekali beli
               </p>
               <p className="text-[11px] text-content-muted mt-0.5">
-                {photoCount} hasil foto AI · Pilihan {suitChoices} · Akses unduhan {accessDuration}
+                {photoCount} hasil foto AI · {creditAmount} kredit · maks. {maxTemplates} template · Akses unduhan {accessDuration}
               </p>
             </div>
 

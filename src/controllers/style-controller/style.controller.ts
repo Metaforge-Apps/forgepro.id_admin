@@ -1,133 +1,107 @@
 import {
   SuitStyleItem,
   SuitCategory,
-  SuitCategoryFilter,
   SuitStatus,
   SuitCategoryTab,
   SuitStyleFilterParams,
   SuitCatalogSummary,
   CreateSuitStylePayload,
   UpdateSuitStylePayload,
+  SUIT_CATEGORIES,
 } from './style.types';
+import { INITIAL_SUIT_STYLES } from './style.seed';
 
-const STORAGE_KEY = 'forgepro_suit_styles_v1';
+export { INITIAL_SUIT_STYLES };
 
-export const INITIAL_SUIT_STYLES: SuitStyleItem[] = [
-  {
-    id: 'suit-1',
-    name: 'Jas Navy Klasik',
-    category: 'Bisnis',
-    status: 'Tayang',
-    stats: '428 foto dibuat',
-    count: 428,
-    image: '/images/suits/suit-navy-klasik.jpg',
-    description:
-      'Jas navy berpotongan klasik dengan kemeja putih dan dasi netral. Pencahayaan lembut serta latar studio hangat untuk kesan profesional.',
-    updatedAt: '19 Okt 2026, 14:20 WIB',
-  },
-  {
-    id: 'suit-2',
-    name: 'Jas Hitam Formal',
-    category: 'Formal',
-    status: 'Tayang',
-    stats: '312 foto dibuat',
-    count: 312,
-    image: '/images/suits/suit-hitam-formal.jpg',
-    description:
-      'Potongan jas hitam formal berstruktur tegas dengan kontras kemeja putih bersih untuk dokumen resmi dan profil eksekutif.',
-    updatedAt: '19 Okt 2026, 13:45 WIB',
-  },
-  {
-    id: 'suit-3',
-    name: 'Blazer Krem Modern',
-    category: 'Bisnis',
-    status: 'Tayang',
-    stats: '286 foto dibuat',
-    count: 286,
-    image: '/images/suits/suit-blazer-krem.jpg',
-    description:
-      'Blazer krem bertekstur ringan dengan pencahayaan natural hangat untuk tampilan profesional modern.',
-    updatedAt: '18 Okt 2026, 19:10 WIB',
-  },
-  {
-    id: 'suit-4',
-    name: 'Jas Abu Profesional',
-    category: 'Bisnis',
-    status: 'Tayang',
-    stats: '194 foto dibuat',
-    count: 194,
-    image: '/images/suits/suit-abu-profesional.jpg',
-    description:
-      'Jas abu-abu charcoal dengan kerah klasik dan pencahayaan studio seimbang untuk profil korporat.',
-    updatedAt: '18 Okt 2026, 16:30 WIB',
-  },
-  {
-    id: 'suit-5',
-    name: 'Tuksedo Malam',
-    category: 'Seremonial',
-    status: 'Tayang',
-    stats: '128 foto dibuat',
-    count: 128,
-    image: '/images/suits/suit-tuksedo-malam.jpg',
-    description:
-      'Tuksedo malam dengan lapel satin dan dasi kupu-kupu untuk acara gala maupun potret seremonial.',
-    updatedAt: '17 Okt 2026, 11:20 WIB',
-  },
-  {
-    id: 'suit-6',
-    name: 'Blazer Navy Elegan',
-    category: 'Formal',
-    status: 'Draf',
-    stats: 'Belum dipublikasikan',
-    count: 0,
-    image: '/images/suits/suit-blazer-hijab.jpg',
-    description:
-      'Blazer navy elegan dengan paduan hijab profesional yang rapi dan pencahayaan lembut.',
-    updatedAt: '17 Okt 2026, 09:15 WIB',
-  },
-];
+const STORAGE_KEY = 'forgepro_suit_styles_v4';
+const DEFAULT_IMAGE = '/images/templates/men/navy-eksekutif.jpg';
 
 type StyleListener = () => void;
 
+interface StoredStyles {
+  styles: SuitStyleItem[];
+  lastUpdated: string;
+}
+
+const formatNow = (): string =>
+  `${new Date().toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })} WIB`;
+
+/** Ubah nama menjadi ID template gaya aplikasi, mis. "Navy Eksekutif" -> "navy-eksekutif". */
+export const slugifyStyleId = (value: string): string =>
+  value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const buildStats = (status: SuitStatus, count: number): string =>
+  status === 'Tayang' ? `${count} foto dibuat` : 'Belum dipublikasikan';
+
 /**
- * StyleController — Mengelola seluruh data & operasi Katalog Gaya Jas di ForgePro.id
+ * StyleController — Mengelola seluruh data & operasi Katalog Gaya Jas di ForgePro.id.
+ * Bentuk data mengikuti `SuitTemplate` pada aplikasi Flutter.
  */
 export class StyleController {
   private styles: SuitStyleItem[];
+  private lastUpdated: string;
   private listeners: Set<StyleListener> = new Set();
 
   constructor() {
-    this.styles = this.loadFromStorage();
+    const stored = this.loadFromStorage();
+    this.styles = stored.styles;
+    this.lastUpdated = stored.lastUpdated;
   }
 
-  private loadFromStorage(): SuitStyleItem[] {
-    if (typeof window === 'undefined') {
-      return [...INITIAL_SUIT_STYLES];
-    }
+  private defaults(): StoredStyles {
+    return {
+      styles: INITIAL_SUIT_STYLES.map((s) => ({ ...s, tags: [...(s.tags ?? [])] })),
+      lastUpdated: 'Data bawaan aplikasi',
+    };
+  }
+
+  private loadFromStorage(): StoredStyles {
+    if (typeof window === 'undefined') return this.defaults();
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as SuitStyleItem[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        const parsed = JSON.parse(raw) as StoredStyles;
+        if (Array.isArray(parsed?.styles) && parsed.styles.length > 0) {
+          return {
+            styles: parsed.styles.filter((s) =>
+              SUIT_CATEGORIES.includes(s.category)
+            ),
+            lastUpdated: parsed.lastUpdated || 'Data bawaan aplikasi',
+          };
         }
       }
     } catch {
-      // Fallback to initial data
+      // Fallback ke data awal
     }
-    return [...INITIAL_SUIT_STYLES];
+    return this.defaults();
   }
 
   private saveToStorage(): void {
     if (typeof window === 'undefined') return;
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.styles));
+      const data: StoredStyles = {
+        styles: this.styles,
+        lastUpdated: this.lastUpdated,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch {
-      // Ignore storage quota errors
+      // Abaikan error kuota penyimpanan
     }
   }
 
-  private notify(): void {
+  private notify(touch = true): void {
+    if (touch) this.lastUpdated = formatNow();
     this.saveToStorage();
     this.listeners.forEach((listener) => listener());
   }
@@ -147,6 +121,10 @@ export class StyleController {
     return this.styles.find((item) => item.id === id);
   }
 
+  public isIdTaken(id: string): boolean {
+    return this.styles.some((item) => item.id === id);
+  }
+
   public getFilteredStyles(params: SuitStyleFilterParams = {}): SuitStyleItem[] {
     const {
       category = 'Semua',
@@ -155,24 +133,25 @@ export class StyleController {
       sortBy = 'Terbaru',
     } = params;
 
+    const q = searchQuery.trim().toLowerCase();
     const filtered = this.styles.filter((item) => {
-      if (category !== 'Semua' && item.category !== category) {
-        return false;
-      }
-      if (status !== 'Semua status' && item.status !== status) {
-        return false;
-      }
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
+      if (category !== 'Semua' && item.category !== category) return false;
+      if (status !== 'Semua status' && item.status !== status) return false;
+      if (q !== '') {
         const matchName = item.name.toLowerCase().includes(q);
         const matchCategory = item.category.toLowerCase().includes(q);
-        if (!matchName && !matchCategory) return false;
+        const matchTag = (item.tags ?? []).some((t) => t.toLowerCase().includes(q));
+        if (!matchName && !matchCategory && !matchTag) return false;
       }
       return true;
     });
 
     if (sortBy === 'Terpopuler') {
-      return [...filtered].sort((a, b) => (b.count || 0) - (a.count || 0));
+      return [...filtered].sort(
+        (a, b) =>
+          Number(Boolean(b.isPopular)) - Number(Boolean(a.isPopular)) ||
+          (b.count || 0) - (a.count || 0)
+      );
     }
     if (sortBy === 'Nama A-Z') {
       return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
@@ -182,46 +161,51 @@ export class StyleController {
 
   public getCategoryTabs(): SuitCategoryTab[] {
     const allCount = this.styles.length;
-    const bisnisCount = this.styles.filter((s) => s.category === 'Bisnis').length;
-    const formalCount = this.styles.filter((s) => s.category === 'Formal').length;
-    const seremonialCount = this.styles.filter((s) => s.category === 'Seremonial').length;
-
-    return [
+    const tabs: SuitCategoryTab[] = [
       { label: `Semua gaya (${allCount})`, category: 'Semua', count: allCount },
-      { label: `Bisnis (${bisnisCount})`, category: 'Bisnis', count: bisnisCount },
-      { label: `Formal (${formalCount})`, category: 'Formal', count: formalCount },
-      { label: `Seremonial (${seremonialCount})`, category: 'Seremonial', count: seremonialCount },
     ];
+    for (const cat of SUIT_CATEGORIES) {
+      const count = this.styles.filter((s) => s.category === cat).length;
+      tabs.push({ label: `${cat} (${count})`, category: cat, count });
+    }
+    return tabs;
   }
 
   public getSummary(): SuitCatalogSummary {
     const total = this.styles.length;
     const published = this.styles.filter((s) => s.status === 'Tayang').length;
     const draft = this.styles.filter((s) => s.status === 'Draf').length;
-
-    return {
-      total,
-      published,
-      draft,
-      lastUpdated: '19 Okt 2026, 14:20 WIB',
-    };
+    return { total, published, draft, lastUpdated: this.lastUpdated };
   }
 
   public createStyle(payload: CreateSuitStylePayload): SuitStyleItem {
     const status: SuitStatus = payload.status || 'Draf';
     const category: SuitCategory = payload.category || 'Bisnis';
+
+    const baseId = slugifyStyleId(payload.id || payload.name) || `gaya-${Date.now()}`;
+    let id = baseId;
+    let suffix = 2;
+    while (this.isIdTaken(id)) {
+      id = `${baseId}-${suffix++}`;
+    }
+
     const newItem: SuitStyleItem = {
-      id: `suit-${Date.now()}`,
+      id,
       name: payload.name.trim(),
       category,
       status,
-      stats: status === 'Tayang' ? '0 foto dibuat' : 'Belum dipublikasikan',
+      stats: buildStats(status, 0),
       count: 0,
-      image: payload.image || '/images/suits/suit-navy-klasik.jpg',
+      image: payload.image || DEFAULT_IMAGE,
       description:
         payload.description?.trim() ||
-        'Gaya jas profesional ForgePro.id dengan pencahayaan studio seimbang.',
-      updatedAt: 'Baru saja',
+        'Potret jas profesional AI dengan pencahayaan studio seimbang.',
+      prompt: payload.prompt?.trim() || '',
+      aspectRatio: payload.aspectRatio || (category === 'Wanita' ? '9:16' : '3:4'),
+      isPopular: Boolean(payload.isPopular),
+      isNew: Boolean(payload.isNew),
+      tags: (payload.tags ?? []).map((t) => t.trim()).filter(Boolean),
+      updatedAt: formatNow(),
     };
 
     this.styles = [newItem, ...this.styles];
@@ -236,36 +220,34 @@ export class StyleController {
       if (item.id !== id) return item;
 
       const nextStatus: SuitStatus = payload.status ?? item.status;
-      const nextStats =
-        nextStatus === 'Tayang'
-          ? item.count > 0
-            ? `${item.count} foto dibuat`
-            : '0 foto dibuat'
-          : 'Belum dipublikasikan';
-
       updatedItem = {
         ...item,
         name: payload.name !== undefined ? payload.name.trim() || item.name : item.name,
         category: payload.category ?? item.category,
         description: payload.description ?? item.description,
+        prompt: payload.prompt !== undefined ? payload.prompt.trim() : item.prompt,
+        aspectRatio: payload.aspectRatio ?? item.aspectRatio,
+        isPopular: payload.isPopular ?? item.isPopular,
+        isNew: payload.isNew ?? item.isNew,
+        tags:
+          payload.tags !== undefined
+            ? payload.tags.map((t) => t.trim()).filter(Boolean)
+            : item.tags,
         status: nextStatus,
-        stats: nextStats,
+        stats: buildStats(nextStatus, item.count),
         image: payload.image ?? item.image,
-        updatedAt: 'Baru saja',
+        updatedAt: formatNow(),
       };
       return updatedItem;
     });
 
-    if (updatedItem) {
-      this.notify();
-    }
+    if (updatedItem) this.notify();
     return updatedItem;
   }
 
   public toggleStyleStatus(id: string): SuitStyleItem | null {
     const target = this.getStyleById(id);
     if (!target) return null;
-
     const nextStatus: SuitStatus = target.status === 'Tayang' ? 'Draf' : 'Tayang';
     return this.updateStyle(id, { status: nextStatus });
   }
@@ -274,15 +256,14 @@ export class StyleController {
     const initialLen = this.styles.length;
     this.styles = this.styles.filter((item) => item.id !== id);
     const deleted = this.styles.length < initialLen;
-    if (deleted) {
-      this.notify();
-    }
+    if (deleted) this.notify();
     return deleted;
   }
 
   public resetStyles(): SuitStyleItem[] {
-    this.styles = [...INITIAL_SUIT_STYLES];
-    this.notify();
+    this.styles = this.defaults().styles;
+    this.lastUpdated = 'Data bawaan aplikasi';
+    this.notify(false);
     return this.getAllStyles();
   }
 

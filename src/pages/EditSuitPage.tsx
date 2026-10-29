@@ -11,7 +11,11 @@ import {
   SuitStyleItem,
   SuitCategory,
   SuitStatus,
+  SuitAspectRatio,
+  SUIT_CATEGORIES,
 } from '../controllers/style-controller';
+import { StyleAppFields, parseTags } from '../components/catalog/StyleAppFields';
+import { readImageAsDataUrl } from '../utils/image';
 
 interface EditSuitLocationState {
   suit?: SuitStyleItem;
@@ -20,43 +24,70 @@ interface EditSuitLocationState {
 export function EditSuitPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { updateStyle, summary } = useStyleController();
+  const { updateStyle, getStyleById, suits, summary } = useStyleController();
 
   const state = location.state as EditSuitLocationState | null;
-  const incomingSuit = state?.suit;
+  const requestedId = state?.suit?.id;
+  // Selalu ambil data terbaru dari katalog; jika halaman dibuka langsung, pakai gaya pertama.
+  const incomingSuit =
+    (requestedId ? getStyleById(requestedId) : undefined) ?? suits[0];
 
-  const [suitId] = useState<string>(incomingSuit?.id || 'suit-1');
-  const [name, setName] = useState<string>(
-    incomingSuit?.name || 'Jas Navy Klasik'
-  );
+  const [suitId] = useState<string>(incomingSuit?.id || '');
+  const [name, setName] = useState<string>(incomingSuit?.name || '');
   const [category, setCategory] = useState<SuitCategory>(
     incomingSuit?.category || 'Bisnis'
   );
   const [description, setDescription] = useState<string>(
-    incomingSuit?.description ||
-      'Jas navy berpotongan klasik dengan kemeja putih dan dasi netral. Pencahayaan lembut serta latar studio hangat untuk kesan profesional.'
+    incomingSuit?.description || ''
   );
+  const [prompt, setPrompt] = useState<string>(incomingSuit?.prompt || '');
+  const [aspectRatio, setAspectRatio] = useState<SuitAspectRatio>(
+    incomingSuit?.aspectRatio || (incomingSuit?.category === 'Wanita' ? '9:16' : '3:4')
+  );
+  const [tagsText, setTagsText] = useState<string>(
+    (incomingSuit?.tags ?? []).join(', ')
+  );
+  const [isPopular, setIsPopular] = useState<boolean>(
+    Boolean(incomingSuit?.isPopular)
+  );
+  const [isNew, setIsNew] = useState<boolean>(Boolean(incomingSuit?.isNew));
   const [status, setStatus] = useState<SuitStatus>(
     incomingSuit?.status || 'Tayang'
   );
   const [imagePreview, setImagePreview] = useState<string>(
-    incomingSuit?.image || '/images/suits/suit-navy-klasik.jpg'
+    incomingSuit?.image || ''
   );
-  const [photosCount] = useState<number>(incomingSuit?.count ?? 428);
+  const [photosCount] = useState<number>(incomingSuit?.count ?? 0);
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
+    if (!file) return;
+    try {
+      setImagePreview(await readImageAsDataUrl(file));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Gagal membaca gambar.');
     }
   };
 
   const handleSave = () => {
+    if (!suitId) return;
+    if (!name.trim()) {
+      alert('Nama gaya wajib diisi.');
+      return;
+    }
+    if (status === 'Tayang' && !prompt.trim()) {
+      alert('Prompt AI wajib diisi sebelum gaya ditayangkan.');
+      return;
+    }
     updateStyle(suitId, {
       name,
       category,
       description,
+      prompt,
+      aspectRatio,
+      tags: parseTags(tagsText),
+      isPopular,
+      isNew,
       status,
       image: imagePreview,
     });
@@ -128,6 +159,23 @@ export function EditSuitPage() {
               />
             </div>
 
+            {/* ID Template (tidak bisa diubah) */}
+            <div className="flex flex-col gap-1.5 text-xs">
+              <label className="font-semibold text-content-primary">
+                ID template
+              </label>
+              <input
+                type="text"
+                value={suitId}
+                readOnly
+                disabled
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-hover border border-border-subtle text-content-muted font-mono cursor-not-allowed"
+              />
+              <span className="text-[11px] text-content-muted mt-0.5">
+                ID dipakai aplikasi & riwayat pesanan sehingga tidak dapat diubah.
+              </span>
+            </div>
+
             {/* Kategori */}
             <div className="flex flex-col gap-1.5 text-xs">
               <label className="font-semibold text-content-primary">
@@ -139,14 +187,16 @@ export function EditSuitPage() {
                   onChange={(e) => setCategory(e.target.value as SuitCategory)}
                   className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
                 >
-                  <option value="Bisnis">Bisnis</option>
-                  <option value="Formal">Formal</option>
-                  <option value="Seremonial">Seremonial</option>
+                  {SUIT_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
               </div>
               <span className="text-[11px] text-content-muted mt-0.5">
-                Kategori tersedia: Bisnis, Formal, Seremonial.
+                Kategori tersedia: {SUIT_CATEGORIES.join(', ')}.
               </span>
             </div>
 
@@ -164,18 +214,44 @@ export function EditSuitPage() {
             </div>
           </Card>
 
+          {/* Card: Prompt AI, aspek rasio, tag, label Populer/Baru */}
+          <StyleAppFields
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+            tagsText={tagsText}
+            onTagsChange={setTagsText}
+            isPopular={isPopular}
+            onPopularChange={setIsPopular}
+            isNew={isNew}
+            onNewChange={setIsNew}
+          />
+
           {/* Card 2: Gambar Gaya */}
           <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold text-content-primary">
-              Gambar gaya
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-content-primary">
+                Gambar gaya
+              </h3>
+              <span className="text-xs text-content-muted font-mono bg-surface-hover px-2.5 py-1 rounded-lg">
+                Target Rasio: {aspectRatio}
+              </span>
+            </div>
 
             {/* Existing Image Display */}
-            <div className="w-full h-72 sm:h-80 rounded-2xl overflow-hidden bg-[#EAE6DF] dark:bg-[#1C273E] border border-border-subtle relative">
+            <div className="w-full max-h-[460px] aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-900/30 border border-border-subtle relative flex items-center justify-center">
+              {/* Blur backdrop */}
+              <img
+                src={imagePreview}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-125 pointer-events-none"
+              />
               <img
                 src={imagePreview}
                 alt={name}
-                className="w-full h-full object-cover object-top"
+                className="relative z-10 w-full h-full object-contain"
               />
             </div>
 

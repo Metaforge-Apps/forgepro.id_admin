@@ -52,19 +52,6 @@ export interface BrandConfig {
   };
 }
 
-export interface OrderItem {
-  id: string;
-  customer: string;
-  package: string;
-  amount: string;
-  paymentStatus: 'Dibayar' | 'Menunggu' | 'Gagal';
-  photoStatus: 'Selesai' | 'Diproses' | 'Belum mulai' | 'Dibatalkan';
-  time: string;
-  suitType: string;
-  photoCount: number;
-  downloadUrl: string | null;
-}
-
 export interface PrintingItem {
   id: string;
   spec: string;
@@ -74,20 +61,6 @@ export interface PrintingItem {
   courier: string;
   trackingNumber: string;
   actionText: string;
-}
-
-export interface VoucherItem {
-  id: string;
-  code: string;
-  name: string;
-  discountMain: string;
-  discountSub: string;
-  period: string;
-  periodGroup: string;
-  packageTarget: string;
-  used: number;
-  quota: number;
-  status: 'Aktif' | 'Terjadwal' | 'Berakhir';
 }
 
 export interface AdminMember {
@@ -124,3 +97,5 @@ export interface WebhookItem {
 
 export * from '../controllers/style-controller/style.types';
 export * from '../controllers/package-controller/package.types';
+export * from '../controllers/voucher-controller/voucher.types';
+export * from '../controllers/order-controller/order.types';

@@ -10,42 +10,88 @@ import {
 import {
   usePackageController,
   PackageStatus,
+  PackageTier,
+  PACKAGE_TIER_LABEL,
+  formatRupiah,
 } from '../controllers/package-controller';
+
+const toInt = (value: string): number => {
+  const digits = value.replace(/\D/g, '');
+  return digits === '' ? 0 : parseInt(digits, 10);
+};
 
 export function AddPackagePage() {
   const navigate = useNavigate();
-  const { createPackage, packages } = usePackageController();
+  const { createPackage, packages, availableTiers } = usePackageController();
 
-  const [packageName, setPackageName] = useState<string>('Karier Plus');
-  const [description, setDescription] = useState<string>(
-    'Pilihan foto lebih beragam untuk memperbarui profil karier.'
+  const [tier, setTier] = useState<PackageTier | ''>(availableTiers[0] ?? '');
+  const [packageName, setPackageName] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [photoCount, setPhotoCount] = useState<string>('12');
+  const [creditAmount, setCreditAmount] = useState<string>('100');
+  const [maxTemplates, setMaxTemplates] = useState<string>('1');
+  const [extraBenefits, setExtraBenefits] = useState<string>('');
+  const [accessDuration, setAccessDuration] = useState<string>('14 hari');
+  const [displayOrder, setDisplayOrder] = useState<string>(
+    String(packages.length + 1)
   );
-  const [photoCount, setPhotoCount] = useState<string>('16');
-  const [suitChoices, setSuitChoices] = useState<string>('5 gaya jas');
-  const [extraBenefits, setExtraBenefits] = useState<string>(
-    'Variasi latar profesional\nUnduhan digital tanpa watermark'
-  );
-  const [accessDuration, setAccessDuration] = useState<string>('30 hari');
-  const [displayOrder, setDisplayOrder] = useState<string>('4');
   const [status, setStatus] = useState<PackageStatus>('Draf');
+  const [isFeatured, setIsFeatured] = useState<boolean>(false);
 
   // Google Play Billing
-  const [productId, setProductId] = useState<string>('forgepro_karier_plus');
-  const [refPrice, setRefPrice] = useState<string>('129.000');
+  const [productId, setProductId] = useState<string>(
+    availableTiers[0] ? `forgepro_${availableTiers[0]}` : ''
+  );
+  const [refPrice, setRefPrice] = useState<string>('');
+
+  const handleTierChange = (next: PackageTier | '') => {
+    setTier(next);
+    if (next) {
+      if (!packageName.trim()) setPackageName(PACKAGE_TIER_LABEL[next]);
+      setProductId(`forgepro_${next}`);
+    }
+  };
 
   const handleSave = () => {
-    createPackage({
+    if (!tier) {
+      alert('Semua tier paket (Esensial, Profesional, Eksklusif) sudah dibuat.');
+      return;
+    }
+    if (!packageName.trim()) {
+      alert('Nama paket wajib diisi.');
+      return;
+    }
+    if (!productId.trim()) {
+      alert('Google Play product ID wajib diisi.');
+      return;
+    }
+    if (toInt(refPrice) <= 0) {
+      alert('Harga referensi harus lebih dari 0.');
+      return;
+    }
+    if (toInt(photoCount) <= 0 || toInt(creditAmount) <= 0 || toInt(maxTemplates) <= 0) {
+      alert('Jumlah foto, kredit AI, dan template jas harus lebih dari 0.');
+      return;
+    }
+    const created = createPackage({
+      tier,
       name: packageName,
       description,
-      photoCount,
-      suitChoices,
+      photoCount: toInt(photoCount),
+      creditAmount: toInt(creditAmount),
+      maxTemplates: toInt(maxTemplates),
       extraBenefits,
       accessDuration,
-      displayOrder,
+      displayOrder: toInt(displayOrder) || packages.length + 1,
       status,
       sku: productId,
-      priceRaw: refPrice,
+      priceValue: toInt(refPrice),
+      isFeatured,
     });
+    if (!created) {
+      alert(`Paket tier ${PACKAGE_TIER_LABEL[tier]} sudah ada.`);
+      return;
+    }
     navigate('/paket-harga');
   };
 
@@ -88,6 +134,34 @@ export function AddPackagePage() {
               Informasi &amp; manfaat paket
             </h3>
 
+            {/* Tier Paket */}
+            <div className="flex flex-col gap-1.5 text-xs">
+              <label className="font-semibold text-content-primary">
+                Tier paket *
+              </label>
+              <div className="relative">
+                <select
+                  value={tier}
+                  onChange={(e) => handleTierChange(e.target.value as PackageTier | '')}
+                  disabled={availableTiers.length === 0}
+                  className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer disabled:cursor-not-allowed disabled:bg-surface-hover"
+                >
+                  {availableTiers.length === 0 && (
+                    <option value="">Semua tier sudah dibuat</option>
+                  )}
+                  {availableTiers.map((t) => (
+                    <option key={t} value={t}>
+                      {PACKAGE_TIER_LABEL[t]}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
+              </div>
+              <span className="text-[11px] text-content-muted">
+                Aplikasi hanya mengenali tier Esensial, Profesional, dan Eksklusif (satu paket per tier).
+              </span>
+            </div>
+
             {/* Nama Paket */}
             <div className="flex flex-col gap-1.5 text-xs">
               <label className="font-semibold text-content-primary">
@@ -114,42 +188,53 @@ export function AddPackagePage() {
               />
             </div>
 
-            {/* Row: Jumlah Hasil Foto & Pilihan Gaya Jas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Row: Jumlah Hasil Foto, Kredit AI & Template Jas */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
                   Jumlah hasil foto *
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={photoCount}
                   onChange={(e) => setPhotoCount(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  Hasil foto AI resolusi tinggi
+                  photo_count
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
-                  Pilihan gaya jas *
+                  Kredit AI *
                 </label>
-                <div className="relative">
-                  <select
-                    value={suitChoices}
-                    onChange={(e) => setSuitChoices(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
-                  >
-                    <option value="2 gaya jas">2 gaya jas</option>
-                    <option value="4 gaya jas">4 gaya jas</option>
-                    <option value="5 gaya jas">5 gaya jas</option>
-                    <option value="Seluruh gaya jas">Seluruh gaya jas yang tayang</option>
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
-                </div>
+                <input
+                  type="number"
+                  min={1}
+                  value={creditAmount}
+                  onChange={(e) => setCreditAmount(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
+                />
                 <span className="text-[11px] text-content-muted">
-                  Dari gaya yang berstatus Tayang
+                  5 foto per generate = 10 kredit
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-content-primary">
+                  Maks. template jas *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={maxTemplates}
+                  onChange={(e) => setMaxTemplates(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
+                />
+                <span className="text-[11px] text-content-muted">
+                  max_templates (&gt; 1 = pilih banyak)
                 </span>
               </div>
             </div>
@@ -166,7 +251,7 @@ export function AddPackagePage() {
                 className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors resize-none leading-relaxed"
               />
               <span className="text-[11px] text-content-muted">
-                Satu manfaat per baris. Jumlah foto dan pilihan gaya ditambahkan otomatis.
+                Satu manfaat per baris. Jumlah foto, kredit AI, dan jumlah template ditambahkan otomatis.
               </span>
             </div>
 
@@ -192,7 +277,8 @@ export function AddPackagePage() {
                   Urutan tampilan
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={displayOrder}
                   onChange={(e) => setDisplayOrder(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
@@ -223,6 +309,24 @@ export function AddPackagePage() {
                 Tidak ditawarkan sampai dipublikasikan. Pilihan: Draf / Tayang.
               </span>
             </div>
+
+            {/* Direkomendasikan */}
+            <label className="flex items-start gap-3 cursor-pointer select-none text-xs">
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-[#D9B06F] cursor-pointer"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-semibold text-content-primary">
+                  Tandai direkomendasikan
+                </span>
+                <span className="text-[11px] text-content-muted leading-relaxed">
+                  Paket diberi label rekomendasi di aplikasi. Hanya satu paket yang bisa direkomendasikan.
+                </span>
+              </span>
+            </label>
           </Card>
 
           {/* Info Notice Bawah */}
@@ -296,13 +400,15 @@ export function AddPackagePage() {
                   Harga referensi (Rp)
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  min={1}
                   value={refPrice}
+                  placeholder="mis. 99000"
                   onChange={(e) => setRefPrice(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  Referensi internal, bukan harga live.
+                  Angka rupiah tanpa titik. Referensi internal, bukan harga live.
                 </span>
               </div>
 
@@ -331,12 +437,12 @@ export function AddPackagePage() {
             </h4>
 
             <p className="text-xs font-semibold text-content-primary mt-1">
-              Rp{refPrice} · referensi
+              {refPrice ? formatRupiah(toInt(refPrice)) : 'Rp-'} · referensi
             </p>
 
             <div className="space-y-1 text-xs text-content-muted mt-2">
               <p>
-                {photoCount} hasil foto · Pilihan {suitChoices}
+                {photoCount} hasil foto · {creditAmount} kredit AI · maks. {maxTemplates} template
               </p>
               <p>Akses unduhan {accessDuration}</p>
               <p>

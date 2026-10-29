@@ -2,77 +2,20 @@ import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { X } from 'lucide-react';
+import { useOrderController, type OrderItem } from '../../controllers/order-controller';
 
-interface TransactionItem {
-  id: string;
-  email: string;
-  package: string;
-  amount: string;
-  status: string;
-  time: string;
-  photosCount: number;
-  paymentMethod: string;
-}
-
-const TRANSACTIONS: TransactionItem[] = [
-  {
-    id: 'PS-261019-001',
-    email: 'aditya@mail.com',
-    package: 'Profesional',
-    amount: 'Rp99.000',
-    status: 'Dibayar',
-    time: '19 Okt, 16:12',
-    photosCount: 20,
-    paymentMethod: 'QRIS BCA',
-  },
-  {
-    id: 'PS-261019-002',
-    email: 'sari.w@mail.com',
-    package: 'Esensial',
-    amount: 'Rp59.000',
-    status: 'Menunggu',
-    time: '19 Okt, 15:48',
-    photosCount: 10,
-    paymentMethod: 'Virtual Account Mandiri',
-  },
-  {
-    id: 'PS-261019-003',
-    email: 'rizky@mail.com',
-    package: 'Eksklusif',
-    amount: 'Rp169.000',
-    status: 'Diproses',
-    time: '19 Okt, 15:20',
-    photosCount: 35,
-    paymentMethod: 'GoPay',
-  },
-  {
-    id: 'PS-261019-004',
-    email: 'dewi.a@mail.com',
-    package: 'Profesional',
-    amount: 'Rp99.000',
-    status: 'Dibayar',
-    time: '19 Okt, 14:55',
-    photosCount: 20,
-    paymentMethod: 'Kartu Kredit',
-  },
-  {
-    id: 'PS-261018-001',
-    email: 'bayu@mail.com',
-    package: 'Esensial',
-    amount: 'Rp59.000',
-    status: 'Gagal',
-    time: '18 Okt, 21:30',
-    photosCount: 10,
-    paymentMethod: 'ShopeePay (Batas Waktu Habis)',
-  },
-];
+const formatRupiah = (val: number): string =>
+  `Rp${Math.round(val).toLocaleString('id-ID')}`;
 
 /**
  * Recent Transactions Table Component
- * Sesuai kolom dan baris data transaksi di Figma ForgePro.id
+ * Terhubung dengan orderController sehingga menampilkan data transaksi terkini
  */
 export function RecentTransactionsTable() {
-  const [selectedTx, setSelectedTx] = useState<TransactionItem | null>(null);
+  const { orders } = useOrderController();
+  const [selectedTx, setSelectedTx] = useState<OrderItem | null>(null);
+
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <Card className="flex flex-col">
@@ -81,7 +24,7 @@ export function RecentTransactionsTable() {
           Transaksi terbaru
         </h3>
         <span className="px-3.5 py-1 rounded-full bg-[#F4F1EA] dark:bg-[#1C273E] text-xs font-semibold text-content-primary">
-          5 transaksi
+          {recentOrders.length} transaksi
         </span>
       </div>
 
@@ -99,7 +42,7 @@ export function RecentTransactionsTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle/50">
-            {TRANSACTIONS.map((tx) => (
+            {recentOrders.map((tx) => (
               <tr
                 key={tx.id}
                 onClick={() => setSelectedTx(tx)}
@@ -107,35 +50,42 @@ export function RecentTransactionsTable() {
               >
                 {/* No Pesanan */}
                 <td className="py-4 pr-4 pl-1 font-mono text-content-primary font-medium tracking-tight">
-                  {tx.id}
+                  {tx.orderNumber}
                 </td>
 
                 {/* Email */}
                 <td className="py-4 px-4 text-content-secondary group-hover:text-content-primary transition-colors">
-                  {tx.email}
+                  {tx.customerEmail}
                 </td>
 
                 {/* Paket */}
                 <td className="py-4 px-4 text-content-secondary">
-                  {tx.package}
+                  {tx.packageName}
                 </td>
 
                 {/* Nominal */}
                 <td className="py-4 px-4 font-medium text-content-primary">
-                  {tx.amount}
+                  {formatRupiah(tx.amount)}
                 </td>
 
                 {/* Status Badge */}
                 <td className="py-4 px-4 text-center">
-                  <Badge status={tx.status} />
+                  <Badge status={tx.paymentStatus} />
                 </td>
 
                 {/* Waktu */}
                 <td className="py-4 pl-4 pr-1 text-right text-content-muted">
-                  {tx.time}
+                  {tx.timeDisplay}
                 </td>
               </tr>
             ))}
+            {recentOrders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-content-muted">
+                  Belum ada transaksi.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -159,9 +109,9 @@ export function RecentTransactionsTable() {
 
             <div className="flex items-center gap-2 mb-3">
               <span className="text-xs font-mono text-[#D9B06F] font-semibold">
-                {selectedTx.id}
+                {selectedTx.orderNumber}
               </span>
-              <Badge status={selectedTx.status} size="sm" />
+              <Badge status={selectedTx.paymentStatus} size="sm" />
             </div>
 
             <h4 className="font-serif text-xl font-bold text-content-primary mb-1">
@@ -175,19 +125,19 @@ export function RecentTransactionsTable() {
               <div className="flex justify-between pt-2">
                 <span className="text-content-muted">Pelanggan</span>
                 <span className="font-medium text-content-primary">
-                  {selectedTx.email}
+                  {selectedTx.customerEmail}
                 </span>
               </div>
               <div className="flex justify-between pt-2">
                 <span className="text-content-muted">Pilihan Paket</span>
                 <span className="font-medium text-content-primary">
-                  {selectedTx.package}
+                  {selectedTx.packageName} ({selectedTx.photoCount} foto AI)
                 </span>
               </div>
               <div className="flex justify-between pt-2">
                 <span className="text-content-muted">Total Pembayaran</span>
                 <span className="font-bold text-[#D9B06F] text-sm">
-                  {selectedTx.amount}
+                  {formatRupiah(selectedTx.amount)}
                 </span>
               </div>
               <div className="flex justify-between pt-2">
@@ -197,15 +147,15 @@ export function RecentTransactionsTable() {
                 </span>
               </div>
               <div className="flex justify-between pt-2">
-                <span className="text-content-muted">Estimasi Hasil Foto</span>
+                <span className="text-content-muted">Gaya Jas</span>
                 <span className="font-medium text-content-primary">
-                  {selectedTx.photosCount} Variasi Foto Jas
+                  {selectedTx.suitType}
                 </span>
               </div>
               <div className="flex justify-between pt-2">
                 <span className="text-content-muted">Waktu Transaksi</span>
                 <span className="font-medium text-content-primary">
-                  {selectedTx.time} WIB
+                  {selectedTx.timeDisplay} WIB
                 </span>
               </div>
             </div>

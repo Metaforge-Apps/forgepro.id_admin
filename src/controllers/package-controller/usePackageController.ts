@@ -57,8 +57,15 @@ export function usePackageController() {
     return packageController.getStatusBadgeStyle(status);
   }, []);
 
+  const availableTiers = useMemo(
+    () => packageController.getAvailableTiers(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [packages]
+  );
+
   return {
     packages,
+    availableTiers,
     rules,
     packageToDeactivate,
     setPackageToDeactivate,

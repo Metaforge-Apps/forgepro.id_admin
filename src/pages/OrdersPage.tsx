@@ -5,96 +5,17 @@ import {
   Search,
   ChevronDown,
   Info,
-  X
+  X,
+  RefreshCw,
+  Truck,
+  CheckCircle2,
 } from 'lucide-react';
-import type { OrderItem } from '../types';
-
-const ORDERS_DATA: OrderItem[] = [
-  {
-    id: 'PS-261019-001',
-    customer: 'aditya@mail.com',
-    package: 'Profesional',
-    amount: 'Rp99.000',
-    paymentStatus: 'Dibayar',
-    photoStatus: 'Selesai',
-    time: '19 Okt 16:12',
-    suitType: 'Jas Navy Klasik & Formal',
-    photoCount: 12,
-    downloadUrl: '#',
-  },
-  {
-    id: 'PS-261019-002',
-    customer: 'sari.w@mail.com',
-    package: 'Esensial',
-    amount: 'Rp59.000',
-    paymentStatus: 'Menunggu',
-    photoStatus: 'Belum mulai',
-    time: '19 Okt 15:48',
-    suitType: 'Blazer Krem Modern',
-    photoCount: 4,
-    downloadUrl: null,
-  },
-  {
-    id: 'PS-261019-003',
-    customer: 'rizky@mail.com',
-    package: 'Eksklusif',
-    amount: 'Rp169.000',
-    paymentStatus: 'Dibayar',
-    photoStatus: 'Diproses',
-    time: '19 Okt 15:20',
-    suitType: 'Tuksedo Malam & Bisnis',
-    photoCount: 24,
-    downloadUrl: null,
-  },
-  {
-    id: 'PS-261019-004',
-    customer: 'dewi.a@mail.com',
-    package: 'Profesional',
-    amount: 'Rp99.000',
-    paymentStatus: 'Dibayar',
-    photoStatus: 'Selesai',
-    time: '19 Okt 14:55',
-    suitType: 'Blazer Navy Elegan',
-    photoCount: 12,
-    downloadUrl: '#',
-  },
-  {
-    id: 'PS-261018-001',
-    customer: 'bayu@mail.com',
-    package: 'Esensial',
-    amount: 'Rp59.000',
-    paymentStatus: 'Gagal',
-    photoStatus: 'Dibatalkan',
-    time: '18 Okt 21:30',
-    suitType: 'Jas Abu Profesional',
-    photoCount: 4,
-    downloadUrl: null,
-  },
-  {
-    id: 'PS-261018-002',
-    customer: 'nabila@mail.com',
-    package: 'Profesional',
-    amount: 'Rp99.000',
-    paymentStatus: 'Dibayar',
-    photoStatus: 'Selesai',
-    time: '18 Okt 20:14',
-    suitType: 'Blazer Krem Modern',
-    photoCount: 12,
-    downloadUrl: '#',
-  },
-  {
-    id: 'PS-261018-003',
-    customer: 'fajar@mail.com',
-    package: 'Eksklusif',
-    amount: 'Rp169.000',
-    paymentStatus: 'Dibayar',
-    photoStatus: 'Selesai',
-    time: '18 Okt 19:46',
-    suitType: 'Jas Hitam Formal',
-    photoCount: 24,
-    downloadUrl: '#',
-  },
-];
+import {
+  useOrderController,
+  type OrderItem,
+  type PaymentStatus,
+  type PhotoGenerationStatus,
+} from '../controllers/order-controller';
 
 const TABS = [
   'Semua pesanan',
@@ -104,52 +25,82 @@ const TABS = [
   'Gagal',
 ];
 
-const getPaymentBadgeStyle = (status: OrderItem['paymentStatus']): string => {
-  if (status === 'Dibayar') {
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-  }
-  if (status === 'Menunggu') {
-    return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-  }
-  return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
-};
-
-const getPhotoBadgeStyle = (status: OrderItem['photoStatus']): string => {
-  if (status === 'Selesai') {
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-  }
-  if (status === 'Diproses') {
-    return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-  }
-  return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
-};
+const formatRupiah = (val: number): string =>
+  `Rp${Math.round(val).toLocaleString('id-ID')}`;
 
 export function OrdersPage() {
+  const {
+    orders,
+    updateOrderStatus,
+    getPaymentBadgeStyle,
+    getPhotoBadgeStyle,
+  } = useOrderController();
+
   const [activeTab, setActiveTab] = useState<string>('Semua pesanan');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('7 hari terakhir');
-  const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const selectedOrder = useMemo(
+    () => orders.find((o) => o.id === selectedOrderId || o.orderNumber === selectedOrderId) ?? null,
+    [orders, selectedOrderId]
+  );
+
+  // Dynamic calculations for stat cards
+  const stats = useMemo(() => {
+    const totalCount = orders.length;
+    const paidOrders = orders.filter((o) => o.paymentStatus === 'Dibayar');
+    const revenue = paidOrders.reduce((acc, curr) => acc + curr.amount, 0);
+    const completedCount = orders.filter((o) => o.photoStatus === 'Selesai').length;
+    const pendingFailedCount = orders.filter(
+      (o) => o.paymentStatus === 'Menunggu' || o.paymentStatus === 'Gagal' || o.photoStatus === 'Dibatalkan'
+    ).length;
+
+    return {
+      totalCount,
+      revenue,
+      completedCount,
+      pendingFailedCount,
+    };
+  }, [orders]);
 
   // Filter Data
   const filteredOrders = useMemo(() => {
-    return ORDERS_DATA.filter((item) => {
+    const q = searchQuery.trim().toLowerCase();
+    return orders.filter((item) => {
       if (activeTab === 'Menunggu pembayaran' && item.paymentStatus !== 'Menunggu') return false;
       if (activeTab === 'Dalam proses' && item.photoStatus !== 'Diproses') return false;
       if (activeTab === 'Selesai' && item.photoStatus !== 'Selesai') return false;
       if (activeTab === 'Gagal' && item.paymentStatus !== 'Gagal') return false;
 
-      if (selectedPackage !== 'Semua paket' && item.package !== selectedPackage) return false;
+      if (selectedPackage !== 'Semua paket' && item.packageName !== selectedPackage) return false;
 
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
-        return item.id.toLowerCase().includes(q) || item.customer.toLowerCase().includes(q);
+      if (q !== '') {
+        const matchId = item.id.toLowerCase().includes(q);
+        const matchNumber = item.orderNumber.toLowerCase().includes(q);
+        const matchEmail = item.customerEmail.toLowerCase().includes(q);
+        const matchName = (item.customerName || '').toLowerCase().includes(q);
+        if (!matchId && !matchNumber && !matchEmail && !matchName) return false;
       }
 
       return true;
     });
-  }, [activeTab, selectedPackage, searchQuery]);
+  }, [orders, activeTab, selectedPackage, searchQuery]);
+
+  const handleUpdatePaymentStatus = (newStatus: PaymentStatus) => {
+    if (!selectedOrder) return;
+    updateOrderStatus(selectedOrder.id, { paymentStatus: newStatus });
+    setStatusMessage(`Status pembayaran diperbarui menjadi "${newStatus}"`);
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  const handleUpdatePhotoStatus = (newStatus: PhotoGenerationStatus) => {
+    if (!selectedOrder) return;
+    updateOrderStatus(selectedOrder.id, { photoStatus: newStatus });
+    setStatusMessage(`Status proses foto diperbarui menjadi "${newStatus}"`);
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,32 +112,26 @@ export function OrdersPage() {
               Total Transaksi
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              1.284
+              {stats.totalCount}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-xs">
-            <span className="text-content-muted">7 hari terakhir ·</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-              +12,4%
-            </span>
-          </div>
+          <span className="text-xs text-content-muted mt-4 block">
+            Tersimpan di sistem
+          </span>
         </Card>
 
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
             <span className="text-xs font-medium text-content-muted">
-              Pendapatan
+              Pendapatan Terkonfirmasi
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              Rp96,8 jt
+              {formatRupiah(stats.revenue)}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 mt-4 text-xs">
-            <span className="text-content-muted">7 hari terakhir ·</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-              +8,1%
-            </span>
-          </div>
+          <span className="text-xs text-content-muted mt-4 block">
+            Dari pesanan berstatus Dibayar
+          </span>
         </Card>
 
         <Card padding="p-6" className="flex flex-col justify-between">
@@ -195,7 +140,7 @@ export function OrdersPage() {
               Pesanan Berhasil
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              1.126
+              {stats.completedCount}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
@@ -209,24 +154,23 @@ export function OrdersPage() {
               Pending &amp; Gagal
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              158
+              {stats.pendingFailedCount}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Perlu ditinjau secara berkala
+            Perlu ditinjau atau render ulang
           </span>
         </Card>
       </div>
 
       {/* Main Table Card: Daftar Pesanan */}
       <Card padding="p-6 sm:p-7" className="flex flex-col gap-5">
-        {/* Card Header: Title & Date */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h2 className="text-base sm:text-lg font-semibold text-content-primary">
             Daftar pesanan
           </h2>
           <span className="text-xs text-content-muted">
-            13–19 Oktober 2026
+            Menampilkan data sesuai format aplikasi Flutter
           </span>
         </div>
 
@@ -251,21 +195,19 @@ export function OrdersPage() {
           })}
         </div>
 
-        {/* Search & Select Filter Controls */}
+        {/* Filter Row */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          {/* Search Input */}
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
             <input
               type="text"
-              placeholder="Cari nomor pesanan atau email..."
+              placeholder="Cari no. pesanan, email, atau nama pelanggan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors"
             />
           </div>
 
-          {/* Dropdown Filters */}
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="relative">
               <ChevronDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-primary pointer-events-none" />
@@ -280,195 +222,160 @@ export function OrdersPage() {
                 <option value="Eksklusif">Eksklusif</option>
               </select>
             </div>
-
-            <div className="relative">
-              <ChevronDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-primary pointer-events-none" />
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="appearance-none pl-9 pr-4 py-2.5 rounded-xl text-xs font-semibold bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
-              >
-                <option value="7 hari terakhir">7 hari terakhir</option>
-                <option value="30 hari terakhir">30 hari terakhir</option>
-                <option value="Bulan ini">Bulan ini</option>
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* Table Container */}
+        {/* Table */}
         <div className="overflow-x-auto -mx-6 sm:-mx-7 px-6 sm:px-7">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-border-subtle text-content-muted font-semibold tracking-wider text-[10px] uppercase">
-                <th className="pb-3 pr-4">PESANAN / PELANGGAN</th>
+                <th className="pb-3 pr-4">NO. PESANAN / PELANGGAN</th>
                 <th className="pb-3 px-4">PAKET</th>
-                <th className="pb-3 px-4">NOMINAL</th>
+                <th className="pb-3 px-4">TOTAL</th>
                 <th className="pb-3 px-4">PEMBAYARAN</th>
-                <th className="pb-3 px-4">PROSES FOTO</th>
-                <th className="pb-3 px-4">WAKTU (WIB)</th>
+                <th className="pb-3 px-4">PROSES AI</th>
+                <th className="pb-3 px-4">CETAK FISIK</th>
+                <th className="pb-3 px-4">WAKTU</th>
                 <th className="pb-3 pl-4 text-left">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
-              {filteredOrders.length === 0 ? (
+              {filteredOrders.map((item) => (
+                <tr
+                  key={item.id}
+                  onClick={() => setSelectedOrderId(item.id)}
+                  className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
+                >
+                  <td className="py-4 pr-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-mono font-bold text-content-primary">
+                        {item.orderNumber}
+                      </span>
+                      <span className="text-[11px] text-content-muted">
+                        {item.customerEmail}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-content-primary">
+                        {item.packageName}
+                      </span>
+                      <span className="text-[11px] text-content-muted">
+                        {item.photoCount} foto · {item.suitType}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-bold text-content-primary">
+                        {formatRupiah(item.amount)}
+                      </span>
+                      {item.discount > 0 && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                          Hemat {formatRupiah(item.discount)} ({item.voucherCode})
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPaymentBadgeStyle(
+                        item.paymentStatus
+                      )}`}
+                    >
+                      {item.paymentStatus}
+                    </span>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPhotoBadgeStyle(
+                        item.photoStatus
+                      )}`}
+                    >
+                      {item.photoStatus}
+                    </span>
+                  </td>
+
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    {item.hasPhysicalPrint ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D9B06F]">
+                        <Truck className="w-3.5 h-3.5" />
+                        <span>{item.shippingCourier || 'Ya'}</span>
+                      </span>
+                    ) : (
+                      <span className="text-content-muted text-[11px]">Digital saja</span>
+                    )}
+                  </td>
+
+                  <td className="py-4 px-4 text-content-muted whitespace-nowrap">
+                    {item.timeDisplay}
+                  </td>
+
+                  <td className="py-4 pl-4 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedOrderId(item.id);
+                      }}
+                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
+                    >
+                      <span>Detail</span>
+                      <span>&rarr;</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-content-muted">
+                  <td colSpan={8} className="py-10 text-center text-content-muted">
                     Tidak ada pesanan yang sesuai dengan filter.
                   </td>
                 </tr>
-              ) : (
-                filteredOrders.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => setSelectedOrder(row)}
-                    className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
-                  >
-                    {/* Pesanan / Pelanggan */}
-                    <td className="py-4 pr-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-content-primary">
-                          {row.id}
-                        </span>
-                        <span className="text-[11px] text-content-muted">
-                          {row.customer}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Paket */}
-                    <td className="py-4 px-4 text-content-muted whitespace-nowrap">
-                      {row.package}
-                    </td>
-
-                    {/* Nominal */}
-                    <td className="py-4 px-4 text-content-muted whitespace-nowrap">
-                      {row.amount}
-                    </td>
-
-                    {/* Pembayaran */}
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPaymentBadgeStyle(
-                          row.paymentStatus
-                        )}`}
-                      >
-                        {row.paymentStatus}
-                      </span>
-                    </td>
-
-                    {/* Proses Foto */}
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPhotoBadgeStyle(
-                          row.photoStatus
-                        )}`}
-                      >
-                        {row.photoStatus}
-                      </span>
-                    </td>
-
-                    {/* Waktu */}
-                    <td className="py-4 px-4 text-content-muted whitespace-nowrap">
-                      {row.time}
-                    </td>
-
-                    {/* Aksi */}
-                    <td className="py-4 pl-4 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedOrder(row);
-                        }}
-                        className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1 select-none"
-                      >
-                        <span>Detail</span>
-                        <span>&rarr;</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Table Footer: Count & Pagination */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border-subtle text-xs text-content-muted">
-          <span>
-            Menampilkan 1–{filteredOrders.length} dari 1.284 pesanan
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border-subtle">
+          <span className="text-xs text-content-muted">
+            Menampilkan {filteredOrders.length} dari total {orders.length} pesanan
           </span>
-
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="px-3.5 py-2 rounded-xl font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary disabled:opacity-50 disabled:cursor-not-allowed select-none transition-colors"
-            >
-              Sebelumnya
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-xl font-semibold flex items-center justify-center transition-colors select-none ${
-                currentPage === 1
-                  ? 'bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] border border-[#D9B06F]/60'
-                  : 'border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary'
-              }`}
-            >
-              1
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(2)}
-              className={`w-8 h-8 rounded-xl font-semibold flex items-center justify-center transition-colors select-none ${
-                currentPage === 2
-                  ? 'bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] border border-[#D9B06F]/60'
-                  : 'border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary'
-              }`}
-            >
-              2
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(2)}
-              className="px-3.5 py-2 rounded-xl font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary select-none transition-colors"
-            >
-              Berikutnya
-            </button>
-          </div>
         </div>
       </Card>
 
-      {/* Bottom Info Notice (Disamakan dengan styling footer Menu Sistem) */}
+      {/* Bottom Info Notice */}
       <div className="flex items-start gap-2.5 px-1 pt-1">
         <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold text-content-primary">
-            Status pembayaran dan proses ditampilkan terpisah
+            Kepatuhan Keamanan &amp; Alur Tanpa Login (Guest First)
           </span>
           <p className="text-xs text-content-muted leading-relaxed">
-            Foto diproses setelah pembayaran terkonfirmasi. Pesanan gagal tidak
-            diteruskan ke antrean produksi atau pengiriman.
+            Pesanan terikat pada email pelanggan. Sesuai UU PDP No. 27/2022, foto hasil AI disimpan di cloud selama 14–30 hari dan foto selfie mentah dibersihkan dalam 24 jam.
           </p>
         </div>
       </div>
 
-      {/* Modal Detail Pesanan */}
+      {/* Modal Detail Pesanan & Pengelolaan Status */}
       {selectedOrder && (
         <div
-          onClick={() => setSelectedOrder(null)}
+          onClick={() => setSelectedOrderId(null)}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
           >
             <button
               type="button"
-              onClick={() => setSelectedOrder(null)}
+              onClick={() => setSelectedOrderId(null)}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
             >
               <X className="w-4 h-4" />
@@ -476,7 +383,7 @@ export function OrdersPage() {
 
             <div className="flex items-center gap-2.5 mb-2">
               <span className="font-mono text-sm font-semibold text-[#D9B06F]">
-                {selectedOrder.id}
+                {selectedOrder.orderNumber}
               </span>
               <span
                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPaymentBadgeStyle(
@@ -485,76 +392,192 @@ export function OrdersPage() {
               >
                 {selectedOrder.paymentStatus}
               </span>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPhotoBadgeStyle(
+                  selectedOrder.photoStatus
+                )}`}
+              >
+                {selectedOrder.photoStatus}
+              </span>
             </div>
 
             <h3 className="font-serif text-2xl font-medium text-content-primary mb-1">
-              Detail Pesanan &amp; Foto
+              Detail Pesanan #{selectedOrder.orderNumber}
             </h3>
-            <p className="text-xs text-content-muted mb-5">
-              Informasi lengkap pelanggan, paket, dan status AI generation
+            <p className="text-xs text-content-muted mb-4">
+              ID Database: <code className="font-mono">{selectedOrder.id}</code> · {selectedOrder.timeDisplay} WIB
             </p>
+
+            {statusMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{statusMessage}</span>
+              </div>
+            )}
 
             <div className="space-y-3 text-xs border-t border-b border-border-subtle py-4">
               <div className="flex items-center justify-between">
-                <span className="text-content-muted">Email Pelanggan</span>
+                <span className="text-content-muted">Pelanggan</span>
+                <span className="font-semibold text-content-primary text-right">
+                  {selectedOrder.customerName || '-'} ({selectedOrder.customerEmail})
+                </span>
+              </div>
+              {selectedOrder.customerPhone && (
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">Nomor WhatsApp / HP</span>
+                  <span className="font-medium text-content-primary">
+                    {selectedOrder.customerPhone}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-content-muted">Paket &amp; Manfaat</span>
                 <span className="font-semibold text-content-primary">
-                  {selectedOrder.customer}
+                  {selectedOrder.packageName} · {selectedOrder.photoCount} foto AI ({selectedOrder.creditsRemaining}/{selectedOrder.totalCredits} kredit)
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-content-muted">Pilihan Paket</span>
-                <span className="font-semibold text-content-primary">
-                  {selectedOrder.package} ({selectedOrder.photoCount} foto AI)
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Gaya Jas Dipilih</span>
+                <span className="text-content-muted">Pilihan Gaya Jas</span>
                 <span className="font-semibold text-content-primary">
                   {selectedOrder.suitType}
+                </span>
+              </div>
+              {selectedOrder.customPrompt && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-content-muted">Prompt Khusus Pelanggan</span>
+                  <p className="p-2.5 rounded-xl bg-surface-hover/60 border border-border-subtle text-content-primary italic">
+                    &ldquo;{selectedOrder.customPrompt}&rdquo;
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-content-muted">Metode Pembayaran</span>
+                <span className="font-medium text-content-primary">
+                  {selectedOrder.paymentMethod}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-content-muted">Total Pembayaran</span>
                 <span className="font-bold text-sm text-[#D9B06F]">
-                  {selectedOrder.amount}
+                  {formatRupiah(selectedOrder.amount)}
+                  {selectedOrder.discount > 0 && (
+                    <span className="text-xs font-normal text-content-muted ml-1.5">
+                      (Diskon {formatRupiah(selectedOrder.discount)} via {selectedOrder.voucherCode})
+                    </span>
+                  )}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Status Proses Foto</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPhotoBadgeStyle(
-                    selectedOrder.photoStatus
-                  )}`}
-                >
-                  {selectedOrder.photoStatus}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Waktu Transaksi Masuk</span>
-                <span className="font-medium text-content-primary">
-                  {selectedOrder.time} WIB
-                </span>
-              </div>
+
+              {selectedOrder.hasPhysicalPrint && (
+                <div className="pt-3 border-t border-border-subtle/60 flex flex-col gap-1.5">
+                  <span className="font-semibold text-content-primary flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-[#D9B06F]" />
+                    <span>Cetak Fisik &amp; Pengiriman</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-content-muted">
+                    <div>
+                      <span>Penerima:</span> <span className="font-medium text-content-primary">{selectedOrder.recipientName || '-'}</span>
+                    </div>
+                    <div>
+                      <span>Kurir:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingCourier || 'JNE'}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span>Alamat:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingAddress || '-'}</span>
+                    </div>
+                    <div>
+                      <span>No. Resi:</span> <span className="font-mono font-medium text-content-primary">{selectedOrder.shippingTrackingNumber || 'Belum ada'}</span>
+                    </div>
+                    <div>
+                      <span>Status Kirim:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingStatus || 'Antre cetak'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="mt-5 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setSelectedOrder(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
-              >
-                Tutup
-              </button>
-              {selectedOrder.downloadUrl && (
+            {/* Kontrol Aksi Manajemen Order */}
+            <div className="mt-4 flex flex-col gap-3">
+              <span className="text-xs font-semibold text-content-primary">
+                Aksi Pengelolaan Order
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* Pembayaran */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-content-muted">Ubah Status Pembayaran:</span>
+                  <div className="flex items-center gap-1.5">
+                    {(['Dibayar', 'Menunggu', 'Gagal'] as PaymentStatus[]).map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => handleUpdatePaymentStatus(st)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          selectedOrder.paymentStatus === st
+                            ? 'border-[#D9B06F] bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] font-semibold'
+                            : 'border-border-subtle hover:bg-surface-hover text-content-muted'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Proses AI */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-content-muted">Ubah Status Proses AI:</span>
+                  <div className="flex items-center gap-1.5">
+                    {(['Diproses', 'Selesai', 'Dibatalkan'] as PhotoGenerationStatus[]).map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => handleUpdatePhotoStatus(st)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          selectedOrder.photoStatus === st
+                            ? 'border-[#D9B06F] bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] font-semibold'
+                            : 'border-border-subtle hover:bg-surface-hover text-content-muted'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between gap-2.5 border-t border-border-subtle">
                 <button
                   type="button"
-                  onClick={() => alert('Mengunduh paket arsip foto ZIP...')}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] inline-flex items-center gap-1.5"
+                  onClick={() => {
+                    handleUpdatePhotoStatus('Diproses');
+                    setStatusMessage('Permintaan render ulang AI berhasil dikirim ke antrean.');
+                  }}
+                  className="px-3.5 py-2 rounded-xl text-xs font-medium border border-border-subtle hover:bg-surface-hover text-content-primary inline-flex items-center gap-1.5 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Unduh Arsip Foto</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-[#D9B06F]" />
+                  <span>Render Ulang AI</span>
                 </button>
-              )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrderId(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  {selectedOrder.downloadUrl && (
+                    <button
+                      type="button"
+                      onClick={() => alert(`Mengunduh paket hasil foto untuk ${selectedOrder.orderNumber}...`)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] inline-flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Unduh Arsip</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

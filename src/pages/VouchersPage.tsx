@@ -4,165 +4,289 @@ import {
   Search,
   ChevronDown,
   Download,
-  X
+  X,
+  Trash2,
 } from 'lucide-react';
-import type { VoucherItem } from '../types';
+import {
+  useVoucherController,
+  getVoucherStatus,
+  getPeriodGroup,
+  formatPeriod,
+  formatDateShort,
+  describeDiscount,
+  todayIso,
+  PACKAGE_TARGET_LABEL,
+  type VoucherItem,
+  type VoucherInput,
+  type VoucherDiscountType,
+  type VoucherPackageTarget,
+} from '../controllers/voucher-controller';
 
-const INITIAL_VOUCHERS: VoucherItem[] = [
-  {
-    id: 'v-1',
-    code: 'KARIER20',
-    name: 'Kampanye karier Oktober',
-    discountMain: '20%',
-    discountSub: 'Maks. Rp25.000',
-    period: '1–31 Okt 2026',
-    periodGroup: 'Oktober 2026',
-    packageTarget: 'Semua paket',
-    used: 186,
-    quota: 500,
-    status: 'Aktif',
-  },
-  {
-    id: 'v-2',
-    code: 'PROBARU',
-    name: 'Pelanggan baru',
-    discountMain: 'Rp10.000',
-    discountSub: 'Min. Rp59.000',
-    period: '1–31 Okt 2026',
-    periodGroup: 'Oktober 2026',
-    packageTarget: 'Semua paket',
-    used: 94,
-    quota: 300,
-    status: 'Aktif',
-  },
-  {
-    id: 'v-3',
-    code: 'EKSKLUSIF15',
-    name: 'Khusus paket Eksklusif',
-    discountMain: '15%',
-    discountSub: 'Maks. Rp30.000',
-    period: '15–31 Okt 2026',
-    periodGroup: 'Oktober 2026',
-    packageTarget: 'Eksklusif',
-    used: 42,
-    quota: 200,
-    status: 'Aktif',
-  },
-  {
-    id: 'v-4',
-    code: 'NOVHEMAT',
-    name: 'Promo awal November',
-    discountMain: 'Rp15.000',
-    discountSub: 'Min. Rp99.000',
-    period: '1–7 Nov 2026',
-    periodGroup: 'November 2026',
-    packageTarget: 'Profesional',
-    used: 0,
-    quota: 250,
-    status: 'Terjadwal',
-  },
-  {
-    id: 'v-5',
-    code: 'SEPTCERIA',
-    name: 'Kampanye September',
-    discountMain: '10%',
-    discountSub: 'Maks. Rp20.000',
-    period: '1–30 Sep 2026',
-    periodGroup: 'September 2026',
-    packageTarget: 'Semua paket',
-    used: 200,
-    quota: 200,
-    status: 'Berakhir',
-  },
-];
+const inputClass =
+  'w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors';
+
+const toInt = (value: string): number => {
+  const digits = value.replace(/\D/g, '');
+  return digits === '' ? 0 : parseInt(digits, 10);
+};
+
+interface VoucherFormState {
+  code: string;
+  title: string;
+  description: string;
+  badge: string;
+  discountType: VoucherDiscountType;
+  percentOff: string;
+  amountOff: string;
+  bonusPhotos: string;
+  maxDiscount: string;
+  minPurchase: string;
+  promoProductId: string;
+  perEmailLimit: string;
+  packageTarget: VoucherPackageTarget;
+  startDate: string;
+  endDate: string;
+  quota: string;
+  isActive: boolean;
+}
+
+const emptyForm = (): VoucherFormState => ({
+  code: '',
+  title: '',
+  description: '',
+  badge: 'PROMO',
+  discountType: 'percent',
+  percentOff: '10',
+  amountOff: '',
+  bonusPhotos: '0',
+  maxDiscount: '',
+  minPurchase: '',
+  promoProductId: '',
+  perEmailLimit: '1',
+  packageTarget: 'all',
+  startDate: todayIso(),
+  endDate: '',
+  quota: '200',
+  isActive: true,
+});
+
+const formFromVoucher = (v: VoucherItem): VoucherFormState => ({
+  code: v.code,
+  title: v.title,
+  description: v.description,
+  badge: v.badge,
+  discountType: v.discountType,
+  percentOff: v.percentOff ? String(v.percentOff) : '',
+  amountOff: v.amountOff ? String(v.amountOff) : '',
+  bonusPhotos: String(v.bonusPhotos),
+  maxDiscount: v.maxDiscount ? String(v.maxDiscount) : '',
+  minPurchase: v.minPurchase ? String(v.minPurchase) : '',
+  promoProductId: v.promoProductId,
+  perEmailLimit: String(v.perEmailLimit),
+  packageTarget: v.packageTarget,
+  startDate: v.startDate,
+  endDate: v.endDate,
+  quota: String(v.quota),
+  isActive: v.isActive,
+});
+
+const inputFromForm = (f: VoucherFormState): VoucherInput => ({
+  code: f.code,
+  title: f.title,
+  description: f.description,
+  badge: f.badge,
+  discountType: f.discountType,
+  percentOff: toInt(f.percentOff),
+  amountOff: toInt(f.amountOff),
+  bonusPhotos: toInt(f.bonusPhotos),
+  maxDiscount: toInt(f.maxDiscount),
+  minPurchase: toInt(f.minPurchase),
+  promoProductId: f.promoProductId,
+  perEmailLimit: toInt(f.perEmailLimit),
+  packageTarget: f.packageTarget,
+  startDate: f.startDate,
+  endDate: f.endDate,
+  quota: toInt(f.quota),
+  isActive: f.isActive,
+});
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 text-xs">
+      <label className="font-semibold text-content-primary">{label}</label>
+      {children}
+      {hint && <span className="text-[11px] text-content-muted">{hint}</span>}
+    </div>
+  );
+}
 
 export function VouchersPage() {
-  const [vouchers, setVouchers] = useState<VoucherItem[]>(INITIAL_VOUCHERS);
+  const {
+    vouchers,
+    summary,
+    createVoucher,
+    updateVoucher,
+    toggleActive,
+    deleteVoucher,
+    validate,
+    getStatusBadgeStyle,
+  } = useVoucherController();
+
   const [activeTab, setActiveTab] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [packageFilter, setPackageFilter] = useState<string>('Semua paket');
   const [periodFilter, setPeriodFilter] = useState<string>('Semua periode');
 
   // Modal states
-  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
-  const [selectedVoucher, setSelectedVoucher] = useState<VoucherItem | null>(null);
+  const [showFormModal, setShowFormModal] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<VoucherFormState>(emptyForm());
+  const [formError, setFormError] = useState<string | null>(null);
+  const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
-  // Form state for new voucher
-  const [newCode, setNewCode] = useState<string>('');
-  const [newName, setNewName] = useState<string>('');
-  const [newDiscountMain, setNewDiscountMain] = useState<string>('');
-  const [newDiscountSub, setNewDiscountSub] = useState<string>('');
-  const [newPeriod, setNewPeriod] = useState<string>('1–30 Nov 2026');
-  const [newQuota, setNewQuota] = useState<string>('200');
+  const selectedVoucher = useMemo(
+    () => vouchers.find((v) => v.id === selectedVoucherId) ?? null,
+    [vouchers, selectedVoucherId]
+  );
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm());
+    setFormError(null);
+    setShowFormModal(true);
+  };
+
+  const openEdit = (v: VoucherItem) => {
+    setEditingId(v.id);
+    setForm(formFromVoucher(v));
+    setFormError(null);
+    setSelectedVoucherId(null);
+    setShowFormModal(true);
+  };
+
+  const closeForm = () => {
+    setShowFormModal(false);
+    setEditingId(null);
+    setFormError(null);
+  };
 
   // Listen to Header "Buat voucher" button
   useEffect(() => {
     const handleHeaderAction = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail === 'create-voucher') {
-        setShowCreateModal(true);
+        setEditingId(null);
+        setForm(emptyForm());
+        setFormError(null);
+        setShowFormModal(true);
       }
     };
     window.addEventListener('forgepro-action', handleHeaderAction);
     return () => window.removeEventListener('forgepro-action', handleHeaderAction);
   }, []);
 
-  const counts = useMemo(() => {
-    return {
-      Semua: vouchers.length,
-      Aktif: vouchers.filter((v) => v.status === 'Aktif').length,
-      Terjadwal: vouchers.filter((v) => v.status === 'Terjadwal').length,
-      Berakhir: vouchers.filter((v) => v.status === 'Berakhir').length,
-    };
+  const withStatus = useMemo(
+    () => vouchers.map((v) => ({ voucher: v, status: getVoucherStatus(v) })),
+    [vouchers]
+  );
+
+  const counts = useMemo(
+    () => ({
+      Semua: withStatus.length,
+      Aktif: withStatus.filter((x) => x.status === 'Aktif').length,
+      Terjadwal: withStatus.filter((x) => x.status === 'Terjadwal').length,
+      Berakhir: withStatus.filter((x) => x.status === 'Berakhir').length,
+      Nonaktif: withStatus.filter((x) => x.status === 'Nonaktif').length,
+    }),
+    [withStatus]
+  );
+
+  const periodOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const v of vouchers) seen.add(getPeriodGroup(v));
+    return Array.from(seen);
   }, [vouchers]);
 
-  const filteredVouchers = useMemo(() => {
-    return vouchers.filter((v) => {
-      if (activeTab !== 'Semua' && v.status !== activeTab) return false;
-      if (packageFilter !== 'Semua paket' && v.packageTarget !== packageFilter) return false;
-      if (periodFilter !== 'Semua periode' && v.periodGroup !== periodFilter) return false;
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return withStatus.filter(({ voucher: v, status }) => {
+      if (activeTab !== 'Semua' && status !== activeTab) return false;
+      if (
+        packageFilter !== 'Semua paket' &&
+        PACKAGE_TARGET_LABEL[v.packageTarget] !== packageFilter
+      ) {
+        return false;
+      }
+      if (periodFilter !== 'Semua periode' && getPeriodGroup(v) !== periodFilter) {
+        return false;
+      }
+      if (q !== '') {
         const matchCode = v.code.toLowerCase().includes(q);
-        const matchName = v.name.toLowerCase().includes(q);
-        if (!matchCode && !matchName) return false;
+        const matchTitle = v.title.toLowerCase().includes(q);
+        if (!matchCode && !matchTitle) return false;
       }
       return true;
     });
-  }, [vouchers, activeTab, packageFilter, periodFilter, searchQuery]);
+  }, [withStatus, activeTab, packageFilter, periodFilter, searchQuery]);
 
-  const handleCreateVoucher = (e: React.FormEvent<HTMLFormElement>) => {
+  const setField = <K extends keyof VoucherFormState>(
+    key: K,
+    value: VoucherFormState[K]
+  ) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newCode.trim()) return;
-    const created: VoucherItem = {
-      id: `v-${Date.now()}`,
-      code: newCode.trim().toUpperCase(),
-      name: newName.trim() || 'Kampanye promo baru',
-      discountMain: newDiscountMain.trim() || '15%',
-      discountSub: newDiscountSub.trim() || 'Maks. Rp25.000',
-      period: newPeriod.trim() || '1–30 Nov 2026',
-      periodGroup: 'November 2026',
-      packageTarget: 'Semua paket',
-      used: 0,
-      quota: parseInt(newQuota, 10) || 200,
-      status: 'Aktif',
-    };
-    setVouchers((prev) => [created, ...prev]);
-    setShowCreateModal(false);
-    setNewCode('');
-    setNewName('');
-    setNewDiscountMain('');
-    setNewDiscountSub('');
+    const input = inputFromForm(form);
+    const error = validate(input, editingId ?? undefined);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    if (editingId) {
+      updateVoucher(editingId, input);
+    } else {
+      createVoucher(input);
+    }
+    closeForm();
   };
 
-  const getStatusBadgeStyle = (status: VoucherItem['status']): string => {
-    if (status === 'Aktif') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Terjadwal') {
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+  const handleExportCsv = () => {
+    const header = [
+      'code', 'title', 'description', 'badge', 'discount_type', 'percent_off',
+      'amount_off', 'bonus_photos', 'max_discount', 'min_purchase',
+      'promo_product_id', 'per_email_limit', 'package_target', 'start_date',
+      'end_date', 'quota', 'used', 'status',
+    ];
+    const esc = (value: string | number): string =>
+      `"${String(value).replace(/"/g, '""')}"`;
+    const rows = filtered.map(({ voucher: v, status }) =>
+      [
+        v.code, v.title, v.description, v.badge, v.discountType, v.percentOff,
+        v.amountOff, v.bonusPhotos, v.maxDiscount, v.minPurchase,
+        v.promoProductId, v.perEmailLimit, v.packageTarget, v.startDate,
+        v.endDate, v.quota, v.used, status,
+      ]
+        .map(esc)
+        .join(',')
+    );
+    const blob = new Blob([[header.join(','), ...rows].join('\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'voucher-forgepro.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const tabs = [
@@ -170,11 +294,12 @@ export function VouchersPage() {
     { key: 'Aktif', label: `Aktif (${counts.Aktif})` },
     { key: 'Terjadwal', label: `Terjadwal (${counts.Terjadwal})` },
     { key: 'Berakhir', label: `Berakhir (${counts.Berakhir})` },
+    { key: 'Nonaktif', label: `Nonaktif (${counts.Nonaktif})` },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 4 Summary Stat Cards Sesuai Referensi Figma */}
+      {/* 4 Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
@@ -182,11 +307,11 @@ export function VouchersPage() {
               Voucher aktif
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              {counts.Aktif}
+              {summary.active}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Dari {counts.Semua} voucher yang dibuat
+            Dari {summary.total} voucher yang dibuat
           </span>
         </Card>
 
@@ -196,25 +321,25 @@ export function VouchersPage() {
               Total penggunaan
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              322
+              {summary.totalUsed}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Voucher aktif · Oktober 2026
+            Akumulasi seluruh voucher
           </span>
         </Card>
 
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
             <span className="text-xs font-medium text-content-muted">
-              Nilai diskon
+              Sisa kuota aktif
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              Rp4,8 jt
+              {summary.remainingQuota}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Akumulasi voucher Oktober
+            Pemakaian yang masih tersedia
           </span>
         </Card>
 
@@ -224,25 +349,30 @@ export function VouchersPage() {
               Promo terjadwal
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              {counts.Terjadwal}
+              {summary.scheduled}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Mulai 1 November 2026
+            {summary.nextStart
+              ? `Mulai ${formatDateShort(summary.nextStart)}`
+              : 'Belum ada promo terjadwal'}
           </span>
         </Card>
       </div>
 
       {/* Main Card: Daftar voucher */}
       <Card padding="p-6 sm:p-7" className="flex flex-col gap-5">
-        {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h2 className="text-base sm:text-lg font-semibold text-content-primary">
             Daftar voucher
           </h2>
-          <span className="text-xs text-content-muted">
-            Waktu mengikuti zona WIB
-          </span>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] transition-colors"
+          >
+            + Buat voucher
+          </button>
         </div>
 
         {/* Filter Tabs */}
@@ -268,19 +398,17 @@ export function VouchersPage() {
 
         {/* Search & Filter Row */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          {/* Search Input */}
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
             <input
               type="text"
-              placeholder="Cari kode atau nama promo..."
+              placeholder="Cari kode atau judul promo..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors"
             />
           </div>
 
-          {/* Filter Dropdowns */}
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="relative">
               <ChevronDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-primary pointer-events-none" />
@@ -304,9 +432,11 @@ export function VouchersPage() {
                 className="appearance-none pl-9 pr-4 py-2.5 rounded-xl text-xs font-semibold bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
               >
                 <option value="Semua periode">Semua periode</option>
-                <option value="Oktober 2026">Oktober 2026</option>
-                <option value="November 2026">November 2026</option>
-                <option value="September 2026">September 2026</option>
+                {periodOptions.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -319,6 +449,7 @@ export function VouchersPage() {
               <tr className="border-b border-border-subtle text-content-muted font-semibold tracking-wider text-[10px] uppercase">
                 <th className="pb-3 pr-4">KODE / PROMO</th>
                 <th className="pb-3 px-4">DISKON</th>
+                <th className="pb-3 px-4">PAKET</th>
                 <th className="pb-3 px-4">MASA BERLAKU</th>
                 <th className="pb-3 px-4">PENGGUNAAN / KUOTA</th>
                 <th className="pb-3 px-4">STATUS</th>
@@ -326,47 +457,51 @@ export function VouchersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
-              {filteredVouchers.map((v) => {
-                const progressPercent = Math.min(
-                  100,
-                  Math.round((v.used / v.quota) * 100)
-                );
+              {filtered.map(({ voucher: v, status }) => {
+                const [discountMain, discountSub] = describeDiscount(v);
+                const progressPercent =
+                  v.quota > 0
+                    ? Math.min(100, Math.round((v.used / v.quota) * 100))
+                    : 0;
                 return (
                   <tr
                     key={v.id}
-                    onClick={() => setSelectedVoucher(v)}
+                    onClick={() => {
+                      setConfirmDelete(false);
+                      setSelectedVoucherId(v.id);
+                    }}
                     className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
                   >
-                    {/* KODE / PROMO */}
                     <td className="py-4 pr-4">
                       <div className="flex flex-col gap-0.5">
                         <span className="font-bold text-content-primary tracking-wide">
                           {v.code}
                         </span>
                         <span className="text-[11px] text-content-muted">
-                          {v.name}
+                          {v.title}
                         </span>
                       </div>
                     </td>
 
-                    {/* DISKON */}
                     <td className="py-4 px-4">
                       <div className="flex flex-col gap-0.5">
                         <span className="font-semibold text-content-primary">
-                          {v.discountMain}
+                          {discountMain}
                         </span>
                         <span className="text-[11px] text-content-muted">
-                          {v.discountSub}
+                          {discountSub}
                         </span>
                       </div>
                     </td>
 
-                    {/* MASA BERLAKU */}
                     <td className="py-4 px-4 text-content-muted whitespace-nowrap">
-                      {v.period}
+                      {PACKAGE_TARGET_LABEL[v.packageTarget]}
                     </td>
 
-                    {/* PENGGUNAAN / KUOTA */}
+                    <td className="py-4 px-4 text-content-muted whitespace-nowrap">
+                      {formatPeriod(v)}
+                    </td>
+
                     <td className="py-4 px-4">
                       <div className="flex flex-col gap-1.5 w-36 sm:w-40">
                         <span className="font-medium text-content-primary text-[11px]">
@@ -381,34 +516,39 @@ export function VouchersPage() {
                       </div>
                     </td>
 
-                    {/* STATUS */}
                     <td className="py-4 px-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getStatusBadgeStyle(
-                          v.status
+                          status
                         )}`}
                       >
-                        {v.status}
+                        {status}
                       </span>
                     </td>
 
-                    {/* AKSI */}
                     <td className="py-4 pl-4 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedVoucher(v);
+                          openEdit(v);
                         }}
                         className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
                       >
-                        <span>Kelola</span>
+                        <span>Ubah</span>
                         <span>&rarr;</span>
                       </button>
                     </td>
                   </tr>
                 );
               })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-10 text-center text-content-muted">
+                    Belum ada voucher yang cocok dengan filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -416,12 +556,12 @@ export function VouchersPage() {
         {/* Table Footer */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border-subtle">
           <span className="text-xs text-content-muted">
-            Menampilkan seluruh {filteredVouchers.length} voucher
+            Menampilkan seluruh {filtered.length} voucher
           </span>
 
           <button
             type="button"
-            onClick={() => alert('Mengekspor daftar voucher ke CSV...')}
+            onClick={handleExportCsv}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors self-start sm:self-auto"
           >
             <Download className="w-3.5 h-3.5" />
@@ -437,8 +577,8 @@ export function VouchersPage() {
             Batas penggunaan
           </h3>
           <p className="text-xs text-content-muted leading-relaxed">
-            Satu kode promo per pesanan. Setiap pelanggan dapat menggunakan kode
-            yang sama maksimal satu kali selama periode berlaku.
+            Pelanggan tidak login, sehingga batas pemakaian dihitung per email
+            saat checkout. Atur batas per email pada setiap voucher (bawaan 1×).
           </p>
         </Card>
 
@@ -447,121 +587,261 @@ export function VouchersPage() {
             Penerapan diskon
           </h3>
           <p className="text-xs text-content-muted leading-relaxed">
-            Diskon hanya berlaku pada harga paket foto AI. Biaya cetak dan
-            pengiriman tidak termasuk dasar perhitungan diskon.
+            Harga di Google Play ditentukan SKU produk. Agar potongan benar-benar
+            berlaku, isi SKU promo (<code>promo_product_id</code>) atau gunakan
+            bonus foto. Biaya cetak dan pengiriman tidak termasuk dasar diskon.
           </p>
         </Card>
       </div>
 
-      {/* Modal Buat Voucher Baru */}
-      {showCreateModal && (
+      {/* Modal Buat / Ubah Voucher */}
+      {showFormModal && (
         <div
-          onClick={() => setShowCreateModal(false)}
+          onClick={closeForm}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
           >
             <button
               type="button"
-              onClick={() => setShowCreateModal(false)}
+              onClick={closeForm}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover"
             >
               <X className="w-4 h-4" />
             </button>
 
             <h3 className="font-serif text-2xl font-medium text-content-primary mb-1">
-              Buat voucher baru
+              {editingId ? 'Ubah voucher' : 'Buat voucher baru'}
             </h3>
             <p className="text-xs text-content-muted mb-5">
-              Atur kode promo, nilai potongan, dan batas kuota penggunaan.
+              Data ini tampil di sheet &ldquo;Pilih Kupon&rdquo; dan dipakai saat
+              validasi kode di aplikasi.
             </p>
 
-            <form onSubmit={handleCreateVoucher} className="space-y-3.5 text-xs">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-content-primary">
-                  Kode voucher
-                </label>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field
+                  label="Kode voucher *"
+                  hint={editingId ? undefined : 'Huruf besar, angka, - atau _.'}
+                >
+                  <input
+                    type="text"
+                    value={form.code}
+                    onChange={(e) => setField('code', e.target.value.toUpperCase())}
+                    placeholder="KARIER20"
+                    className={`${inputClass} font-mono tracking-wide`}
+                  />
+                </Field>
+
+                <Field label="Badge" hint="Label kecil di kartu kupon, mis. PALING HEMAT.">
+                  <input
+                    type="text"
+                    value={form.badge}
+                    onChange={(e) => setField('badge', e.target.value)}
+                    placeholder="PROMO"
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <Field label="Judul *">
                 <input
                   type="text"
-                  placeholder="Contoh: KARIER25"
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value.toUpperCase())}
-                  required
-                  className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary uppercase font-semibold focus:outline-none focus:border-[#D9B06F]"
+                  value={form.title}
+                  onChange={(e) => setField('title', e.target.value)}
+                  placeholder="Diskon 15% Spesial Rilis 2026"
+                  className={inputClass}
                 />
-              </div>
+              </Field>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-content-primary">
-                  Nama kampanye promo
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Kampanye karier November"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
+              <Field label="Deskripsi">
+                <textarea
+                  rows={2}
+                  value={form.description}
+                  onChange={(e) => setField('description', e.target.value)}
+                  placeholder="Potongan 15% langsung untuk seluruh pilihan paket jas AI."
+                  className={`${inputClass} resize-none leading-relaxed`}
                 />
-              </div>
+              </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Nilai diskon
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="20% atau Rp15.000"
-                    value={newDiscountMain}
-                    onChange={(e) => setNewDiscountMain(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Ketentuan diskon
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Maks. Rp25.000"
-                    value={newDiscountSub}
-                    onChange={(e) => setNewDiscountSub(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
-                  />
-                </div>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Jenis potongan">
+                  <div className="relative">
+                    <select
+                      value={form.discountType}
+                      onChange={(e) =>
+                        setField('discountType', e.target.value as VoucherDiscountType)
+                      }
+                      className={`${inputClass} appearance-none cursor-pointer`}
+                    >
+                      <option value="percent">Persen (%)</option>
+                      <option value="amount">Nominal (Rp)</option>
+                      <option value="none">Hanya bonus foto</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
+                  </div>
+                </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Masa berlaku
-                  </label>
-                  <input
-                    type="text"
-                    value={newPeriod}
-                    onChange={(e) => setNewPeriod(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Kuota penggunaan
-                  </label>
+                {form.discountType === 'percent' && (
+                  <Field label="Diskon persen *" hint="1–100 (percent_off)">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={form.percentOff}
+                      onChange={(e) => setField('percentOff', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                )}
+                {form.discountType === 'amount' && (
+                  <Field label="Potongan (Rp) *" hint="amount_off, tanpa titik">
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.amountOff}
+                      onChange={(e) => setField('amountOff', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                )}
+                {form.discountType === 'none' && <div />}
+
+                <Field label="Bonus foto" hint="bonus_photos (opsional)">
                   <input
                     type="number"
-                    value={newQuota}
-                    onChange={(e) => setNewQuota(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
+                    min={0}
+                    value={form.bonusPhotos}
+                    onChange={(e) => setField('bonusPhotos', e.target.value)}
+                    className={inputClass}
                   />
-                </div>
+                </Field>
               </div>
 
-              <div className="mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-border-subtle">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {form.discountType === 'percent' && (
+                  <Field label="Maks. potongan (Rp)" hint="Kosongkan bila tanpa batas">
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.maxDiscount}
+                      onChange={(e) => setField('maxDiscount', e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                )}
+                <Field label="Minimum pembelian (Rp)" hint="Kosongkan bila tanpa minimum">
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.minPurchase}
+                    onChange={(e) => setField('minPurchase', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Berlaku untuk paket">
+                  <div className="relative">
+                    <select
+                      value={form.packageTarget}
+                      onChange={(e) =>
+                        setField('packageTarget', e.target.value as VoucherPackageTarget)
+                      }
+                      className={`${inputClass} appearance-none cursor-pointer`}
+                    >
+                      <option value="all">Semua paket</option>
+                      <option value="esensial">Esensial</option>
+                      <option value="profesional">Profesional</option>
+                      <option value="eksklusif">Eksklusif</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
+                  </div>
+                </Field>
+
+                <Field label="SKU promo Play Console" hint="promo_product_id (opsional)">
+                  <input
+                    type="text"
+                    value={form.promoProductId}
+                    onChange={(e) => setField('promoProductId', e.target.value)}
+                    placeholder="forgepro_profesional_promo"
+                    className={`${inputClass} font-mono`}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Tanggal mulai *">
+                  <input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(e) => setField('startDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Tanggal berakhir *">
+                  <input
+                    type="date"
+                    value={form.endDate}
+                    min={form.startDate}
+                    onChange={(e) => setField('endDate', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Kuota total *" hint="Jumlah pemakaian seluruh pelanggan">
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.quota}
+                    onChange={(e) => setField('quota', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Batas per email *" hint="Pelanggan tamu dikenali dari email">
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.perEmailLimit}
+                    onChange={(e) => setField('perEmailLimit', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <label className="flex items-start gap-3 cursor-pointer select-none text-xs">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) => setField('isActive', e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-[#D9B06F] cursor-pointer"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-content-primary">
+                    Voucher aktif
+                  </span>
+                  <span className="text-[11px] text-content-muted">
+                    Bila dimatikan, voucher tidak ditawarkan dan ditolak saat validasi
+                    meskipun masih dalam masa berlaku.
+                  </span>
+                </span>
+              </label>
+
+              {formError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+                  {formError}
+                </div>
+              )}
+
+              <div className="mt-2 flex items-center justify-end gap-2.5 pt-4 border-t border-border-subtle">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={closeForm}
                   className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
                 >
                   Batalkan
@@ -570,7 +850,7 @@ export function VouchersPage() {
                   type="submit"
                   className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285]"
                 >
-                  Simpan voucher
+                  {editingId ? 'Simpan perubahan' : 'Simpan voucher'}
                 </button>
               </div>
             </form>
@@ -581,7 +861,7 @@ export function VouchersPage() {
       {/* Modal Kelola Voucher */}
       {selectedVoucher && (
         <div
-          onClick={() => setSelectedVoucher(null)}
+          onClick={() => setSelectedVoucherId(null)}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
         >
           <div
@@ -590,7 +870,7 @@ export function VouchersPage() {
           >
             <button
               type="button"
-              onClick={() => setSelectedVoucher(null)}
+              onClick={() => setSelectedVoucherId(null)}
               className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover"
             >
               <X className="w-4 h-4" />
@@ -599,17 +879,42 @@ export function VouchersPage() {
             <h3 className="font-serif text-2xl font-medium text-content-primary mb-1">
               {selectedVoucher.code}
             </h3>
-            <p className="text-xs text-content-muted mb-5">
-              {selectedVoucher.name} · {selectedVoucher.period}
+            <p className="text-xs text-content-muted mb-1">
+              {selectedVoucher.title} · {formatPeriod(selectedVoucher)}
             </p>
+            {selectedVoucher.description && (
+              <p className="text-xs text-content-muted mb-5 leading-relaxed">
+                {selectedVoucher.description}
+              </p>
+            )}
 
             <div className="space-y-3 text-xs border-t border-b border-border-subtle py-4">
               <div className="flex items-center justify-between">
-                <span className="text-content-muted">Potongan diskon</span>
-                <span className="font-semibold text-content-primary">
-                  {selectedVoucher.discountMain} ({selectedVoucher.discountSub})
+                <span className="text-content-muted">Potongan</span>
+                <span className="font-semibold text-content-primary text-right">
+                  {describeDiscount(selectedVoucher).join(' · ')}
                 </span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-content-muted">Paket</span>
+                <span className="font-semibold text-content-primary">
+                  {PACKAGE_TARGET_LABEL[selectedVoucher.packageTarget]}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-content-muted">Batas per email</span>
+                <span className="font-semibold text-content-primary">
+                  {selectedVoucher.perEmailLimit}×
+                </span>
+              </div>
+              {selectedVoucher.promoProductId && (
+                <div className="flex items-center justify-between">
+                  <span className="text-content-muted">SKU promo</span>
+                  <span className="font-mono text-content-primary">
+                    {selectedVoucher.promoProductId}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-content-muted">Penggunaan saat ini</span>
                 <span className="font-semibold text-content-primary">
@@ -620,44 +925,71 @@ export function VouchersPage() {
                 <span className="text-content-muted">Status kampanye</span>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getStatusBadgeStyle(
-                    selectedVoucher.status
+                    getVoucherStatus(selectedVoucher)
                   )}`}
                 >
-                  {selectedVoucher.status}
+                  {getVoucherStatus(selectedVoucher)}
                 </span>
               </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const nextStatus: VoucherItem['status'] =
-                    selectedVoucher.status === 'Aktif' ? 'Berakhir' : 'Aktif';
-                  setVouchers((prev) =>
-                    prev.map((item) =>
-                      item.id === selectedVoucher.id
-                        ? { ...item, status: nextStatus }
-                        : item
-                    )
-                  );
-                  setSelectedVoucher(null);
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
-              >
-                {selectedVoucher.status === 'Aktif'
-                  ? 'Akhiri kampanye'
-                  : 'Aktifkan kembali'}
-              </button>
+            {confirmDelete ? (
+              <div className="mt-5 flex flex-col gap-3">
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-content-primary">
+                  Hapus voucher <b>{selectedVoucher.code}</b>? Tindakan ini tidak
+                  dapat dibatalkan. Untuk menghentikan sementara, gunakan
+                  &ldquo;Nonaktifkan&rdquo;.
+                </div>
+                <div className="flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
+                  >
+                    Batalkan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      deleteVoucher(selectedVoucher.id);
+                      setConfirmDelete(false);
+                      setSelectedVoucherId(null);
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+                  >
+                    Hapus voucher
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setSelectedVoucher(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C]"
-              >
-                Selesai
-              </button>
-            </div>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleActive(selectedVoucher.id)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
+                  >
+                    {selectedVoucher.isActive ? 'Nonaktifkan' : 'Aktifkan kembali'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(selectedVoucher)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C]"
+                  >
+                    Ubah
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

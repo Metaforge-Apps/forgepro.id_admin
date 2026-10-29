@@ -11,23 +11,46 @@ import {
   useStyleController,
   SuitCategory,
   SuitStatus,
+  SuitAspectRatio,
+  SUIT_CATEGORIES,
+  slugifyStyleId,
 } from '../controllers/style-controller';
+import { StyleAppFields, parseTags } from '../components/catalog/StyleAppFields';
+import { readImageAsDataUrl } from '../utils/image';
 
 export function AddSuitPage() {
   const navigate = useNavigate();
-  const { createStyle, summary } = useStyleController();
+  const { createStyle, getStyleById, summary } = useStyleController();
 
   const [name, setName] = useState<string>('');
+  const [styleId, setStyleId] = useState<string>('');
   const [category, setCategory] = useState<SuitCategory | ''>('');
   const [description, setDescription] = useState<string>('');
+  const [prompt, setPrompt] = useState<string>('');
+  const [aspectRatio, setAspectRatio] = useState<SuitAspectRatio>('3:4');
+  const [tagsText, setTagsText] = useState<string>('');
+  const [isPopular, setIsPopular] = useState<boolean>(false);
+  const [isNew, setIsNew] = useState<boolean>(true);
   const [status, setStatus] = useState<SuitStatus>('Draf');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const effectiveId = slugifyStyleId(styleId || name);
+  const idTaken = effectiveId !== '' && Boolean(getStyleById(effectiveId));
+
+  const handleCategoryChange = (val: SuitCategory | '') => {
+    setCategory(val);
+    if (val === 'Wanita') {
+      setAspectRatio('9:16');
+    }
+  };
+
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setImagePreview(url);
+    if (!file) return;
+    try {
+      setImagePreview(await readImageAsDataUrl(file));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Gagal membaca gambar.');
     }
   };
 
@@ -36,13 +59,35 @@ export function AddSuitPage() {
       alert('Nama gaya wajib diisi.');
       return;
     }
+    if (!category) {
+      alert('Kategori wajib dipilih.');
+      return;
+    }
+    if (!effectiveId) {
+      alert('ID template tidak valid.');
+      return;
+    }
+    if (idTaken) {
+      alert(`ID template "${effectiveId}" sudah dipakai gaya lain.`);
+      return;
+    }
     const targetStatus: SuitStatus = publishImmediately ? 'Tayang' : status;
+    if (targetStatus === 'Tayang' && !prompt.trim()) {
+      alert('Prompt AI wajib diisi sebelum gaya ditayangkan.');
+      return;
+    }
     createStyle({
+      id: effectiveId,
       name: name.trim(),
-      category: (category || 'Bisnis') as SuitCategory,
+      category,
       description,
+      prompt,
+      aspectRatio,
+      tags: parseTags(tagsText),
+      isPopular,
+      isNew,
       status: targetStatus,
-      image: imagePreview || '/images/suits/suit-navy-klasik.jpg',
+      image: imagePreview || undefined,
     });
     navigate('/katalog-jas');
   };
@@ -101,6 +146,29 @@ export function AddSuitPage() {
               />
             </div>
 
+            {/* ID Template */}
+            <div className="flex flex-col gap-1.5 text-xs">
+              <label className="font-semibold text-content-primary">
+                ID template
+              </label>
+              <input
+                type="text"
+                placeholder={name ? slugifyStyleId(name) : 'dibuat otomatis dari nama gaya'}
+                value={styleId}
+                onChange={(e) => setStyleId(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors font-mono"
+              />
+              <span
+                className={`text-[11px] mt-0.5 ${
+                  idTaken ? 'text-rose-500' : 'text-content-muted'
+                }`}
+              >
+                {idTaken
+                  ? `ID "${effectiveId}" sudah dipakai gaya lain.`
+                  : `ID yang dipakai aplikasi: ${effectiveId || '-'}. Tidak bisa diubah setelah disimpan.`}
+              </span>
+            </div>
+
             {/* Kategori */}
             <div className="flex flex-col gap-2 text-xs">
               <label className="font-semibold text-content-primary">
@@ -109,20 +177,22 @@ export function AddSuitPage() {
               <div className="relative">
                 <select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as SuitCategory | '')}
+                  onChange={(e) => handleCategoryChange(e.target.value as SuitCategory | '')}
                   className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
                 >
                   <option value="">Pilih kategori</option>
-                  <option value="Bisnis">Bisnis</option>
-                  <option value="Formal">Formal</option>
-                  <option value="Seremonial">Seremonial</option>
+                  {SUIT_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted pointer-events-none" />
               </div>
 
               {/* Tag Suggestions */}
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {(['Bisnis', 'Formal', 'Seremonial'] as SuitCategory[]).map((cat) => (
+              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                {SUIT_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -156,6 +226,20 @@ export function AddSuitPage() {
               </span>
             </div>
           </Card>
+
+          {/* Card: Prompt AI, aspek rasio, tag, label Populer/Baru */}
+          <StyleAppFields
+            prompt={prompt}
+            onPromptChange={setPrompt}
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+            tagsText={tagsText}
+            onTagsChange={setTagsText}
+            isPopular={isPopular}
+            onPopularChange={setIsPopular}
+            isNew={isNew}
+            onNewChange={setIsNew}
+          />
 
           {/* Card 2: Gambar Gaya */}
           <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">

@@ -247,7 +247,7 @@ export function PricingPackagesPage() {
                 {packageToDeactivate.sku || `forgepro_${packageToDeactivate.name.toLowerCase()}`} · Sekali beli
               </p>
               <p className="text-[11px] text-content-muted mt-0.5">
-                {packageToDeactivate.photoCount || '12'} hasil foto AI · Pilihan {packageToDeactivate.suitChoices || '4 gaya jas'} · Akses unduhan 30 hari
+                {packageToDeactivate.photoCount} hasil foto AI · {packageToDeactivate.creditAmount} kredit · maks. {packageToDeactivate.maxTemplates} template · Akses unduhan {packageToDeactivate.accessDuration}
               </p>
             </div>
 

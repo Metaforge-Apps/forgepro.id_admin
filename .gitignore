@@ -3,8 +3,7 @@ node_modules/
 .pnp
 .pnp.js
 
-# Production build outputs
-dist/
+# Production build outputs (dist tidak di-ignore agar bisa di-deploy langsung lewat Git)
 dist-ssr/
 build/
 *.local

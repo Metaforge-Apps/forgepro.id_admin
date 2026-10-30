@@ -6,86 +6,96 @@ import {
   UpdateOrderStatusPayload,
   UpdateShippingPayload,
 } from './order.types';
-import { INITIAL_ORDERS } from './order.seed';
-
-const STORAGE_KEY = 'forgepro_orders_v3';
+import { mockDb } from '../../mocks/db';
+import {
+  canTransitionShippingStatus,
+  validateOrderStateCombination,
+} from '../../config/business';
+import { getStatusBadgeClasses } from '../../config/statusColors';
 
 type OrderListener = () => void;
 
 export class OrderController {
-  private orders: OrderItem[];
-  private listeners: Set<OrderListener> = new Set();
-
-  constructor() {
-    this.orders = this.loadFromStorage();
-  }
-
-  private loadFromStorage(): OrderItem[] {
-    if (typeof window === 'undefined') return [...INITIAL_ORDERS];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as OrderItem[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [...INITIAL_ORDERS];
-  }
-
-  private saveToStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.orders));
-    } catch {
-      // Ignore quota
-    }
-  }
-
-  private notify(): void {
-    this.saveToStorage();
-    this.listeners.forEach((l) => l());
-  }
-
   public subscribe(listener: OrderListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return mockDb.subscribe(listener);
   }
 
   public getAllOrders(): OrderItem[] {
-    return [...this.orders];
+    return [...mockDb.getState().orders];
   }
 
   public getOrderById(id: string): OrderItem | undefined {
-    return this.orders.find((o) => o.id === id || o.orderNumber === id);
+    return mockDb
+      .getState()
+      .orders.find((o) => o.id === id || o.orderNumber === id);
   }
 
   public getPhysicalPrintOrders(): OrderItem[] {
-    return this.orders.filter((o) => o.hasPhysicalPrint);
+    return mockDb.getState().orders.filter((o) => o.hasPhysicalPrint);
   }
 
   public updateOrderStatus(
     id: string,
     payload: UpdateOrderStatusPayload
   ): OrderItem | null {
-    let updated: OrderItem | null = null;
-    this.orders = this.orders.map((o) => {
-      if (o.id !== id && o.orderNumber !== id) return o;
-      updated = {
-        ...o,
-        paymentStatus: payload.paymentStatus ?? o.paymentStatus,
-        photoStatus: payload.photoStatus ?? o.photoStatus,
-        creditsRemaining: payload.creditsRemaining ?? o.creditsRemaining,
-      };
-      return updated;
+    const currentOrders = mockDb.getState().orders;
+    const target = currentOrders.find(
+      (o) => o.id === id || o.orderNumber === id
+    );
+    if (!target) return null;
+
+    const nextPayment: PaymentStatus =
+      payload.paymentStatus ?? target.paymentStatus;
+    let nextPhoto: PhotoGenerationStatus =
+      payload.photoStatus ?? target.photoStatus;
+
+    // Jika pembayaran berubah menjadi Gagal, proses foto otomatis Dibatalkan
+    if (payload.paymentStatus === 'Gagal' && !payload.photoStatus) {
+      nextPhoto = 'Dibatalkan';
+    } else if (
+      payload.paymentStatus === 'Menunggu' &&
+      !payload.photoStatus &&
+      (nextPhoto === 'Diproses' || nextPhoto === 'Selesai')
+    ) {
+      nextPhoto = 'Belum mulai';
+    }
+
+    // Validasi kombinasi status (Fase 0: 0.7 — tidak boleh Menunggu/Gagal tapi Selesai/Diproses)
+    const comboCheck = validateOrderStateCombination(nextPayment, nextPhoto);
+    if (!comboCheck.valid) {
+      nextPhoto = nextPayment === 'Gagal' ? 'Dibatalkan' : 'Belum mulai';
+    }
+
+    const updated: OrderItem = {
+      ...target,
+      paymentStatus: nextPayment,
+      photoStatus: nextPhoto,
+      creditsRemaining: payload.creditsRemaining ?? target.creditsRemaining,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) =>
+        o.id === target.id ? updated : o
+      ),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Memperbarui status pesanan · ${updated.orderNumber} (${updated.paymentStatus} / ${updated.photoStatus})`,
+      result: 'Berhasil',
+      targetId: updated.orderNumber,
+      beforeData: {
+        paymentStatus: target.paymentStatus,
+        photoStatus: target.photoStatus,
+      },
+      afterData: {
+        paymentStatus: updated.paymentStatus,
+        photoStatus: updated.photoStatus,
+      },
     });
 
-    if (updated) this.notify();
     return updated;
   }
 
@@ -93,67 +103,72 @@ export class OrderController {
     id: string,
     payload: UpdateShippingPayload
   ): OrderItem | null {
-    let updated: OrderItem | null = null;
-    this.orders = this.orders.map((o) => {
-      if (o.id !== id && o.orderNumber !== id) return o;
-      updated = {
-        ...o,
-        shippingStatus: payload.shippingStatus ?? o.shippingStatus,
-        shippingTrackingNumber:
-          payload.shippingTrackingNumber !== undefined
-            ? payload.shippingTrackingNumber.trim()
-            : o.shippingTrackingNumber,
-        shippingCourier: payload.shippingCourier ?? o.shippingCourier,
-      };
-      return updated;
+    const currentOrders = mockDb.getState().orders;
+    const target = currentOrders.find(
+      (o) => o.id === id || o.orderNumber === id
+    );
+    if (!target) return null;
+
+    const currentShip = target.shippingStatus ?? 'Antre cetak';
+    const nextShip = payload.shippingStatus ?? currentShip;
+    if (!canTransitionShippingStatus(currentShip, nextShip)) {
+      // Tetap izinkan koreksi manual admin di panel
+    }
+
+    const updated: OrderItem = {
+      ...target,
+      shippingStatus: nextShip,
+      shippingTrackingNumber:
+        payload.shippingTrackingNumber !== undefined
+          ? payload.shippingTrackingNumber.trim()
+          : target.shippingTrackingNumber,
+      shippingCourier: payload.shippingCourier ?? target.shippingCourier,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) =>
+        o.id === target.id ? updated : o
+      ),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Memperbarui pengiriman cetak · ${updated.orderNumber} (${updated.shippingStatus})`,
+      result: 'Berhasil',
+      targetId: updated.orderNumber,
     });
 
-    if (updated) this.notify();
     return updated;
   }
 
   public deleteOrder(id: string): boolean {
-    const prevLen = this.orders.length;
-    this.orders = this.orders.filter((o) => o.id !== id && o.orderNumber !== id);
-    const deleted = this.orders.length < prevLen;
-    if (deleted) this.notify();
-    return deleted;
+    const exists = mockDb
+      .getState()
+      .orders.some((o) => o.id === id || o.orderNumber === id);
+    if (!exists) return false;
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.filter((o) => o.id !== id && o.orderNumber !== id),
+    }));
+    return true;
   }
 
   public resetOrders(): OrderItem[] {
-    this.orders = [...INITIAL_ORDERS];
-    this.notify();
-    return this.getAllOrders();
+    return mockDb.resetToSeed().orders;
   }
 
   public getPaymentBadgeStyle(status: PaymentStatus): string {
-    if (status === 'Dibayar') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Menunggu') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
+    return getStatusBadgeClasses(status);
   }
 
   public getPhotoBadgeStyle(status: PhotoGenerationStatus): string {
-    if (status === 'Selesai') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Diproses') {
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   }
 
   public getShippingBadgeStyle(status: ShippingStatus): string {
-    if (status === 'Antre cetak') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    if (status === 'Dicetak' || status === 'Siap dikirim' || status === 'Dikirim') {
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    }
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+    return getStatusBadgeClasses(status);
   }
 }
 

@@ -17,6 +17,11 @@ import {
   PACKAGE_TIER_LABEL,
   formatRupiah,
 } from '../controllers/package-controller';
+import {
+  useDirtyForm,
+  DirtyStatusBadge,
+  DirtyGuardModal,
+} from '../components/common/DirtyGuard';
 
 interface EditPackageLocationState {
   pkg?: PricingPackageItem;
@@ -79,6 +84,38 @@ export function EditPackagePage() {
 
   const [showDeactivateModal, setShowDeactivateModal] = useState<boolean>(false);
 
+  // Pelacakan perubahan belum disimpan (Fase 0: 0.9)
+  const savedSnapshot = {
+    packageName: incomingPkg?.name || '',
+    description: incomingPkg?.description || '',
+    photoCount: String(incomingPkg?.photoCount ?? 12),
+    creditAmount: String(incomingPkg?.creditAmount ?? 60),
+    maxTemplates: String(incomingPkg?.maxTemplates ?? 1),
+    extraBenefits: incomingPkg?.extraBenefits || '',
+    accessDuration: incomingPkg?.accessDuration || '14 hari',
+    displayOrder: String(incomingPkg?.displayOrder ?? 1),
+    status: incomingPkg?.status || 'Tayang',
+    isFeatured: Boolean(incomingPkg?.isFeatured),
+    productId: incomingPkg?.sku || '',
+    refPrice: String(incomingPkg?.priceValue ?? ''),
+  };
+  const currentSnapshot = {
+    packageName,
+    description,
+    photoCount,
+    creditAmount,
+    maxTemplates,
+    extraBenefits,
+    accessDuration,
+    displayOrder,
+    status,
+    isFeatured,
+    productId,
+    refPrice,
+  };
+  const { isDirty, hasPendingLeave, guardAction, confirmLeave, cancelLeave } =
+    useDirtyForm(savedSnapshot, currentSnapshot);
+
   const handleSave = () => {
     if (!pkgId) return;
     if (!packageName.trim()) {
@@ -111,7 +148,8 @@ export function EditPackagePage() {
       priceValue: toInt(refPrice),
       isFeatured,
     });
-    navigate('/paket-harga');
+    // Data sudah tersimpan: arahkan tanpa peringatan perubahan
+    setTimeout(() => navigate('/paket-harga'), 0);
   };
 
   const handleConfirmDeactivate = () => {
@@ -144,7 +182,7 @@ export function EditPackagePage() {
 
         <div className="flex flex-col sm:items-end gap-1.5 self-start sm:self-center">
           <span className="text-xs text-content-muted">
-            Perubahan belum disimpan
+            <DirtyStatusBadge isDirty={isDirty} />
           </span>
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
@@ -368,7 +406,7 @@ export function EditPackagePage() {
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              onClick={() => navigate('/paket-harga')}
+              onClick={() => guardAction(() => navigate('/paket-harga'))}
               className="px-5 py-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-xs font-semibold text-content-primary select-none transition-colors"
             >
               Batalkan
@@ -377,7 +415,8 @@ export function EditPackagePage() {
             <button
               type="button"
               onClick={handleSave}
-              className="px-6 py-2.5 rounded-xl bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] border border-[#D9B06F]/60 text-xs font-semibold select-none shadow-sm transition-all"
+              disabled={!isDirty}
+              className="px-6 py-2.5 rounded-xl bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] border border-[#D9B06F]/60 text-xs font-semibold select-none shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Simpan perubahan
             </button>
@@ -589,6 +628,8 @@ export function EditPackagePage() {
           </div>
         </div>
       )}
+
+      <DirtyGuardModal open={hasPendingLeave} onStay={cancelLeave} onLeave={confirmLeave} />
     </div>
   );
 }

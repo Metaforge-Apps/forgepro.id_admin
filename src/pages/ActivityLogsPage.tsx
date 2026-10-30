@@ -8,81 +8,13 @@ import {
   X
 } from 'lucide-react';
 import type { ActivityLogItem, WebhookItem } from '../types';
-
-const INITIAL_ACTIVITY_LOGS: ActivityLogItem[] = [
-  {
-    id: 'act-1',
-    time: '19 Okt, 16:12:08',
-    source: 'Sistem',
-    category: 'Pesanan',
-    activity: 'Pembayaran dikonfirmasi · PS-261019-001',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-2',
-    time: '19 Okt, 15:28:41',
-    source: 'Maya Lestari',
-    category: 'Pesanan',
-    activity: 'Memulai proses foto · PS-261019-003',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-3',
-    time: '19 Okt, 14:20:15',
-    source: 'Dimas Putra',
-    category: 'Katalog',
-    activity: 'Memperbarui gaya · Jas Navy Klasik',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-4',
-    time: '19 Okt, 13:40:02',
-    source: 'Andi Prasetyo',
-    category: 'Admin',
-    activity: 'Mengundang admin · raka@forgepro.id',
-    result: 'Berhasil',
-  },
-];
-
-const INITIAL_WEBHOOKS: WebhookItem[] = [
-  {
-    id: 'wh-1',
-    time: '19 Okt, 16:12:09',
-    eventTitle: 'Pembayaran berhasil',
-    eventSub: 'payment.paid · PS-261019-001',
-    statusBadge: '200 · Berhasil',
-    statusType: 'success',
-    latency: '248 ms',
-    attempts: '1 dari 3',
-    actionLabel: 'Detail',
-  },
-  {
-    id: 'wh-2',
-    time: '19 Okt, 15:20:04',
-    eventTitle: 'Proses foto dimulai',
-    eventSub: 'order.processing · PS-261019-003',
-    statusBadge: '504 · Gagal',
-    statusType: 'error',
-    latency: 'Batas waktu habis',
-    attempts: '2 dari 3',
-    actionLabel: 'Coba ulang',
-  },
-  {
-    id: 'wh-3',
-    time: '19 Okt, 14:55:18',
-    eventTitle: 'Foto selesai',
-    eventSub: 'order.completed · PS-261019-004',
-    statusBadge: '200 · Berhasil',
-    statusType: 'success',
-    latency: '182 ms',
-    attempts: '1 dari 3',
-    actionLabel: 'Detail',
-  },
-];
+import { useCentralStore } from '../mocks/selectors';
+import { BUSINESS_CONFIG } from '../config/business';
 
 export function ActivityLogsPage() {
-  const [activityLogs] = useState<ActivityLogItem[]>(INITIAL_ACTIVITY_LOGS);
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>(INITIAL_WEBHOOKS);
+  const { state, updateState } = useCentralStore();
+  const activityLogs = state.activityLogs;
+  const webhooks = state.webhooks;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activityFilter, setActivityFilter] = useState<string>('Semua aktivitas');
@@ -126,21 +58,40 @@ export function ActivityLogsPage() {
     });
   }, [activityLogs, activityFilter, searchQuery]);
 
+  const webhookStats = useMemo(() => {
+    const totalWebhooks = webhooks.length;
+    const successCount = webhooks.filter((w) => w.statusType === 'success').length;
+    const failedCount = webhooks.filter((w) => w.statusType === 'error').length;
+    return {
+      activityCount: activityLogs.length,
+      totalWebhooks,
+      successCount,
+      failedCount,
+    };
+  }, [activityLogs.length, webhooks]);
+
   const handleRetryWebhook = (wh: WebhookItem) => {
-    setWebhooks((prev) =>
-      prev.map((item) =>
+    const nextAttempt = Math.min(
+      BUSINESS_CONFIG.webhookPolicy.maxRetries,
+      (wh.attemptCount ?? 2) + 1
+    );
+    updateState((prev) => ({
+      ...prev,
+      webhooks: prev.webhooks.map((item) =>
         item.id === wh.id
           ? {
               ...item,
               statusBadge: '200 · Berhasil',
               statusType: 'success',
+              httpStatus: 200,
               latency: '210 ms',
-              attempts: '3 dari 3',
+              attemptCount: nextAttempt,
+              attempts: `${nextAttempt} dari ${BUSINESS_CONFIG.webhookPolicy.maxRetries}`,
               actionLabel: 'Detail',
             }
           : item
-      )
-    );
+      ),
+    }));
   };
 
   return (
@@ -150,10 +101,10 @@ export function ActivityLogsPage() {
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
             <span className="text-xs font-medium text-content-muted">
-              Aktivitas hari ini
+              Aktivitas tercatat
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              148
+              {webhookStats.activityCount}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
@@ -167,11 +118,11 @@ export function ActivityLogsPage() {
               Webhook terkirim
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              326
+              {webhookStats.successCount}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Dari 329 pengiriman hari ini
+            Dari {webhookStats.totalWebhooks} pengiriman tercatat
           </span>
         </Card>
 
@@ -181,11 +132,11 @@ export function ActivityLogsPage() {
               Perlu dicoba ulang
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              3
+              {webhookStats.failedCount}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Terkendala koneksi tujuan
+            Maks. {BUSINESS_CONFIG.webhookPolicy.maxRetriesLabel} ({BUSINESS_CONFIG.webhookPolicy.backoffDescription})
           </span>
         </Card>
       </div>

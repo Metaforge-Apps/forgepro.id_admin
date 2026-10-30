@@ -1,45 +1,16 @@
 import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { DashboardPeriodKey } from './Header';
-
-interface ChartPointData {
-  label: string;
-  value: number;
-  display: string;
-}
-
-const CHART_DATA: Record<DashboardPeriodKey, ChartPointData[]> = {
-  Hari: [
-    { label: '08:00', value: 1.2, display: 'Rp1,2 jt' },
-    { label: '11:00', value: 3.4, display: 'Rp3,4 jt' },
-    { label: '14:00', value: 2.8, display: 'Rp2,8 jt' },
-    { label: '17:00', value: 5.6, display: 'Rp5,6 jt' },
-    { label: '20:00', value: 4.1, display: 'Rp4,1 jt' },
-    { label: '23:00', value: 2.5, display: 'Rp2,5 jt' },
-  ],
-  Minggu: [
-    { label: 'SEN', value: 8.4, display: 'Rp8,4 jt' },
-    { label: 'SEL', value: 12.1, display: 'Rp12,1 jt' },
-    { label: 'RAB', value: 10.5, display: 'Rp10,5 jt' },
-    { label: 'KAM', value: 16.8, display: 'Rp16,8 jt' },
-    { label: 'JUM', value: 14.2, display: 'Rp14,2 jt' },
-    { label: 'SAB', value: 22.5, display: 'Rp22,5 jt' },
-    { label: 'MIN', value: 19.3, display: 'Rp19,3 jt' },
-  ],
-  Bulan: [
-    { label: 'MGG 1', value: 64.0, display: 'Rp64 jt' },
-    { label: 'MGG 2', value: 78.5, display: 'Rp78,5 jt' },
-    { label: 'MGG 3', value: 89.2, display: 'Rp89,2 jt' },
-    { label: 'MGG 4', value: 96.8, display: 'Rp96,8 jt' },
-  ],
-};
+import { useCentralStore } from '../../mocks/selectors';
 
 /**
  * Revenue Chart Component
  * Menampilkan kurva Tren Pendapatan berwarna emas dengan area gradient
- * serta menyinkronkan periode terpilih ke Header Dashboard
+ * serta menyinkronkan periode terpilih ke Header Dashboard.
+ * Data dihitung secara dinamis dari basis data terpusat (src/mocks/db.ts).
  */
 export function RevenueChart() {
+  const { dashboardMetrics } = useCentralStore();
   const [period, setPeriod] = useState<DashboardPeriodKey>('Minggu');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
@@ -49,8 +20,14 @@ export function RevenueChart() {
     window.dispatchEvent(new CustomEvent('forgepro-period-change', { detail: p }));
   };
 
-  const data = CHART_DATA[period];
-  const maxVal = Math.max(...data.map((d) => d.value));
+  const chartDataByPeriod = {
+    Hari: dashboardMetrics.dailySeries,
+    Minggu: dashboardMetrics.weeklySeries,
+    Bulan: dashboardMetrics.monthlySeries,
+  };
+
+  const data = chartDataByPeriod[period];
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
   const minVal = Math.min(...data.map((d) => d.value)) * 0.7;
 
   // ViewBox SVG dimensions
@@ -60,7 +37,7 @@ export function RevenueChart() {
   const paddingY = 25;
 
   const points = data.map((d, i) => {
-    const x = paddingX + (i / (data.length - 1)) * (width - paddingX * 2);
+    const x = paddingX + (i / Math.max(1, data.length - 1)) * (width - paddingX * 2);
     const y =
       height -
       paddingY -

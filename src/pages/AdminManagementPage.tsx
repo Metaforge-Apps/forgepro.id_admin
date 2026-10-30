@@ -8,69 +8,8 @@ import {
   X
 } from 'lucide-react';
 import type { AdminMember } from '../types';
-
-const INITIAL_ADMINS: AdminMember[] = [
-  {
-    id: 'adm-1',
-    name: 'Andi Prasetyo',
-    email: 'andi@forgepro.id',
-    role: 'Admin Utama',
-    access: 'Seluruh menu',
-    status: 'Aktif',
-    lastActive: '19 Okt, 16:20 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-2',
-    name: 'Maya Lestari',
-    email: 'maya@forgepro.id',
-    role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
-    status: 'Aktif',
-    lastActive: '19 Okt, 16:05 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-3',
-    name: 'Dimas Putra',
-    email: 'dimas@forgepro.id',
-    role: 'Produk',
-    access: 'Katalog, paket & promo',
-    status: 'Aktif',
-    lastActive: '19 Okt, 15:42 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-4',
-    name: 'Sinta Dewi',
-    email: 'sinta@forgepro.id',
-    role: 'Keuangan',
-    access: 'Transaksi & ekspor',
-    status: 'Aktif',
-    lastActive: '19 Okt, 14:58 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-5',
-    name: 'Raka Wijaya',
-    email: 'raka@forgepro.id',
-    role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
-    status: 'Diundang',
-    lastActive: 'Belum pernah masuk',
-    actionLabel: 'Kirim ulang',
-  },
-  {
-    id: 'adm-6',
-    name: 'Laras Putri',
-    email: 'laras@forgepro.id',
-    role: 'Produk',
-    access: 'Tidak ada akses',
-    status: 'Nonaktif',
-    lastActive: '12 Okt, 10:15 WIB',
-    actionLabel: 'Kelola',
-  },
-];
+import { useCentralStore } from '../mocks/selectors';
+import { getStatusBadgeClasses } from '../config/statusColors';
 
 const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
   'Admin Utama': 'Seluruh menu',
@@ -81,7 +20,14 @@ const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
 
 export function AdminManagementPage() {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState<AdminMember[]>(INITIAL_ADMINS);
+  const { state, updateState, appendActivityLog } = useCentralStore();
+  const admins = state.admins;
+  const setAdmins = (updater: (prev: AdminMember[]) => AdminMember[]) => {
+    updateState((prev) => ({
+      ...prev,
+      admins: updater(prev.admins),
+    }));
+  };
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('Semua peran');
   const [statusFilter, setStatusFilter] = useState<string>('Semua status');
@@ -143,6 +89,13 @@ export function AdminManagementPage() {
       actionLabel: 'Kirim ulang',
     };
     setAdmins((prev) => [...prev, newMember]);
+    appendActivityLog({
+      source: 'Andi Prasetyo',
+      category: 'Admin',
+      activity: `Mengundang admin · ${newMember.email}`,
+      result: 'Berhasil',
+      targetId: newMember.email,
+    });
     setShowInviteModal(false);
     setInviteName('');
     setInviteEmail('');
@@ -150,13 +103,7 @@ export function AdminManagementPage() {
   };
 
   const getStatusBadgeStyle = (status: AdminMember['status']): string => {
-    if (status === 'Aktif') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Diundang') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   };
 
   return (

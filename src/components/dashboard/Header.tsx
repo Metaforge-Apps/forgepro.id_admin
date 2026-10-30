@@ -10,6 +10,12 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { useLocation, Link } from 'react-router-dom';
+import { isMockMode } from '../../config/business';
+import { BRAND_CONFIG } from '../../config/branding';
+import { DIRTY_STATE_EVENT } from '../common/DirtyGuard';
+
+/** Halaman yang memakai tombol Simpan di header dan mengikuti status "dirty". */
+const DIRTY_AWARE_PATHS = ['/pengaturan', '/profil'];
 
 export interface PageActionConfig {
   label: string;
@@ -263,6 +269,18 @@ export function Header({ onMenuClick }: HeaderProps) {
     useState<DashboardPeriodKey>('Minggu');
 
   const isDashboard = location.pathname === '/dashboard';
+  const isDirtyAwarePage = DIRTY_AWARE_PATHS.includes(location.pathname);
+  const [isPageDirty, setIsPageDirty] = useState<boolean>(false);
+
+  // Status "perubahan belum disimpan" disiarkan oleh halaman aktif (Fase 0: 0.9)
+  useEffect(() => {
+    setIsPageDirty(false);
+    const handleDirty = (e: Event) => {
+      setIsPageDirty(Boolean((e as CustomEvent<boolean>).detail));
+    };
+    window.addEventListener(DIRTY_STATE_EVENT, handleDirty);
+    return () => window.removeEventListener(DIRTY_STATE_EVENT, handleDirty);
+  }, [location.pathname]);
   const currentConfig =
     PAGE_CONFIGS[location.pathname] || PAGE_CONFIGS['/dashboard'];
 
@@ -299,11 +317,23 @@ export function Header({ onMenuClick }: HeaderProps) {
       {/* Category (termasuk — RINGKASAN pada Dashboard), Title, Subtitle, dan Tombol Header */}
       <div>
         {currentConfig.category && (
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-8 h-[1px] bg-[#D9B06F]" />
-            <span className="text-[11px] font-medium tracking-[0.1em] text-[#8A94A8] uppercase">
-              {currentConfig.category}
-            </span>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-[1px] bg-[#D9B06F]" />
+              <span className="text-[11px] font-medium tracking-[0.1em] text-[#8A94A8] uppercase">
+                {currentConfig.category}
+              </span>
+            </div>
+
+            {isMockMode() && (
+              <span
+                title={BRAND_CONFIG.feedback.demoModeTooltip}
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/30 select-none"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D9B06F]" />
+                <span>{BRAND_CONFIG.feedback.demoModeBanner}</span>
+              </span>
+            )}
           </div>
         )}
 
@@ -320,6 +350,13 @@ export function Header({ onMenuClick }: HeaderProps) {
           {/* Sisi Kanan Header: Button Light/Dark + Pill Periode (Dashboard) atau Action Buttons */}
           <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
             <ThemeToggle />
+
+            {isDirtyAwarePage && isPageDirty && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span>{BRAND_CONFIG.feedback.dirtyBadge}</span>
+              </span>
+            )}
 
             {isDashboard && (
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#111A2C] border border-[#D9B06F] text-xs select-none shadow-sm">
@@ -345,7 +382,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <Link
                       key={idx}
                       to={act.href}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm select-none ${btnStyle}`}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm select-none disabled:opacity-50 disabled:cursor-not-allowed ${btnStyle}`}
                     >
                       {act.icon === 'Plus' && <Plus className="w-4 h-4" />}
                       <span>{act.label}</span>
@@ -358,7 +395,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                     key={idx}
                     type="button"
                     onClick={act.onClick}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm select-none ${btnStyle}`}
+                    disabled={isDirtyAwarePage && !isPageDirty}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm select-none disabled:opacity-50 disabled:cursor-not-allowed ${btnStyle}`}
                   >
                     {act.icon === 'Download' && (
                       <Download className="w-4 h-4" />

@@ -16,6 +16,11 @@ import {
 } from '../controllers/style-controller';
 import { StyleAppFields, parseTags } from '../components/catalog/StyleAppFields';
 import { readImageAsDataUrl } from '../utils/image';
+import {
+  useDirtyForm,
+  DirtyStatusBadge,
+  DirtyGuardModal,
+} from '../components/common/DirtyGuard';
 
 interface EditSuitLocationState {
   suit?: SuitStyleItem;
@@ -59,6 +64,35 @@ export function EditSuitPage() {
   );
   const [photosCount] = useState<number>(incomingSuit?.count ?? 0);
 
+  // Pelacakan perubahan belum disimpan (Fase 0: 0.9)
+  const savedSnapshot = {
+    name: incomingSuit?.name || '',
+    category: incomingSuit?.category || 'Bisnis',
+    description: incomingSuit?.description || '',
+    prompt: incomingSuit?.prompt || '',
+    aspectRatio:
+      incomingSuit?.aspectRatio || (incomingSuit?.category === 'Wanita' ? '9:16' : '3:4'),
+    tagsText: (incomingSuit?.tags ?? []).join(', '),
+    isPopular: Boolean(incomingSuit?.isPopular),
+    isNew: Boolean(incomingSuit?.isNew),
+    status: incomingSuit?.status || 'Tayang',
+    imagePreview: incomingSuit?.image || '',
+  };
+  const currentSnapshot = {
+    name,
+    category,
+    description,
+    prompt,
+    aspectRatio,
+    tagsText,
+    isPopular,
+    isNew,
+    status,
+    imagePreview,
+  };
+  const { isDirty, hasPendingLeave, guardAction, confirmLeave, cancelLeave } =
+    useDirtyForm(savedSnapshot, currentSnapshot);
+
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -91,7 +125,8 @@ export function EditSuitPage() {
       status,
       image: imagePreview,
     });
-    navigate('/katalog-jas');
+    // Data sudah tersimpan: arahkan tanpa peringatan perubahan
+    setTimeout(() => navigate('/katalog-jas'), 0);
   };
 
   const handleToggleActive = () => {
@@ -122,7 +157,7 @@ export function EditSuitPage() {
 
         <div className="flex flex-col sm:items-end gap-1.5 self-start sm:self-center">
           <span className="text-xs text-content-muted">
-            Perubahan belum disimpan
+            <DirtyStatusBadge isDirty={isDirty} />
           </span>
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
@@ -281,7 +316,7 @@ export function EditSuitPage() {
           <div className="flex items-center justify-between pt-1">
             <button
               type="button"
-              onClick={() => navigate('/katalog-jas')}
+              onClick={() => guardAction(() => navigate('/katalog-jas'))}
               className="px-5 py-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-xs font-semibold text-content-primary select-none transition-colors"
             >
               Batalkan
@@ -290,7 +325,8 @@ export function EditSuitPage() {
             <button
               type="button"
               onClick={handleSave}
-              className="px-6 py-2.5 rounded-xl bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] border border-[#D9B06F]/60 text-xs font-semibold select-none shadow-sm transition-all"
+              disabled={!isDirty}
+              className="px-6 py-2.5 rounded-xl bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] border border-[#D9B06F]/60 text-xs font-semibold select-none shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Simpan perubahan
             </button>
@@ -380,6 +416,8 @@ export function EditSuitPage() {
           </Card>
         </div>
       </div>
+
+      <DirtyGuardModal open={hasPendingLeave} onStay={cancelLeave} onLeave={confirmLeave} />
     </div>
   );
 }

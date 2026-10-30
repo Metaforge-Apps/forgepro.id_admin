@@ -54,6 +54,37 @@ export const BRAND_CONFIG: BrandConfig = {
     submitButton: 'Masuk',
     submitLoading: 'Memverifikasi...',
   },
+
+  // Teks umpan balik terpusat (Fase 0: 0.5, 0.8, 0.9)
+  feedback: {
+    savedSuccess: 'Perubahan berhasil disimpan.',
+    cancelledReset: 'Perubahan dibatalkan. Data dikembalikan ke versi tersimpan.',
+    saveErrorPrefix: 'Gagal menyimpan: ',
+    retryButton: 'Coba lagi',
+    dirtyBadge: 'Perubahan belum disimpan',
+    unsavedNavigationTitle: 'Perubahan belum disimpan',
+    unsavedNavigationMessage:
+      'Anda memiliki perubahan yang belum disimpan. Jika meninggalkan halaman ini, seluruh perubahan yang belum disimpan akan hilang.',
+    unsavedStayButton: 'Tetap di halaman',
+    unsavedLeaveButton: 'Buang perubahan',
+    demoModeBanner: 'Mode data contoh',
+    demoModeTooltip:
+      'Panel berjalan dengan basis data contoh lokal (VITE_USE_MOCK=true). Seluruh perubahan tersimpan di peramban.',
+    resetDemoData: 'Reset data contoh',
+    resetDemoSuccess: 'Data contoh berhasil dikembalikan ke kondisi awal.',
+  },
+
+  // Teks state kosong, error, dan konfirmasi umum (Fase 0: 0.4)
+  commonStates: {
+    emptyTitle: 'Belum ada data untuk ditampilkan',
+    emptyDescription:
+      'Sesuaikan kata kunci pencarian atau filter untuk menemukan data yang Anda cari.',
+    errorTitle: 'Gagal memuat data',
+    errorDescription:
+      'Terjadi kendala saat mengambil data. Silakan periksa koneksi atau coba muat ulang.',
+    confirmCancelLabel: 'Batalkan',
+    confirmProceedLabel: 'Konfirmasi',
+  },
 };
 
 export default BRAND_CONFIG;

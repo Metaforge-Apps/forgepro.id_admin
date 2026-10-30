@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/common/Card';
 import { Logo } from '../components/common/Logo';
 import { useNavigate } from 'react-router-dom';
+import { BUSINESS_CONFIG, isMockMode } from '../config/business';
 import {
   Lock,
   Info,
@@ -85,7 +86,7 @@ export function SettingsPage() {
   const [language, setLanguage] = useState<string>('Indonesia');
   const [timezone, setTimezone] = useState<string>('WIB (UTC+7)');
   const [currency, setCurrency] = useState<string>('Rupiah (IDR)');
-  const [downloadAccess, setDownloadAccess] = useState<string>('30 hari');
+  const [downloadAccess, setDownloadAccess] = useState<string>(BUSINESS_CONFIG.defaultDownloadDurationLabel);
 
   const [adminFullName, setAdminFullName] = useState<string>('Andi Prasetyo');
   const [adminEmail, setAdminEmail] = useState<string>('andi@forgepro.id');
@@ -544,9 +545,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Google Play Billing
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Demo
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Demo
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">
@@ -670,7 +673,7 @@ export function SettingsPage() {
                 </span>
                 <p className="text-xs text-content-muted leading-relaxed">
                   Biaya cetak dan pengiriman fisik tidak ditagih melalui Google
-                  Play Billing. Akses unduhan produk digital berlaku 30 hari.
+                  Play Billing. Akses unduhan produk digital berlaku {BUSINESS_CONFIG.defaultDownloadDurationLabel}.
                 </p>
               </div>
             </div>
@@ -783,9 +786,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Pengujian pembelian
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Demo
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Demo
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5 text-xs">
@@ -1012,9 +1017,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Kurir & layanan
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Contoh
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Contoh
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">
@@ -1404,9 +1411,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Sesi &amp; perangkat aktif
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Data contoh
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Data contoh
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">
@@ -1437,9 +1446,11 @@ export function SettingsPage() {
                         <span className="font-semibold text-content-primary">
                           Chrome • Windows
                         </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                          Contoh
-                        </span>
+                        {isMockMode() && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                            Contoh
+                          </span>
+                        )}
                       </div>
                       <span className="text-content-muted">
                         Jakarta, Indonesia • 20 Okt 2026, 16.42 WIB
@@ -1588,9 +1599,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Google Play Developer API
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Demo
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Demo
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">
@@ -1667,9 +1680,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   RTDN • Cloud Pub/Sub
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Demo
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Demo
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">
@@ -1768,9 +1783,11 @@ export function SettingsPage() {
                 <h2 className="text-base font-semibold text-content-primary">
                   Webhook aplikasi
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Demo
-                </span>
+                {isMockMode() && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
+                    Demo
+                  </span>
+                )}
               </div>
 
               <p className="text-xs text-content-muted leading-relaxed">

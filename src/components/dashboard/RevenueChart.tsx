@@ -13,10 +13,14 @@ export function RevenueChart() {
   const { dashboardMetrics } = useCentralStore();
   const [period, setPeriod] = useState<DashboardPeriodKey>('Minggu');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const activeIndex = hoverIndex !== null ? hoverIndex : selectedIndex;
 
   const handleSelectPeriod = (p: DashboardPeriodKey) => {
     setPeriod(p);
     setHoverIndex(null);
+    setSelectedIndex(null);
     window.dispatchEvent(new CustomEvent('forgepro-period-change', { detail: p }));
   };
 
@@ -120,65 +124,81 @@ export function RevenueChart() {
                 r="16"
                 fill="transparent"
                 className="cursor-pointer"
+                onClick={() => setSelectedIndex(selectedIndex === i ? null : i)}
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex(null)}
               />
 
-              {hoverIndex === i && (
+              {(activeIndex === i) && (
                 <circle
                   cx={pt.x}
                   cy={pt.y}
-                  r={5}
+                  r={6}
                   className="transition-all duration-150 pointer-events-none"
                   fill="#D9B06F"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                  stroke="#0A111C"
+                  strokeWidth="2.5"
                 />
               )}
             </g>
           ))}
         </svg>
 
-        {/* Hover Tooltip Popup */}
-        {hoverIndex !== null && points[hoverIndex] && (
+        {/* Hover / Selected Tooltip Popup */}
+        {activeIndex !== null && points[activeIndex] && (
           <div
-            className="absolute -top-3 transform -translate-x-1/2 bg-surface-card border border-[#D9B06F]/60 px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-10 text-center animate-fade-in"
+            className="absolute -top-3 transform -translate-x-1/2 bg-surface-card border border-[#D9B06F] px-3.5 py-2 rounded-xl shadow-2xl pointer-events-none z-20 text-center animate-fade-in backdrop-blur-md"
             style={{
-              left: `${(points[hoverIndex].x / width) * 100}%`,
+              left: `${(points[activeIndex].x / width) * 100}%`,
             }}
           >
-            <p className="text-[10px] text-content-muted uppercase tracking-wider">
-              {points[hoverIndex].label}
+            <p className="text-[10px] font-semibold text-content-muted uppercase tracking-wider">
+              {points[activeIndex].label} · {period === 'Minggu' ? 'Hari ini' : period}
             </p>
-            <p className="text-xs font-semibold text-[#D9B06F]">
-              {points[hoverIndex].display}
+            <p className="text-sm font-bold text-[#D9B06F] mt-0.5">
+              {points[activeIndex].display}
             </p>
+            {'ordersCount' in points[activeIndex] && (
+              <p className="text-[10px] text-content-secondary mt-0.5">
+                {(points[activeIndex] as any).ordersCount} transaksi selesai
+              </p>
+            )}
           </div>
         )}
       </div>
 
-      {/* Axis Pill Boxes Sesuai Referensi Figma */}
+      {/* Axis Pill Boxes Sesuai Referensi Figma (Sen-Min selalu tampil angka pendapatan) */}
       <div
         className="grid gap-2 mt-3"
         style={{
           gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))`,
         }}
       >
-        {data.map((d, idx) => (
-          <div
-            key={d.label}
-            onMouseEnter={() => setHoverIndex(idx)}
-            onMouseLeave={() => setHoverIndex(null)}
-            className="rounded-xl bg-[#F4F1EA] dark:bg-[#1C273E]/70 border border-border-subtle/50 px-2.5 py-2 flex flex-col items-start gap-0.5 cursor-pointer transition-colors hover:border-[#D9B06F]/50"
-          >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">
-              {d.label}
-            </span>
-            <span className="text-xs font-semibold text-content-primary truncate w-full">
-              {hoverIndex === idx ? d.display : '—'}
-            </span>
-          </div>
-        ))}
+        {data.map((d, idx) => {
+          const isPointActive = activeIndex === idx;
+          return (
+            <button
+              key={d.label}
+              type="button"
+              onClick={() => setSelectedIndex(selectedIndex === idx ? null : idx)}
+              onMouseEnter={() => setHoverIndex(idx)}
+              onMouseLeave={() => setHoverIndex(null)}
+              title={`Klik untuk menyorot pendapatan ${d.label}: ${d.display}`}
+              className={`rounded-xl px-2.5 py-2 flex flex-col items-start gap-0.5 cursor-pointer transition-all text-left select-none border ${
+                isPointActive
+                  ? 'bg-[#D9B06F]/15 border-[#D9B06F] shadow-sm ring-1 ring-[#D9B06F]/30'
+                  : 'bg-[#F4F1EA] dark:bg-[#1C273E]/70 border-border-subtle/50 hover:border-[#D9B06F]/50'
+              }`}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">
+                {d.label}
+              </span>
+              <span className={`text-xs font-semibold truncate w-full ${isPointActive ? 'text-[#D9B06F]' : 'text-content-primary'}`}>
+                {d.display}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </Card>
   );

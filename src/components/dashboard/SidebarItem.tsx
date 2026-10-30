@@ -23,6 +23,7 @@ export function SidebarItem({ item, onClick }: SidebarItemProps) {
       to={item.path}
       onClick={onClick}
       end={item.exact}
+      title={item.label}
       className={({ isActive }) => `
         group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium
         transition-all duration-200 select-none

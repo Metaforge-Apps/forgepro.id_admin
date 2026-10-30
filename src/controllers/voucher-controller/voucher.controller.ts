@@ -208,12 +208,23 @@ export class VoucherController {
   }
 
   public deleteVoucher(id: string): boolean {
-    const exists = Boolean(this.getVoucherById(id));
-    if (!exists) return false;
+    const target = this.getVoucherById(id);
+    if (!target) return false;
+    if (target.used > 0) {
+      console.warn(`[VoucherController] Deletion blocked: voucher ${target.code} has ${target.used} usages.`);
+      return false;
+    }
     mockDb.updateState((prev) => ({
       ...prev,
       vouchers: prev.vouchers.filter((v) => v.id !== id),
     }));
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Katalog',
+      activity: `Menghapus kode promo · ${target.code}`,
+      result: 'Berhasil',
+      targetId: target.id,
+    });
     return true;
   }
 

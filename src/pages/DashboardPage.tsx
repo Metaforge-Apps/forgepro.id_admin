@@ -39,7 +39,7 @@ export function DashboardPage() {
           label="Pending & Gagal"
           value={dashboardMetrics.pendingAndFailedCount.toLocaleString('id-ID')}
           trend="-3,5%"
-          trendType="negative"
+          trendType="positive"
         />
       </div>
 

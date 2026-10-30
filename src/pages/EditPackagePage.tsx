@@ -17,6 +17,7 @@ import {
   PACKAGE_TIER_LABEL,
   formatRupiah,
 } from '../controllers/package-controller';
+import { buildPackageDescription } from '../controllers/package-controller/package.types';
 import {
   useDirtyForm,
   DirtyStatusBadge,
@@ -60,6 +61,15 @@ export function EditPackagePage() {
   const [maxTemplates, setMaxTemplates] = useState<string>(
     String(incomingPkg?.maxTemplates ?? 1)
   );
+  const [creditPerPhoto, setCreditPerPhoto] = useState<string>(
+    String(incomingPkg?.creditPerPhoto ?? 5)
+  );
+  const [canEditPrompt, setCanEditPrompt] = useState<boolean>(
+    Boolean(incomingPkg?.canEditPrompt ?? (incomingPkg?.tier !== 'esensial'))
+  );
+  const [downloadDurationDays, setDownloadDurationDays] = useState<string>(
+    String(incomingPkg?.downloadDurationDays ?? 14)
+  );
   const [extraBenefits, setExtraBenefits] = useState<string>(
     incomingPkg?.extraBenefits || ''
   );
@@ -91,6 +101,9 @@ export function EditPackagePage() {
     photoCount: String(incomingPkg?.photoCount ?? 12),
     creditAmount: String(incomingPkg?.creditAmount ?? 60),
     maxTemplates: String(incomingPkg?.maxTemplates ?? 1),
+    creditPerPhoto: String(incomingPkg?.creditPerPhoto ?? 5),
+    canEditPrompt: Boolean(incomingPkg?.canEditPrompt ?? (incomingPkg?.tier !== 'esensial')),
+    downloadDurationDays: String(incomingPkg?.downloadDurationDays ?? 14),
     extraBenefits: incomingPkg?.extraBenefits || '',
     accessDuration: incomingPkg?.accessDuration || '14 hari',
     displayOrder: String(incomingPkg?.displayOrder ?? 1),
@@ -105,6 +118,9 @@ export function EditPackagePage() {
     photoCount,
     creditAmount,
     maxTemplates,
+    creditPerPhoto,
+    canEditPrompt,
+    downloadDurationDays,
     extraBenefits,
     accessDuration,
     displayOrder,
@@ -134,14 +150,26 @@ export function EditPackagePage() {
       alert('Jumlah foto, kredit AI, dan template jas harus lebih dari 0.');
       return;
     }
+
+    const autoDesc = buildPackageDescription({
+      photoCount: toInt(photoCount),
+      creditAmount: toInt(creditAmount),
+      creditPerPhoto: toInt(creditPerPhoto) || 5,
+      maxTemplates: toInt(maxTemplates),
+      canEditPrompt,
+    });
+
     updatePackage(pkgId, {
       name: packageName,
-      description,
+      description: autoDesc,
       photoCount: toInt(photoCount),
       creditAmount: toInt(creditAmount),
       maxTemplates: toInt(maxTemplates),
+      creditPerPhoto: toInt(creditPerPhoto) || 5,
+      canEditPrompt,
+      downloadDurationDays: toInt(downloadDurationDays) || 14,
       extraBenefits,
-      accessDuration,
+      accessDuration: `${toInt(downloadDurationDays) || 14} hari`,
       displayOrder: toInt(displayOrder) || 1,
       status,
       sku: productId,
@@ -235,20 +263,31 @@ export function EditPackagePage() {
               />
             </div>
 
-            {/* Deskripsi */}
-            <div className="flex flex-col gap-1.5 text-xs">
-              <label className="font-semibold text-content-primary">
-                Deskripsi
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors"
-              />
+            {/* Pratinjau Deskripsi Otomatis (Fase 1: Rule 5) */}
+            <div className="flex flex-col gap-1.5 text-xs p-3.5 rounded-xl bg-surface-hover/60 border border-border-subtle">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-content-primary">
+                  Deskripsi otomatis (terstruktur)
+                </span>
+                <span className="text-[10px] text-[#D9B06F] font-semibold uppercase tracking-wider">
+                  Bebas Kontradiksi
+                </span>
+              </div>
+              <p className="text-xs text-content-primary font-medium leading-relaxed">
+                {buildPackageDescription({
+                  photoCount: toInt(photoCount),
+                  creditAmount: toInt(creditAmount),
+                  creditPerPhoto: toInt(creditPerPhoto) || 5,
+                  maxTemplates: toInt(maxTemplates),
+                  canEditPrompt,
+                })}
+              </p>
+              <span className="text-[11px] text-content-muted">
+                Dihasilkan otomatis dari field terstruktur di bawah (jumlah foto, kuota kredit, template jas, &amp; izin kustom prompt).
+              </span>
             </div>
 
-            {/* Row: Jumlah Hasil Foto, Kredit AI & Template Jas */}
+            {/* Row 1: Jumlah Hasil Foto, Kredit AI, Kredit per Foto */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
@@ -262,13 +301,13 @@ export function EditPackagePage() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  photo_count
+                  Foto final berkualitas tinggi
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
-                  Kredit AI *
+                  Total kuota kredit AI *
                 </label>
                 <input
                   type="number"
@@ -278,13 +317,32 @@ export function EditPackagePage() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  5 foto per generate = 10 kredit
+                  Hingga {Math.floor((toInt(creditAmount) || 60) / (toInt(creditPerPhoto) || 5))}x generate
                 </span>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold text-content-primary">
-                  Maks. template jas *
+                  Kredit per render foto *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={creditPerPhoto}
+                  onChange={(e) => setCreditPerPhoto(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
+                />
+                <span className="text-[11px] text-content-muted">
+                  Standar FLUX: 5 kredit/foto
+                </span>
+              </div>
+            </div>
+
+            {/* Row 2: Maks. Template Jas & Izin Edit Custom Prompt */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs items-start">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-content-primary">
+                  Maks. template gaya jas *
                 </label>
                 <input
                   type="number"
@@ -294,8 +352,25 @@ export function EditPackagePage() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  max_templates (&gt; 1 = pilih banyak)
+                  Jumlah template jas yang bebas dipilih pemesan
                 </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5 pt-1">
+                <label className="font-semibold text-content-primary">
+                  Kustom Prompt Pelanggan
+                </label>
+                <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-card border border-border-subtle cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={canEditPrompt}
+                    onChange={(e) => setCanEditPrompt(e.target.checked)}
+                    className="w-4 h-4 accent-[#D9B06F] cursor-pointer"
+                  />
+                  <span className="text-xs font-medium text-content-primary">
+                    Bolehkan kustomisasi prompt tambahan
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -457,28 +532,38 @@ export function EditPackagePage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-content-primary">
-                  Harga referensi (Rp)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-content-primary">
+                    Harga referensi (Rp) *
+                  </label>
+                  {toInt(refPrice) > 0 && (
+                    <span className="text-xs font-bold text-[#D9B06F]">
+                      {formatRupiah(toInt(refPrice))}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
-                  min={1}
+                  min={10000}
+                  step={1000}
                   value={refPrice}
                   onChange={(e) => setRefPrice(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
                 <span className="text-[11px] text-content-muted">
-                  Angka rupiah tanpa titik. Referensi internal, bukan harga live.
+                  {toInt(refPrice) > 0
+                    ? `Format tampilan: ${formatRupiah(toInt(refPrice))}`
+                    : 'Masukkan angka rupiah (mis. 59000 untuk Rp59.000)'}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-surface-hover/60 border border-border-subtle flex items-start gap-2.5 mt-1">
-                <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-2xl bg-surface-hover/80 dark:bg-surface-hover/60 border border-border-subtle flex items-start gap-2.5 mt-1">
+                <Info className="w-4 h-4 text-[#D9B06F] shrink-0 mt-0.5" />
                 <div className="flex flex-col gap-0.5">
                   <span className="font-semibold text-content-primary text-xs">
                     Harga aktual di Play Console
                   </span>
-                  <span className="text-[11px] text-content-muted leading-relaxed">
+                  <span className="text-[11px] text-content-secondary leading-relaxed">
                     Mengubah harga referensi di admin tidak mengubah harga pembelian. Harga yang dibayar pelanggan mengikuti Google Play.
                   </span>
                 </div>

@@ -47,7 +47,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed inset-y-3 left-3 z-50
-          w-[260px] max-w-[85vw]
+          w-[280px] max-w-[88vw]
           flex flex-col
           bg-surface-sidebar
           border border-border-subtle

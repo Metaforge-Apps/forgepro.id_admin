@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card } from '../components/common/Card';
 import {
   Download,
@@ -36,10 +37,13 @@ export function OrdersPage() {
     getPhotoBadgeStyle,
   } = useOrderController();
 
+  const location = useLocation();
+  const incomingOrderId = (location.state as any)?.selectedOrderId || null;
+
   const [activeTab, setActiveTab] = useState<string>('Semua pesanan');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(incomingOrderId);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const selectedOrder = useMemo(
@@ -237,7 +241,7 @@ export function OrdersPage() {
                 <th className="pb-3 px-4">PROSES AI</th>
                 <th className="pb-3 px-4">CETAK FISIK</th>
                 <th className="pb-3 px-4">WAKTU</th>
-                <th className="pb-3 pl-4 text-left">AKSI</th>
+                <th className="pb-3 pl-4 pr-6 text-left sticky right-0 bg-surface-card z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
@@ -317,7 +321,7 @@ export function OrdersPage() {
                     {item.timeDisplay}
                   </td>
 
-                  <td className="py-4 pl-4 whitespace-nowrap">
+                  <td className="py-4 pl-4 pr-6 whitespace-nowrap sticky right-0 bg-surface-card group-hover:bg-surface-hover/80 z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">
                     <button
                       type="button"
                       onClick={(e) => {

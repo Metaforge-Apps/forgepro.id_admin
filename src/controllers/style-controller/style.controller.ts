@@ -255,12 +255,25 @@ export class StyleController {
   }
 
   public deleteStyle(id: string): boolean {
+    const target = this.getStyleById(id);
+    if (!target) return false;
+    if ((target.count || 0) > 0) {
+      console.warn(`[StyleController] Deletion blocked: style ${target.name} has ${target.count} photos.`);
+      return false;
+    }
     const initialLen = this.styles.length;
     const next = this.styles.filter((item) => item.id !== id);
     const deleted = next.length < initialLen;
     if (deleted) {
       this.touch();
       this.styles = next;
+      mockDb.appendActivityLog({
+        source: 'Admin Utama',
+        category: 'Katalog',
+        activity: `Menghapus gaya · ${target.name}`,
+        result: 'Berhasil',
+        targetId: target.id,
+      });
     }
     return deleted;
   }

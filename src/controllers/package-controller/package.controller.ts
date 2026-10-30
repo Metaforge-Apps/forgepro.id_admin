@@ -110,6 +110,13 @@ export class PackageController {
 
     const status: PackageStatus = payload.status || 'Draf';
     const isFeatured = Boolean(payload.isFeatured);
+    const photoCount = payload.photoCount;
+    const creditAmount = payload.creditAmount;
+    const maxTemplates = payload.maxTemplates;
+    const creditPerPhoto = payload.creditPerPhoto || 5;
+    const canEditPrompt = Boolean(payload.canEditPrompt ?? (payload.tier !== 'esensial'));
+    const downloadDurationDays = payload.downloadDurationDays || 14;
+
     const newPkg: PricingPackageItem = {
       id: `pkg-${payload.tier}`,
       tier: payload.tier,
@@ -119,19 +126,22 @@ export class PackageController {
       priceValue: payload.priceValue,
       price: formatRupiah(payload.priceValue),
       sku: payload.sku.trim(),
-      photoCount: payload.photoCount,
-      creditAmount: payload.creditAmount,
-      maxTemplates: payload.maxTemplates,
+      photoCount,
+      creditAmount,
+      maxTemplates,
+      creditPerPhoto,
+      canEditPrompt,
+      downloadDurationDays,
       priceSub: 'referensi · sekali beli',
-      description: payload.description.trim(),
+      description: (payload.description || '').trim() || `${photoCount} foto (${creditAmount} kredit)`,
       features: this.buildFeaturesList(
-        payload.photoCount,
-        payload.creditAmount,
-        payload.maxTemplates,
+        photoCount,
+        creditAmount,
+        maxTemplates,
         payload.extraBenefits
       ),
       extraBenefits: payload.extraBenefits,
-      accessDuration: payload.accessDuration.trim() || '14 hari',
+      accessDuration: (payload.accessDuration || `${downloadDurationDays} hari`).trim(),
       displayOrder: payload.displayOrder,
       salesShare: '0%',
       isFeatured,

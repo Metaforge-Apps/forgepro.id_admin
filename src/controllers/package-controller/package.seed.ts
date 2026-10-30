@@ -1,9 +1,14 @@
-import type { PricingPackageItem, PackageRuleItem } from './package.types';
+import {
+  type PricingPackageItem,
+  type PackageRuleItem,
+  buildPackageDescription,
+  buildPackageFeatures,
+} from './package.types';
 
 /**
  * Data awal paket. Disalin dari `suitPackages` di aplikasi Flutter
  * (forgepro_apps/lib/features/generation/domain/models.dart).
- * Default user baru / paket dasar adalah 100 kredit AI.
+ * Bebas kontradiksi dan deskripsi dibuat otomatis dari field terstruktur (Fase 1: Rule 5).
  */
 export const INITIAL_PACKAGES: PricingPackageItem[] = [
   {
@@ -16,15 +21,27 @@ export const INITIAL_PACKAGES: PricingPackageItem[] = [
     price: 'Rp59.000',
     sku: 'forgepro_esensial',
     photoCount: 12,
-    creditAmount: 100,
+    creditAmount: 60,
+    creditPerPhoto: 5,
     maxTemplates: 1,
+    canEditPrompt: false,
+    downloadDurationDays: 14,
     priceSub: 'referensi · sekali beli',
-    description: '100 Kredit AI (hingga 50 foto · 1 template jas).',
-    features: [
-      '12 hasil foto AI resolusi tinggi',
-      '100 kredit AI bawaan',
-      'Pilihan 1 template jas',
-    ],
+    description: buildPackageDescription({
+      photoCount: 12,
+      creditAmount: 60,
+      creditPerPhoto: 5,
+      maxTemplates: 1,
+      canEditPrompt: false,
+    }),
+    features: buildPackageFeatures({
+      photoCount: 12,
+      creditAmount: 60,
+      creditPerPhoto: 5,
+      maxTemplates: 1,
+      canEditPrompt: false,
+      downloadDurationDays: 14,
+    }),
     extraBenefits: '',
     accessDuration: '14 hari',
     displayOrder: 1,
@@ -41,15 +58,27 @@ export const INITIAL_PACKAGES: PricingPackageItem[] = [
     price: 'Rp99.000',
     sku: 'forgepro_profesional',
     photoCount: 24,
-    creditAmount: 100,
-    maxTemplates: 1,
+    creditAmount: 120,
+    creditPerPhoto: 5,
+    maxTemplates: 2,
+    canEditPrompt: true,
+    downloadDurationDays: 14,
     priceSub: 'referensi · sekali beli',
-    description: '100 Kredit AI (hingga 50 foto · bebas ganti template & prompt).',
-    features: [
-      '24 hasil foto AI resolusi tinggi',
-      '100 kredit AI',
-      'Pilihan 1 template jas',
-    ],
+    description: buildPackageDescription({
+      photoCount: 24,
+      creditAmount: 120,
+      creditPerPhoto: 5,
+      maxTemplates: 2,
+      canEditPrompt: true,
+    }),
+    features: buildPackageFeatures({
+      photoCount: 24,
+      creditAmount: 120,
+      creditPerPhoto: 5,
+      maxTemplates: 2,
+      canEditPrompt: true,
+      downloadDurationDays: 14,
+    }),
     extraBenefits: '',
     accessDuration: '14 hari',
     displayOrder: 2,
@@ -66,15 +95,27 @@ export const INITIAL_PACKAGES: PricingPackageItem[] = [
     price: 'Rp169.000',
     sku: 'forgepro_eksklusif',
     photoCount: 48,
-    creditAmount: 200,
+    creditAmount: 250,
+    creditPerPhoto: 5,
     maxTemplates: 3,
+    canEditPrompt: true,
+    downloadDurationDays: 14,
     priceSub: 'referensi · sekali beli',
-    description: '200 Kredit AI (hingga 100 foto · eksplorasi 3 gaya jas).',
-    features: [
-      '48 hasil foto AI resolusi tinggi',
-      '200 kredit AI',
-      'Pilihan 3 template jas',
-    ],
+    description: buildPackageDescription({
+      photoCount: 48,
+      creditAmount: 250,
+      creditPerPhoto: 5,
+      maxTemplates: 3,
+      canEditPrompt: true,
+    }),
+    features: buildPackageFeatures({
+      photoCount: 48,
+      creditAmount: 250,
+      creditPerPhoto: 5,
+      maxTemplates: 3,
+      canEditPrompt: true,
+      downloadDurationDays: 14,
+    }),
     extraBenefits: '',
     accessDuration: '14 hari',
     displayOrder: 3,

@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/common/Card';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   ChevronDown,
   Settings,
   Info,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import type { ActivityLogItem, WebhookItem } from '../types';
 import { useCentralStore } from '../mocks/selectors';
 import { BUSINESS_CONFIG } from '../config/business';
 
 export function ActivityLogsPage() {
+  const navigate = useNavigate();
   const { state, updateState } = useCentralStore();
   const activityLogs = state.activityLogs;
   const webhooks = state.webhooks;
@@ -324,9 +327,20 @@ export function ActivityLogsPage() {
                       <span className="font-semibold text-content-primary">
                         {wh.eventTitle}
                       </span>
-                      <span className="text-[11px] text-content-muted">
-                        {wh.eventSub}
-                      </span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-content-muted">
+                        <span>{wh.eventName} ·</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/pesanan', { state: { selectedOrderId: wh.orderNumber } });
+                          }}
+                          className="font-mono font-bold text-content-primary hover:text-[#D9B06F] hover:underline inline-flex items-center gap-0.5"
+                        >
+                          <span>{wh.orderNumber}</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
                     </div>
                   </td>
 
@@ -386,9 +400,8 @@ export function ActivityLogsPage() {
             Percobaan ulang otomatis
           </span>
           <p className="text-xs text-content-muted leading-relaxed">
-            Pengiriman gagal dicoba ulang maksimal 3 kali dengan jeda 5 menit.
-            Periksa endpoint dan respons tujuan sebelum melakukan percobaan ulang
-            manual.
+            Pengiriman gagal dicoba ulang otomatis maksimal {BUSINESS_CONFIG.webhookPolicy.maxRetries} kali ({BUSINESS_CONFIG.webhookPolicy.backoffDescription}).
+            Periksa endpoint dan respons server tujuan sebelum melakukan percobaan ulang manual.
           </p>
         </div>
       </div>
@@ -435,6 +448,29 @@ export function ActivityLogsPage() {
                   {selectedLog.result}
                 </span>
               </div>
+              {selectedLog.targetId && (
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle/50">
+                  <span className="text-content-muted">Entitas Terkait</span>
+                  {selectedLog.targetId.startsWith('PRO-') ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = selectedLog.targetId;
+                        setSelectedLog(null);
+                        navigate('/pesanan', { state: { selectedOrderId: target } });
+                      }}
+                      className="font-mono text-xs font-bold text-[#D9B06F] hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>{selectedLog.targetId}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  ) : (
+                    <span className="font-mono text-xs text-content-primary">
+                      {selectedLog.targetId}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="mt-5 flex justify-end">
@@ -494,6 +530,23 @@ export function ActivityLogsPage() {
                   {selectedWebhook.attempts}
                 </span>
               </div>
+              {selectedWebhook.orderNumber && (
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle/50">
+                  <span className="text-content-muted">Pesanan Terkait</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const orderNum = selectedWebhook.orderNumber;
+                      setSelectedWebhook(null);
+                      navigate('/pesanan', { state: { selectedOrderId: orderNum } });
+                    }}
+                    className="font-mono text-xs font-bold text-[#D9B06F] hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>{selectedWebhook.orderNumber}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="mt-5 flex justify-end">

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/common/Card';
 import { Alert } from '../components/common/Alert';
 import { useBroadcastDirty } from '../components/common/DirtyGuard';
 import type { SemanticFeedbackTone } from '../config/statusColors';
 import { useAuth } from '../context/AuthContext';
 import { BRAND_CONFIG } from '../config/branding';
+import { NAVIGATION_SECTIONS } from '../config/navigation';
+import { mockDb } from '../mocks/db';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield,
@@ -39,7 +41,7 @@ const ADMIN_RECENT_ACTIVITIES = [
     id: 'act-p4',
     time: '17 Okt, 11:05 WIB',
     module: 'Voucher & Promo',
-    action: 'Mengaktifkan kode promo KARIER20',
+    action: 'Mengaktifkan kode promo KARIRHEMAT',
     status: 'Berhasil',
   },
 ];
@@ -106,6 +108,23 @@ export function AdminProfilePage() {
   };
   const isDirty = JSON.stringify(savedProfile) !== JSON.stringify(currentProfile);
   useBroadcastDirty(isDirty);
+
+  const totalAccessibleMenus = useMemo(() => {
+    return NAVIGATION_SECTIONS.reduce((acc, sec) => acc + sec.items.length, 0);
+  }, []);
+
+  const adminSessions = useMemo(() => {
+    return mockDb.getState().adminSessions || [];
+  }, []);
+
+  const activeSessionsCount = adminSessions.length;
+  const currentDeviceLabel =
+    adminSessions.find((s) => s.isCurrent)?.deviceLabel || 'Chrome • macOS (Jakarta)';
+
+  const latestActivity = useMemo(() => {
+    const logs = mockDb.getState().activityLogs || [];
+    return logs.find((l) => l.source === 'Admin Utama') || logs[0] || null;
+  }, []);
 
   const showToast = (msg: string, variant: SemanticFeedbackTone = 'success') => {
     setToastMessage(msg);
@@ -229,7 +248,7 @@ export function AdminProfilePage() {
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Seluruh 9 menu panel admin
+            Seluruh {totalAccessibleMenus} menu panel admin
           </span>
         </Card>
 
@@ -253,11 +272,11 @@ export function AdminProfilePage() {
               Sesi perangkat aktif
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              1 sesi
+              {activeSessionsCount} sesi
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Chrome • macOS (Jakarta)
+          <span className="text-xs text-content-muted mt-4 block truncate" title={currentDeviceLabel}>
+            {currentDeviceLabel}
           </span>
         </Card>
 
@@ -267,11 +286,11 @@ export function AdminProfilePage() {
               Aktivitas terakhir
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              16:20
+              {latestActivity ? latestActivity.time.split(',')[1]?.trim().split(' ')[0] || '16:20' : '16:20'}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            19 Oktober 2026 · WIB
+            {latestActivity ? latestActivity.time : '19 Oktober 2026 · WIB'}
           </span>
         </Card>
       </div>

@@ -181,7 +181,7 @@ export function SuitCatalogPage() {
       </div>
 
       {/* Filter Controls: Search, Dropdowns, Grid Density & Display Controls */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+      <div className="flex flex-col 2xl:flex-row items-stretch 2xl:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-content-muted" />
@@ -194,8 +194,8 @@ export function SuitCatalogPage() {
           />
         </div>
 
-        {/* Filters & Display Controls */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Filters & Display Controls (Bebas terpotong: wrap responsif) */}
+        <div className="flex flex-wrap items-center gap-2 max-w-full overflow-x-auto pb-1 [scrollbar-width:none]">
           {/* Status Filter */}
           <div className="relative">
             <ChevronDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-content-primary pointer-events-none" />
@@ -439,13 +439,18 @@ export function SuitCatalogPage() {
                     <span>&rarr;</span>
                   </button>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleToggleStatus(item.id)}
-                      className="text-content-muted hover:text-content-primary transition-colors select-none text-[11px]"
+                      title={item.status === 'Tayang' ? 'Nonaktifkan gaya (simpan sebagai draf)' : 'Tayangkan gaya ke katalog'}
+                      className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-all select-none inline-flex items-center gap-1 border ${
+                        item.status === 'Tayang'
+                          ? 'border-border-subtle bg-surface-card hover:bg-surface-hover text-content-secondary hover:text-content-primary'
+                          : 'border-[#D9B06F]/50 bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] hover:bg-[#D9B06F]/20 font-semibold'
+                      }`}
                     >
-                      {item.status === 'Tayang' ? 'Nonaktifkan' : 'Tayangkan'}
+                      <span>{item.status === 'Tayang' ? 'Nonaktifkan' : 'Tayangkan'}</span>
                     </button>
 
                     <button
@@ -689,40 +694,80 @@ export function SuitCatalogPage() {
               </div>
             </div>
 
-            {/* Red Warning Alert Box */}
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3 mb-4">
-              <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-0.5">
-                <span className="font-semibold text-xs text-content-primary">
-                  Penghapusan tidak dapat dibatalkan
-                </span>
-                <span className="text-[11px] text-content-muted leading-relaxed">
-                  Gaya dan gambar pratinjaunya akan dihapus permanen dari katalog. Gaya ini belum dipakai, sehingga tidak memengaruhi pesanan pelanggan.
-                </span>
+            {/* Perlindungan Hapus Terpadu (Fase 1: Rule 8) */}
+            {suitToDelete.count && suitToDelete.count > 0 ? (
+              <div className="flex flex-col gap-4">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-xs text-content-primary">
+                      Penghapusan diblokir (Gaya telah digunakan)
+                    </span>
+                    <span className="text-[11px] text-content-muted leading-relaxed">
+                      Gaya ini telah digunakan untuk menghasilkan {suitToDelete.count} foto pesanan pelanggan. Demi integritas data transaksi, gaya yang sudah dipakai tidak boleh dihapus permanen.
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-content-muted leading-relaxed">
+                  Silakan nonaktifkan gaya ini (ubah status ke Draf) agar tidak lagi muncul sebagai opsi bagi pesanan baru pelanggan di aplikasi Flutter.
+                </p>
+
+                {/* Bottom Modal Actions (Nonaktifkan / Tutup) */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border-subtle">
+                  <button
+                    type="button"
+                    onClick={() => setSuitToDelete(null)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary select-none transition-colors"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleToggleStatus(suitToDelete.id);
+                      setSuitToDelete(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#D9B06F] text-black hover:bg-[#c9a15f] select-none transition-colors shadow-sm"
+                  >
+                    Nonaktifkan gaya sekarang
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                {/* Red Warning Alert Box */}
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-start gap-3 mb-4">
+                  <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-xs text-content-primary">
+                      Penghapusan tidak dapat dibatalkan
+                    </span>
+                    <span className="text-[11px] text-content-muted leading-relaxed">
+                      Gaya dan gambar pratinjaunya akan dihapus permanen dari katalog. Gaya ini belum pernah dipakai, sehingga aman dihapus.
+                    </span>
+                  </div>
+                </div>
 
-            <p className="text-[11px] text-content-muted leading-relaxed mb-6">
-              Untuk gaya yang sudah digunakan, sebaiknya nonaktifkan agar histori pesanan tidak berubah.
-            </p>
-
-            {/* Bottom Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border-subtle">
-              <button
-                type="button"
-                onClick={() => setSuitToDelete(null)}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary select-none transition-colors"
-              >
-                Batalkan
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white select-none transition-colors shadow-sm"
-              >
-                Hapus gaya
-              </button>
-            </div>
+                {/* Bottom Modal Actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border-subtle">
+                  <button
+                    type="button"
+                    onClick={() => setSuitToDelete(null)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary select-none transition-colors"
+                  >
+                    Batalkan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmDelete}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white select-none transition-colors shadow-sm"
+                  >
+                    Hapus gaya
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

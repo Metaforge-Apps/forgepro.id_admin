@@ -934,33 +934,68 @@ export function VouchersPage() {
             </div>
 
             {confirmDelete ? (
-              <div className="mt-5 flex flex-col gap-3">
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-content-primary">
-                  Hapus voucher <b>{selectedVoucher.code}</b>? Tindakan ini tidak
-                  dapat dibatalkan. Untuk menghentikan sementara, gunakan
-                  &ldquo;Nonaktifkan&rdquo;.
+              selectedVoucher.used > 0 ? (
+                <div className="mt-5 flex flex-col gap-3">
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-content-primary flex flex-col gap-1">
+                    <span className="font-semibold text-content-primary">
+                      Penghapusan diblokir (Voucher telah digunakan)
+                    </span>
+                    <span className="text-[11px] text-content-muted leading-relaxed">
+                      Kode promo <b>{selectedVoucher.code}</b> telah digunakan pada {selectedVoucher.used} pesanan pelanggan. Sesuai aturan perlindungan integritas data, voucher yang telah dipakai tidak dapat dihapus permanen.
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
+                    >
+                      Tutup
+                    </button>
+                    {selectedVoucher.isActive && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleActive(selectedVoucher.id);
+                          setConfirmDelete(false);
+                          setSelectedVoucherId(null);
+                        }}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#D9B06F] text-black hover:bg-[#c9a15f] transition-colors"
+                      >
+                        Nonaktifkan voucher sekarang
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-end gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
-                  >
-                    Batalkan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      deleteVoucher(selectedVoucher.id);
-                      setConfirmDelete(false);
-                      setSelectedVoucherId(null);
-                    }}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
-                  >
-                    Hapus voucher
-                  </button>
+              ) : (
+                <div className="mt-5 flex flex-col gap-3">
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-content-primary">
+                    Hapus voucher <b>{selectedVoucher.code}</b>? Tindakan ini tidak
+                    dapat dibatalkan. Untuk menghentikan sementara, gunakan
+                    &ldquo;Nonaktifkan&rdquo;.
+                  </div>
+                  <div className="flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
+                    >
+                      Batalkan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteVoucher(selectedVoucher.id);
+                        setConfirmDelete(false);
+                        setSelectedVoucherId(null);
+                      }}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+                    >
+                      Hapus voucher
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <div className="mt-5 flex flex-wrap items-center justify-between gap-2.5">
                 <button

@@ -16,7 +16,7 @@ export function DashboardLayout() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
+      <div className="flex-1 lg:pl-[304px] flex flex-col min-w-0">
         <main className="flex-1 p-5 sm:p-8 lg:p-10 max-w-[1600px] w-full mx-auto">
           {/* Header Dashboard */}
           <Header onMenuClick={() => setSidebarOpen(true)} />

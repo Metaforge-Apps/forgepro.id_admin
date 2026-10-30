@@ -279,7 +279,7 @@ export function PrintingShippingPage() {
                 <th className="pb-3 px-4">EKSPEDISI</th>
                 <th className="pb-3 px-4">NOMOR RESI</th>
                 <th className="pb-3 px-4">STATUS</th>
-                <th className="pb-3 pl-4 text-left">AKSI</th>
+                <th className="pb-3 pl-4 pr-6 text-left sticky right-0 bg-surface-card z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
@@ -334,7 +334,7 @@ export function PrintingShippingPage() {
                     </span>
                   </td>
 
-                  <td className="py-4 pl-4 whitespace-nowrap">
+                  <td className="py-4 pl-4 pr-6 whitespace-nowrap sticky right-0 bg-surface-card group-hover:bg-surface-hover/80 z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">
                     <button
                       type="button"
                       onClick={(e) => {

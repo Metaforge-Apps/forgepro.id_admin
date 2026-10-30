@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../components/common/Card';
 import { Logo } from '../components/common/Logo';
 import { useNavigate } from 'react-router-dom';
-import { BUSINESS_CONFIG, isMockMode } from '../config/business';
+import { BUSINESS_CONFIG, PRINT_SIZE_SPECS, isMockMode } from '../config/business';
 import {
   Lock,
   Info,
@@ -849,14 +849,19 @@ export function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-semibold text-content-primary">
-                    Ukuran cetak
+                    Ukuran cetak standar
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={printSize}
                     onChange={(e) => setPrintSize(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors cursor-pointer"
+                  >
+                    {PRINT_SIZE_SPECS.map((s) => (
+                      <option key={s.id} value={`${s.label} (${s.dimensionsMm})`}>
+                        {s.label} — {s.dimensionsMm}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex flex-col gap-1.5">

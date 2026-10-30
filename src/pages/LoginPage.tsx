@@ -11,19 +11,16 @@ import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
 import {
   AlertCircle,
   Sparkles,
-  ShieldCheck,
-  ArrowLeft,
   Lock,
   Clock,
-  KeyRound,
 } from 'lucide-react';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 menit
 
 /**
- * Login Page Component ForgePro.id (Fase 7: Item 32-38)
- * - Autentikasi 2 Langkah: Email & Password -> Kode TOTP 2FA
+ * Login Page Component ForgePro.id
+ * - Autentikasi langsung: Email & Password
  * - Perlindungan Brute-force: Akun dikunci 15 menit jika 5x gagal login
  * - Modal Lupa Kata Sandi dengan tautan verifikasi sekali pakai
  * - Split-screen tema gelap/terang selaras Figma ForgePro.id
@@ -35,10 +32,8 @@ export function LoginPage() {
 
   const { login, isLoading, error: authError, setError } = useAuth();
 
-  const [step, setStep] = useState<'credentials' | '2fa'>('credentials');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [totpCode, setTotpCode] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
   const [isDemoLoading, setIsDemoLoading] = useState<boolean>(false);
   const [showForgotModal, setShowForgotModal] = useState<boolean>(false);
@@ -101,7 +96,7 @@ export function LoginPage() {
     }
   };
 
-  const handleCredentialsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
 
@@ -117,25 +112,6 @@ export function LoginPage() {
 
     if (!password) {
       setFormError('Password wajib diisi.');
-      return;
-    }
-
-    // Pindah ke step 2: 2FA TOTP
-    setStep('2fa');
-    setTotpCode('');
-  };
-
-  const handle2FaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (isLocked) {
-      setFormError(`Akun terkunci sementara. Silakan tunggu ${formatLockoutTimer(lockoutRemainingSec)}.`);
-      return;
-    }
-
-    if (totpCode.trim().length < 6) {
-      setFormError('Kode 2FA TOTP harus berupa 6 digit angka.');
       return;
     }
 
@@ -157,7 +133,7 @@ export function LoginPage() {
         localStorage.setItem('fp_login_lockout_until', lockTime.toString());
         setFormError('Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan tunggu 15 menit.');
       } else {
-        const message = err instanceof Error ? err.message : 'Kredensial atau kode 2FA tidak valid.';
+        const message = err instanceof Error ? err.message : 'Kredensial login tidak valid.';
         setFormError(`${message} (${MAX_FAILED_ATTEMPTS - nextFailures} percobaan tersisa).`);
       }
     }
@@ -193,12 +169,10 @@ export function LoginPage() {
             {/* Header Form */}
             <div className="mb-6">
               <h2 className="font-serif text-3xl font-medium tracking-tight text-[#D9B06F]">
-                {step === 'credentials' ? BRAND_CONFIG.login.title : 'Verifikasi 2FA'}
+                {BRAND_CONFIG.login.title}
               </h2>
               <p className="text-xs text-content-muted mt-1.5">
-                {step === 'credentials'
-                  ? BRAND_CONFIG.login.subtitle
-                  : 'Masukkan 6 digit kode dari aplikasi Google Authenticator Anda.'}
+                {BRAND_CONFIG.login.subtitle}
               </p>
             </div>
 
@@ -235,134 +209,61 @@ export function LoginPage() {
               </div>
             )}
 
-            {/* STEP 1: EMAIL & PASSWORD */}
-            {step === 'credentials' && (
-              <form onSubmit={handleCredentialsSubmit} className="flex flex-col gap-4">
-                <Input
-                  label={BRAND_CONFIG.login.emailLabel}
-                  type="email"
-                  placeholder={BRAND_CONFIG.login.emailPlaceholder}
-                  value={email}
+            {/* FORM LOGIN: EMAIL & PASSWORD */}
+            <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
+              <Input
+                label={BRAND_CONFIG.login.emailLabel}
+                type="email"
+                placeholder={BRAND_CONFIG.login.emailPlaceholder}
+                value={email}
+                disabled={isLocked}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFormError('');
+                  if (setError) setError(null);
+                }}
+                required
+              />
+
+              <div className="space-y-1">
+                <PasswordInput
+                  label={BRAND_CONFIG.login.passwordLabel}
+                  placeholder={BRAND_CONFIG.login.passwordPlaceholder}
+                  value={password}
                   disabled={isLocked}
                   onChange={(e) => {
-                    setEmail(e.target.value);
+                    setPassword(e.target.value);
                     setFormError('');
                     if (setError) setError(null);
                   }}
                   required
                 />
 
-                <div className="space-y-1">
-                  <PasswordInput
-                    label={BRAND_CONFIG.login.passwordLabel}
-                    placeholder={BRAND_CONFIG.login.passwordPlaceholder}
-                    value={password}
-                    disabled={isLocked}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setFormError('');
-                      if (setError) setError(null);
-                    }}
-                    required
-                  />
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotModal(true)}
-                      className="text-[11px] text-[#D9B06F] hover:underline transition-colors"
-                    >
-                      Lupa kata sandi?
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-2">
-                  <Button
-                    type="submit"
-                    variant="dark"
-                    size="md"
-                    fullWidth
-                    disabled={isLoading || isDemoLoading || isLocked}
-                    className="py-3 font-semibold tracking-wide border-[#2C3B53] hover:border-[#D9B06F]"
-                  >
-                    Lanjut ke Verifikasi 2FA &rarr;
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {/* STEP 2: VERIFIKASI TOTP 2FA */}
-            {step === '2fa' && (
-              <form onSubmit={handle2FaSubmit} className="flex flex-col gap-4 text-xs">
-                <div className="p-3 rounded-xl bg-surface-hover/50 border border-border-subtle flex items-center justify-between">
-                  <span className="text-content-muted truncate max-w-[200px]">{email}</span>
+                <div className="flex justify-end pt-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      setStep('credentials');
-                      setFormError('');
-                    }}
-                    className="text-[#D9B06F] hover:underline font-semibold"
+                    onClick={() => setShowForgotModal(true)}
+                    className="text-[11px] text-[#D9B06F] hover:underline transition-colors"
                   >
-                    Ubah
+                    Lupa kata sandi?
                   </button>
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="font-semibold text-content-primary block text-center">
-                    Kode TOTP 6 Digit
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    autoFocus
-                    disabled={isLocked}
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
-                    className="w-full px-4 py-3 rounded-xl border border-border-subtle bg-surface-main text-content-primary font-mono text-center text-xl tracking-[0.35em] font-bold focus:outline-none focus:border-[#D9B06F]"
-                  />
-                  <div className="flex justify-between items-center text-[11px] text-content-muted mt-1 px-1">
-                    <span>Aplikasi Autentikator</span>
-                    <button
-                      type="button"
-                      onClick={() => setTotpCode('123456')}
-                      className="text-[#D9B06F] hover:underline font-semibold"
-                    >
-                      Isi Otomatis (Demo)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="md"
-                    onClick={() => {
-                      setStep('credentials');
-                      setFormError('');
-                    }}
-                    className="px-3"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    fullWidth
-                    disabled={isLoading || isDemoLoading || isLocked}
-                    isLoading={isLoading && !isDemoLoading}
-                    className="py-3 font-semibold tracking-wide"
-                  >
-                    {isLoading && !isDemoLoading ? 'Memverifikasi...' : 'Verifikasi & Masuk'}
-                  </Button>
-                </div>
-              </form>
-            )}
+              <div className="mt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  disabled={isLoading || isDemoLoading || isLocked}
+                  isLoading={isLoading && !isDemoLoading}
+                  className="py-3 font-semibold tracking-wide"
+                >
+                  {isLoading && !isDemoLoading ? 'Memverifikasi...' : 'Masuk'}
+                </Button>
+              </div>
+            </form>
 
             {/* Quick Demo Helper */}
             <div className="mt-6 pt-5 border-t border-border-subtle flex flex-col gap-3">
@@ -383,9 +284,6 @@ export function LoginPage() {
               <div className="text-[11px] text-content-muted text-center space-y-0.5">
                 <p>
                   Demo Admin: <span className="text-[#D9B06F] font-medium">admin@forgepro.id</span> / <span className="text-[#D9B06F] font-medium">admin123</span>
-                </p>
-                <p>
-                  Kode 2FA: <span className="text-[#D9B06F] font-mono font-medium">123456</span>
                 </p>
               </div>
             </div>

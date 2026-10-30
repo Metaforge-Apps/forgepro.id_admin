@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  QrCode,
-  Download,
-  KeyRound,
-  ArrowRight,
   Eye,
   EyeOff,
+  UserCheck,
+  ArrowRight,
 } from 'lucide-react';
 import { Logo } from '../components/common/Logo';
 import { ThemeToggle } from '../components/common/ThemeToggle';
@@ -17,20 +14,9 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
 import { mockDb } from '../mocks/db';
 
-const BACKUP_CODES = [
-  'FP-9812-4412',
-  'FP-5512-8891',
-  'FP-3301-7724',
-  'FP-6641-2290',
-  'FP-1198-4432',
-  'FP-7721-0094',
-  'FP-8842-5519',
-  'FP-2209-6614',
-];
-
 /**
- * Halaman Terima Undangan Admin Baru ForgePro.id (Fase 7: Item 35 & 36)
- * Alur: Set Password Baru (min 12 chars + strength) -> Aktivasi 2FA TOTP -> Simpan & Unduh Kode Cadangan
+ * Halaman Terima Undangan Admin Baru ForgePro.id
+ * Alur: Set Profil & Password Baru (min 12 chars + strength) -> Aktivasi Akun Selesai
  */
 export function AcceptInvitePage() {
   const navigate = useNavigate();
@@ -41,13 +27,12 @@ export function AcceptInvitePage() {
   const { login } = useAuth();
   const { showToast } = useToast();
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState('Staf Baru ForgePro');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [totpCode, setTotpCode] = useState('');
-  const [hasDownloadedBackup, setHasDownloadedBackup] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Password Strength
   const strength = React.useMemo(() => {
@@ -74,39 +59,7 @@ export function AcceptInvitePage() {
       setErrorMsg('Kata sandi wajib minimal 12 karakter.');
       return;
     }
-    setStep(2);
-  };
 
-  const handleStep2 = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    if (totpCode.trim().length < 6) {
-      setErrorMsg('Masukkan 6 digit kode dari aplikasi autentikator.');
-      return;
-    }
-    setStep(3);
-  };
-
-  const handleDownloadBackupCodes = () => {
-    const textContent = `FORGEPRO.ID - KODE CADANGAN SEKALI PAKAI 2FA
-Akun: ${inviteEmail}
-Tanggal Dibuat: ${new Date().toLocaleString('id-ID')}
-
-Simpan kode cadangan ini di tempat aman. Setiap kode hanya dapat digunakan satu kali:
-${BACKUP_CODES.map((c, i) => `${i + 1}. ${c}`).join('\n')}
-`;
-    const blob = new Blob([textContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `forgepro-backup-codes-${inviteEmail}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setHasDownloadedBackup(true);
-    showToast('Berkas kode cadangan berhasil diunduh', 'success');
-  };
-
-  const handleFinish = async () => {
     mockDb.appendActivityLog({
       source: inviteEmail,
       category: 'Admin',
@@ -115,12 +68,19 @@ ${BACKUP_CODES.map((c, i) => `${i + 1}. ${c}`).join('\n')}
       targetId: token,
     });
 
-    showToast('Pendaftaran akun admin selesai! Masuk ke dashboard...', 'success');
+    setStep(2);
+  };
+
+  const handleFinish = async () => {
+    setIsSubmitting(true);
+    showToast('Pendaftaran akun admin selesai! Mengalihkan ke dashboard...', 'success');
     try {
       await login('admin@forgepro.id', 'admin123');
       navigate('/dashboard');
     } catch {
       navigate('/login');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -138,16 +98,13 @@ ${BACKUP_CODES.map((c, i) => `${i + 1}. ${c}`).join('\n')}
         <div className="w-full rounded-3xl p-7 sm:p-9 bg-surface-card border border-border-card shadow-2xl space-y-6">
           {/* Progress Indicator */}
           <div className="flex items-center justify-between pb-4 border-b border-border-subtle text-xs">
-            <span className={`font-semibold ${step === 1 ? 'text-[#D9B06F]' : 'text-content-muted'}`}>
-              1. Kata Sandi
+            <span className={`font-semibold ${step === 1 ? 'text-[#D9B06F]' : 'text-emerald-500 flex items-center gap-1'}`}>
+              {step === 2 && <CheckCircle2 className="w-3.5 h-3.5" />}
+              1. Lengkapi Kata Sandi
             </span>
             <span className="text-content-muted">&rarr;</span>
             <span className={`font-semibold ${step === 2 ? 'text-[#D9B06F]' : 'text-content-muted'}`}>
-              2. Aktivasi 2FA
-            </span>
-            <span className="text-content-muted">&rarr;</span>
-            <span className={`font-semibold ${step === 3 ? 'text-[#D9B06F]' : 'text-content-muted'}`}>
-              3. Kode Cadangan
+              2. Aktivasi Selesai
             </span>
           </div>
 
@@ -166,7 +123,7 @@ ${BACKUP_CODES.map((c, i) => `${i + 1}. ${c}`).join('\n')}
                   Terima Undangan Admin
                 </h3>
                 <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                  Selamat datang di panel admin ForgePro.id. Silakan lengkapi profil dan buat kata sandi aman Anda.
+                  Selamat datang di panel admin ForgePro.id. Silakan lengkapi nama Anda dan buat kata sandi aman.
                 </p>
               </div>
 
@@ -232,112 +189,36 @@ ${BACKUP_CODES.map((c, i) => `${i + 1}. ${c}`).join('\n')}
                 type="submit"
                 className="w-full py-3 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs mt-2 flex items-center justify-center gap-2"
               >
-                <span>Lanjut ke Aktivasi 2FA</span>
+                <span>Aktifkan Akun &amp; Selesai</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           )}
 
-          {/* STEP 2: AKTIVASI 2FA TOTP */}
+          {/* STEP 2: AKTIVASI SELESAI */}
           {step === 2 && (
-            <form onSubmit={handleStep2} className="space-y-4 text-xs">
+            <div className="space-y-5 text-center py-2">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 mx-auto">
+                <UserCheck className="w-8 h-8" />
+              </div>
+
               <div>
                 <h3 className="font-serif text-2xl font-semibold text-content-primary">
-                  Aktivasi 2FA (TOTP)
+                  Akun Admin Aktif!
                 </h3>
-                <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                  Pindai kode QR menggunakan Google Authenticator atau Authy, lalu masukkan 6 digit kode yang tampil.
+                <p className="text-xs text-content-muted mt-1.5 leading-relaxed max-w-sm mx-auto">
+                  Selamat <strong className="text-content-primary">{name}</strong>, akun admin Anda ({inviteEmail}) telah berhasil dibuat dan siap digunakan untuk mengelola panel web ForgePro.id.
                 </p>
               </div>
-
-              <div className="p-4 rounded-2xl bg-surface-hover/40 border border-border-subtle flex flex-col items-center justify-center gap-3">
-                <div className="w-36 h-36 rounded-2xl bg-white p-3 flex items-center justify-center shadow-md">
-                  <QrCode className="w-full h-full text-black" />
-                </div>
-                <div className="text-center space-y-0.5">
-                  <span className="text-[11px] text-content-muted block">Kunci Rahasia Manual:</span>
-                  <span className="font-mono font-bold text-xs text-[#9A7432] dark:text-[#D9B06F] tracking-wider select-all">
-                    FP2FA-4821-9920-ABCD
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-content-primary block text-center">
-                  Masukkan 6 Digit Kode Konfirmasi
-                </label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  required
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="123456"
-                  className="w-full px-4 py-3 rounded-xl border border-border-subtle bg-surface-main text-content-primary font-mono text-center text-lg tracking-[0.3em] font-bold focus:outline-none focus:border-[#D9B06F]"
-                />
-                <span className="text-[11px] text-content-muted block text-center">
-                  Demo Code: <button type="button" onClick={() => setTotpCode('123456')} className="text-[#D9B06F] hover:underline font-semibold">123456</button>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-4 py-2.5 rounded-xl font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary transition-colors text-xs"
-                >
-                  Kembali
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs flex items-center justify-center gap-2"
-                >
-                  <span>Verifikasi &amp; Lanjut</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* STEP 3: KODE CADANGAN SEKALI PAKAI */}
-          {step === 3 && (
-            <div className="space-y-4 text-xs">
-              <div>
-                <h3 className="font-serif text-2xl font-semibold text-content-primary">
-                  Kode Cadangan Sekali Pakai
-                </h3>
-                <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                  Jika Anda kehilangan akses ke aplikasi autentikator, gunakan salah satu kode cadangan ini untuk masuk ke akun Anda.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl bg-surface-hover/40 border border-border-subtle">
-                {BACKUP_CODES.map((code) => (
-                  <div
-                    key={code}
-                    className="p-2 rounded-lg bg-surface-card font-mono text-[11px] font-semibold text-content-primary text-center border border-border-subtle/70"
-                  >
-                    {code}
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDownloadBackupCodes}
-                className="w-full py-2.5 rounded-xl font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors flex items-center justify-center gap-2 text-xs"
-              >
-                <Download className="w-4 h-4 text-[#D9B06F]" />
-                <span>Unduh Kode Cadangan (.txt)</span>
-              </button>
 
               <button
                 type="button"
                 onClick={handleFinish}
+                disabled={isSubmitting}
                 className="w-full py-3 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Selesaikan Pendaftaran &amp; Masuk</span>
+                <span>{isSubmitting ? 'Memproses...' : 'Masuk ke Panel Dashboard'}</span>
               </button>
             </div>
           )}

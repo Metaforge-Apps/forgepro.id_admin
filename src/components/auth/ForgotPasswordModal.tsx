@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, KeyRound, ShieldCheck, CheckCircle2, AlertCircle, ArrowLeft, Send } from 'lucide-react';
+import { X, KeyRound, CheckCircle2, AlertCircle, ArrowLeft, Send } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { mockDb } from '../../mocks/db';
 
@@ -9,15 +9,14 @@ export interface ForgotPasswordModalProps {
 }
 
 /**
- * Modal Lupa Kata Sandi Admin (Fase 7: Item 34 & 36)
- * Alur: Email kerja -> Verifikasi 2FA (TOTP) -> Set Kata Sandi Baru (Min 12 Karakter + Kekuatan Sandi)
+ * Modal Lupa Kata Sandi Admin ForgePro.id
+ * Alur: Email kerja -> Set Kata Sandi Baru (Min 12 Karakter + Kekuatan Sandi) -> Sukses
  */
 export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps) {
   const { showToast } = useToast();
-  const [step, setStep] = useState<'email' | '2fa' | 'new-password' | 'success'>('email');
+  const [step, setStep] = useState<'email' | 'new-password' | 'success'>('email');
 
   const [email, setEmail] = useState('');
-  const [totpCode, setTotpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -44,7 +43,6 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
     if (open) {
       setStep('email');
       setEmail('');
-      setTotpCode('');
       setNewPassword('');
       setConfirmPassword('');
       setErrorMsg('');
@@ -60,17 +58,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
       setErrorMsg('Masukkan alamat email kerja yang valid.');
       return;
     }
-    showToast('Tautan verifikasi reset kata sandi dikirim. Silakan verifikasi 2FA.', 'info');
-    setStep('2fa');
-  };
-
-  const handleVerify2Fa = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-    if (totpCode.trim().length < 6) {
-      setErrorMsg('Kode 2FA TOTP harus 6 digit angka.');
-      return;
-    }
+    showToast('Tautan verifikasi valid. Silakan atur kata sandi baru.', 'info');
     setStep('new-password');
   };
 
@@ -89,7 +77,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
     mockDb.appendActivityLog({
       source: email,
       category: 'Admin',
-      activity: `Reset kata sandi berhasil melalui verifikasi 2FA · ${email}`,
+      activity: `Reset kata sandi berhasil · ${email}`,
       result: 'Berhasil',
       targetId: email,
     });
@@ -129,7 +117,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
                 Lupa Kata Sandi
               </h3>
               <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                Masukkan email kerja admin ForgePro.id Anda untuk menerima tautan pemulihan sekali pakai (berlaku 30 menit).
+                Masukkan email kerja admin ForgePro.id Anda untuk verifikasi identitas dan membuat kata sandi baru.
               </p>
             </div>
 
@@ -159,73 +147,12 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
               className="w-full py-3 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm flex items-center justify-center gap-2 text-xs"
             >
               <Send className="w-4 h-4" />
-              <span>Kirim Tautan Verifikasi</span>
+              <span>Verifikasi Email &amp; Lanjut</span>
             </button>
           </form>
         )}
 
-        {/* STEP 2: VERIFIKASI 2FA TOTP */}
-        {step === '2fa' && (
-          <form onSubmit={handleVerify2Fa} className="space-y-4 text-xs">
-            <div className="w-12 h-12 rounded-2xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] mb-3">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-
-            <div>
-              <h3 className="font-serif text-2xl font-semibold text-content-primary">
-                Verifikasi 2FA (TOTP)
-              </h3>
-              <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                Masukkan 6 digit kode dari aplikasi autentikator (Google Authenticator / Authy) untuk <strong className="text-content-primary">{email}</strong>.
-              </p>
-            </div>
-
-            {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="font-semibold text-content-primary">
-                Kode Autentikator 6 Digit
-              </label>
-              <input
-                type="text"
-                maxLength={6}
-                required
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                className="w-full px-4 py-3 rounded-xl border border-border-subtle bg-surface-main text-content-primary font-mono text-center text-lg tracking-[0.3em] font-bold focus:outline-none focus:border-[#D9B06F]"
-              />
-              <span className="text-[11px] text-content-muted block text-center mt-1">
-                Demo Code: <button type="button" onClick={() => setTotpCode('123456')} className="text-[#D9B06F] hover:underline font-semibold">123456</button>
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setStep('email')}
-                className="px-4 py-2.5 rounded-xl font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary transition-colors text-xs inline-flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Kembali</span>
-              </button>
-
-              <button
-                type="submit"
-                className="flex-1 py-2.5 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs"
-              >
-                Verifikasi Identitas
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* STEP 3: INPUT KATA SANDI BARU */}
+        {/* STEP 2: INPUT KATA SANDI BARU */}
         {step === 'new-password' && (
           <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
             <div>
@@ -233,7 +160,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
                 Buat Kata Sandi Baru
               </h3>
               <p className="text-xs text-content-muted mt-1 leading-relaxed">
-                Kata sandi wajib minimal 12 karakter dan memuat kombinasi huruf besar, angka, serta simbol.
+                Atur kata sandi baru untuk akun <strong className="text-content-primary">{email}</strong>. Minimal 12 karakter.
               </p>
             </div>
 
@@ -290,16 +217,27 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
               />
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs mt-2"
-            >
-              Simpan Kata Sandi Baru
-            </button>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep('email')}
+                className="px-4 py-2.5 rounded-xl font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary transition-colors text-xs inline-flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali</span>
+              </button>
+
+              <button
+                type="submit"
+                className="flex-1 py-2.5 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs"
+              >
+                Simpan Kata Sandi Baru
+              </button>
+            </div>
           </form>
         )}
 
-        {/* STEP 4: SUKSES */}
+        {/* STEP 3: SUKSES */}
         {step === 'success' && (
           <div className="text-center py-4 space-y-4">
             <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 mx-auto">

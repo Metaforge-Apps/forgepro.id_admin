@@ -111,34 +111,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                      [scrollbar-width:none]
                      [&::-webkit-scrollbar]:hidden"
         >
-          {NAVIGATION_SECTIONS.map((section) => {
-            const accessibleItems = section.items.filter((item) =>
-              canAccessRoute(item.path)
-            );
-            if (accessibleItems.length === 0) return null;
+          {NAVIGATION_SECTIONS.map((section) => (
+            <div key={section.title} className="flex flex-col gap-1.5">
+              <span
+                className="mb-1 select-none px-1.5
+                           text-[11px] font-semibold uppercase
+                           tracking-[0.15em] text-content-muted"
+              >
+                {section.title}
+              </span>
 
-            return (
-              <div key={section.title} className="flex flex-col gap-1.5">
-                <span
-                  className="mb-1 select-none px-1.5
-                             text-[11px] font-semibold uppercase
-                             tracking-[0.15em] text-content-muted"
-                >
-                  {section.title}
-                </span>
-
-                <div className="flex flex-col gap-1">
-                  {accessibleItems.map((item) => (
-                    <SidebarItem
-                      key={item.id}
-                      item={item}
-                      onClick={() => onClose?.()}
-                    />
-                  ))}
-                </div>
+              <div className="flex flex-col gap-1">
+                {section.items.map((item) => (
+                  <SidebarItem
+                    key={item.id}
+                    item={item}
+                    onClick={() => onClose?.()}
+                  />
+                ))}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </nav>
 
         {/* Logout */}

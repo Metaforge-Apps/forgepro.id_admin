@@ -7,13 +7,23 @@ import {
   Lock,
   Info,
   CheckCircle2,
+  AlertCircle,
   X
 } from 'lucide-react';
+import { PrivacyRetentionTab } from '../components/settings/PrivacyRetentionTab';
+import { MessageTemplatesTab } from '../components/settings/MessageTemplatesTab';
+import { LegalContentTab } from '../components/settings/LegalContentTab';
+import { FlutterAppTab } from '../components/settings/FlutterAppTab';
+import { IntegrationsExpandedTab } from '../components/settings/IntegrationsExpandedTab';
 
 const SETTINGS_TABS = [
   'Umum',
   'Pembayaran',
   'Cetak & pengiriman',
+  'Privasi & UU PDP',
+  'Template Pesan',
+  'Konten & Legal',
+  'Aplikasi Flutter',
   'Keamanan',
   'Integrasi',
 ];
@@ -157,38 +167,12 @@ export function SettingsPage() {
   const [logSensitiveActivity, setLogSensitiveActivity] = useState<boolean>(true);
   const [windowsSessionActive, setWindowsSessionActive] = useState<boolean>(true);
 
-  // =====================================================================
-  // TAB 5: INTEGRASI STATES
-  // =====================================================================
-  const [apiPackageId, setApiPackageId] = useState<string>('id.forgepro.android');
-  const [serverCredential, setServerCredential] = useState<string>('••••••••••••••••');
-  const [apiConnected, setApiConnected] = useState<boolean>(false);
+  const [toastTone, setToastTone] = useState<'success' | 'danger' | 'warning' | 'info'>('success');
 
-  const [rtdnTopic, setRtdnTopic] = useState<string>(
-    'projects/forgepro-demo/topics/play-rtdn'
-  );
-  const [rtdnSubscription, setRtdnSubscription] = useState<string>(
-    'projects/forgepro-demo/subscriptions/play-rtdn-sub'
-  );
-  const [rtdnPushEndpoint, setRtdnPushEndpoint] = useState<string>(
-    'https://api.forgepro.example/google/rtdn'
-  );
-
-  const [appWebhookUrl, setAppWebhookUrl] = useState<string>(
-    'https://ops.forgepro.example/webhooks/forgepro'
-  );
-  const [webhookSigningSecret, setWebhookSigningSecret] =
-    useState<string>('••••••••••••••••');
-  const [eventOrderDigital, setEventOrderDigital] = useState<boolean>(true);
-  const [eventPrintShipping, setEventPrintShipping] = useState<boolean>(true);
-
-  const [maxRetries, setMaxRetries] = useState<string>('5 kali');
-  const [responseTimeout, setResponseTimeout] = useState<string>('10 detik');
-  const [alertAllRetriesFailed, setAlertAllRetriesFailed] = useState<boolean>(true);
-
-  const showToast = (msg: string) => {
+  const showToast = (msg: string, tone: 'success' | 'danger' | 'warning' | 'info' = 'success') => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
+    setToastTone(tone);
+    setTimeout(() => setToastMessage(''), 3500);
   };
 
   // Listen to Header "Batalkan" & "Simpan perubahan" buttons
@@ -196,9 +180,9 @@ export function SettingsPage() {
     const handleHeaderAction = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail === 'settings-save') {
-        showToast('Perubahan pengaturan berhasil disimpan dan dicatat ke log.');
+        showToast('Perubahan pengaturan berhasil disimpan dan dicatat ke log.', 'success');
       } else if (customEvent.detail === 'settings-cancel') {
-        showToast('Perubahan dibatalkan dan dikembalikan ke nilai semula.');
+        showToast('Perubahan dibatalkan. Data dikembalikan ke versi tersimpan.', 'danger');
       }
     };
     window.addEventListener('forgepro-action', handleHeaderAction);
@@ -207,11 +191,25 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Feedback Toast Banner */}
+      {/* Feedback Toast Banner Sesuai Aturan Warna 0.5 */}
       {toastMessage && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium animate-fade-in">
+        <div
+          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-xs font-medium animate-fade-in ${
+            toastTone === 'danger'
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+              : toastTone === 'warning'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+              : toastTone === 'info'
+              ? 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400'
+              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            {toastTone === 'danger' || toastTone === 'warning' ? (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            )}
             <span>{toastMessage}</span>
           </div>
           <button
@@ -1592,392 +1590,38 @@ export function SettingsPage() {
       )}
 
       {/* ================================================================= */}
-      {/* TAB 5: INTEGRASI                                                  */}
+      {/* TAB 4: PRIVASI & UU PDP                                           */}
+      {/* ================================================================= */}
+      {activeTab === 'Privasi & UU PDP' && (
+        <PrivacyRetentionTab onShowToast={showToast} />
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB 5: TEMPLATE PESAN                                             */}
+      {/* ================================================================= */}
+      {activeTab === 'Template Pesan' && (
+        <MessageTemplatesTab onShowToast={showToast} />
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB 6: KONTEN & LEGAL                                             */}
+      {/* ================================================================= */}
+      {activeTab === 'Konten & Legal' && (
+        <LegalContentTab onShowToast={showToast} />
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB 7: APLIKASI FLUTTER                                           */}
+      {/* ================================================================= */}
+      {activeTab === 'Aplikasi Flutter' && (
+        <FlutterAppTab onShowToast={showToast} />
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB 9: INTEGRASI                                                  */}
       {/* ================================================================= */}
       {activeTab === 'Integrasi' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* KOLOM KIRI (7 Kolom) */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
-            {/* Card 1: Google Play Developer API */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-content-primary">
-                  Google Play Developer API
-                </h2>
-                {isMockMode() && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                    Demo
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Verifikasi detail pembelian dan acknowledgment dilakukan oleh
-                backend, bukan dari aplikasi klien.
-              </p>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Package ID
-                  </label>
-                  <input
-                    type="text"
-                    value={apiPackageId}
-                    onChange={(e) => setApiPackageId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Kredensial server
-                  </label>
-                  <input
-                    type="text"
-                    value={serverCredential}
-                    onChange={(e) => setServerCredential(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary tracking-widest focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                  <span className="text-content-muted leading-relaxed mt-0.5">
-                    Contoh tampilan tersamarkan. Belum ada kredensial nyata
-                    tersimpan; kelola hanya di penyimpanan rahasia server.
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="font-semibold text-content-primary">
-                    Koneksi API
-                  </span>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                      apiConnected
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                        : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30'
-                    }`}
-                  >
-                    {apiConnected ? 'Terhubung • demo' : 'Belum terhubung'}
-                  </span>
-                </div>
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setApiConnected(!apiConnected);
-                      showToast(
-                        !apiConnected
-                          ? 'Simulasi verifikasi Google Play Developer API berhasil.'
-                          : 'Status koneksi API dikembalikan ke belum terhubung.'
-                      );
-                    }}
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
-                  >
-                    Uji verifikasi demo
-                  </button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Card 2: RTDN • Cloud Pub/Sub */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-content-primary">
-                  RTDN • Cloud Pub/Sub
-                </h2>
-                {isMockMode() && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                    Demo
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Notifikasi perubahan pembelian dari Google Play. Seluruh nilai
-                berikut adalah contoh konfigurasi.
-              </p>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Topic Google Cloud
-                  </label>
-                  <input
-                    type="text"
-                    value={rtdnTopic}
-                    onChange={(e) => setRtdnTopic(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Subscription backend
-                  </label>
-                  <input
-                    type="text"
-                    value={rtdnSubscription}
-                    onChange={(e) => setRtdnSubscription(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Endpoint push terautentikasi
-                  </label>
-                  <input
-                    type="text"
-                    value={rtdnPushEndpoint}
-                    onChange={(e) => setRtdnPushEndpoint(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                  <span className="text-content-muted leading-relaxed mt-0.5">
-                    Batasi publisher ke layanan Google Play yang berwenang.
-                    Backend memverifikasi identitas push dan memproses pesan
-                    secara idempoten.
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="font-semibold text-content-primary">
-                    Pesan uji
-                  </span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                    Diterima • simulasi
-                  </span>
-                </div>
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      showToast(
-                        'Notifikasi uji RTDN berhasil dikirim ke endpoint simulasi.'
-                      )
-                    }
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
-                  >
-                    Kirim notifikasi uji demo
-                  </button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Info Notice */}
-            <div className="flex items-start gap-2.5 px-1">
-              <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-content-primary">
-                  RTDN bukan sumber hak akses tunggal
-                </span>
-                <p className="text-xs text-content-muted leading-relaxed">
-                  RTDN memberi sinyal perubahan. Backend kemudian memverifikasi
-                  detail dan status pembelian melalui Google Play Developer API
-                  sebelum memperbarui hak akses.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* KOLOM KANAN (5 Kolom) */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
-            {/* Card 1: Webhook aplikasi */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-content-primary">
-                  Webhook aplikasi
-                </h2>
-                {isMockMode() && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                    Demo
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Kirim peristiwa bisnis ke sistem internal. Tidak ada pengiriman
-                langsung pada konfigurasi contoh ini.
-              </p>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    URL tujuan webhook
-                  </label>
-                  <input
-                    type="text"
-                    value={appWebhookUrl}
-                    onChange={(e) => setAppWebhookUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Secret penandatanganan
-                  </label>
-                  <input
-                    type="text"
-                    value={webhookSigningSecret}
-                    onChange={(e) => setWebhookSigningSecret(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary tracking-widest focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                  <span className="text-content-muted leading-relaxed mt-0.5">
-                    Secret tidak pernah ditampilkan utuh. Validasi tanda tangan
-                    dan timestamp di penerima.
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2 pt-1">
-                  <span className="font-semibold text-content-primary">
-                    Peristiwa yang dikirim
-                  </span>
-
-                  <div className="divide-y divide-border-subtle/60">
-                    <div className="py-3 flex items-center justify-between gap-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-content-primary">
-                          Pesanan &amp; pembelian digital
-                        </span>
-                        <span className="text-content-muted">
-                          order.created • purchase.verified • purchase.refunded
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        checked={eventOrderDigital}
-                        onChange={setEventOrderDigital}
-                      />
-                    </div>
-
-                    <div className="py-3 border-b border-border-subtle/60 flex items-center justify-between gap-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-content-primary">
-                          Produksi &amp; pengiriman
-                        </span>
-                        <span className="text-content-muted">
-                          print.completed • shipment.updated • shipment.failed
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        checked={eventPrintShipping}
-                        onChange={setEventPrintShipping}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      showToast(
-                        'Webhook uji demo berhasil dikirim (Respons: 200 OK).'
-                      )
-                    }
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
-                  >
-                    Kirim webhook uji demo
-                  </button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Card 2: Percobaan ulang & log */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <h2 className="text-base font-semibold text-content-primary">
-                Percobaan ulang &amp; log
-              </h2>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Maksimum percobaan
-                    </label>
-                    <input
-                      type="text"
-                      value={maxRetries}
-                      onChange={(e) => setMaxRetries(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Batas waktu respons
-                    </label>
-                    <input
-                      type="text"
-                      value={responseTimeout}
-                      onChange={(e) => setResponseTimeout(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <p className="text-content-muted leading-relaxed">
-                  Jeda bertahap: 1, 5, 15, lalu 60 menit. Respons 2xx dianggap
-                  berhasil; gunakan ID peristiwa untuk mencegah pemrosesan
-                  ganda.
-                </p>
-
-                <div className="py-3.5 border-t border-b border-border-subtle/60 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      Peringatan seluruh percobaan gagal
-                    </span>
-                    <span className="text-content-muted leading-relaxed">
-                      Kirim pemberitahuan ke halo@forgepro.id dan catat kegagalan
-                      untuk ditinjau admin.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={alertAllRetriesFailed}
-                    onChange={setAlertAllRetriesFailed}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-semibold text-content-primary">
-                    Catatan uji • data simulasi
-                  </span>
-                  <span className="text-content-muted">
-                    21 Okt 2026, 09.30 WIB • RTDN diterima
-                  </span>
-                  <span className="text-content-muted">
-                    21 Okt 2026, 09.31 WIB • Webhook uji: 200 OK
-                  </span>
-                </div>
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/log-aktivitas')}
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
-                  >
-                    Buka Log Aktivitas &amp; Webhook
-                  </button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Info Notice */}
-            <div className="flex items-start gap-2.5 px-1">
-              <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-content-primary">
-                  Rahasia tetap di server
-                </span>
-                <p className="text-xs text-content-muted leading-relaxed">
-                  Jangan simpan JSON service account atau private key di
-                  aplikasi. Semua status koneksi dan log di halaman ini adalah
-                  contoh, bukan koneksi layanan nyata.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <IntegrationsExpandedTab onShowToast={showToast} />
       )}
 
       {/* Modal Ubah Kata Sandi */}

@@ -16,6 +16,10 @@ import {
   Sparkles,
   LayoutGrid,
   Grid3x3,
+  AlertTriangle,
+  Layers,
+  Play,
+  RotateCcw,
 } from 'lucide-react';
 import {
   useStyleController,
@@ -48,6 +52,23 @@ const ASPECT_LABELS: Record<CardAspectMode, { label: string; icon: React.ReactNo
   '16:9': { label: '16:9 Lanskap', icon: <Monitor className="w-3.5 h-3.5" /> },
   '1:1': { label: '1:1 Persegi', icon: <Square className="w-3.5 h-3.5" /> },
 };
+
+function lintPrompt(prompt?: string): { hasWarning: boolean; flaggedWords: string[] } {
+  if (!prompt) return { hasWarning: false, flaggedWords: [] };
+  const patterns = [
+    /\b(\d{1,2}-year-old|\d{1,2}\s*years?\s*old)\b/gi,
+    /\b(asian|caucasian|african|latino|fair\s*skin|dark\s*skin|white\s*skin|complexion)\b/gi,
+    /\b(beautiful\s*face|handsome|wrinkles?|freckles?|blue\s*eyes|brown\s*eyes)\b/gi,
+  ];
+  const flagged: string[] = [];
+  for (const p of patterns) {
+    const matches = prompt.match(p);
+    if (matches) {
+      flagged.push(...matches);
+    }
+  }
+  return { hasWarning: flagged.length > 0, flaggedWords: Array.from(new Set(flagged)) };
+}
 
 export function SuitCatalogPage() {
   const navigate = useNavigate();
@@ -547,6 +568,19 @@ export function SuitCatalogPage() {
                   <p className="text-xs text-content-muted leading-relaxed">
                     {previewSuit.description}
                   </p>
+                )}
+
+                {/* Linter Warning Banner */}
+                {lintPrompt(previewSuit.prompt).hasWarning && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Prompt Perlu Ditinjau (Linter FLUX)</span>
+                    </div>
+                    <p className="text-[11px] text-content-muted leading-relaxed">
+                      Terdeteksi deskripsi identitas biometrik: <span className="font-semibold text-amber-500">{lintPrompt(previewSuit.prompt).flaggedWords.join(', ')}</span>. Sarankan hanya mendeskripsikan pakaian jas, tekstur kain, latar studio, dan pencahayaan agar tidak mengubah wajah asli pelanggan.
+                    </p>
+                  </div>
                 )}
 
                 {/* Prompt AI */}

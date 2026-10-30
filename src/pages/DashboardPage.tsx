@@ -3,11 +3,12 @@ import { StatCard } from '../components/dashboard/StatCard';
 import { RevenueChart } from '../components/dashboard/RevenueChart';
 import { TopPackages } from '../components/dashboard/TopPackages';
 import { RecentTransactionsTable } from '../components/dashboard/RecentTransactionsTable';
+import { ActionItemsAndSystemStatus } from '../components/dashboard/ActionItemsAndSystemStatus';
 import { useCentralStore } from '../mocks/selectors';
 
 /**
  * Dashboard Main Page
- * Menyusun 4 stat cards, grafik pendapatan, paket terlaris, dan tabel transaksi
+ * Menyusun 4 stat cards, kartu tindakan cepat & status sistem, grafik pendapatan, paket terlaris, dan tabel transaksi
  * Seluruh angka dihitung dari satu sumber data terpusat (src/mocks/db.ts).
  */
 export function DashboardPage() {
@@ -43,7 +44,10 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Row 2: Grafik Pendapatan & Paket Terlaris */}
+      {/* Row 2: Perlu Tindakan & Indikator Status Sistem */}
+      <ActionItemsAndSystemStatus />
+
+      {/* Row 3: Grafik Pendapatan & Paket Terlaris */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left: Kurva Pendapatan (7 Kolom pada Desktop) */}
         <div className="lg:col-span-7">

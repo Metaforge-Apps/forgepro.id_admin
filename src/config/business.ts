@@ -190,6 +190,10 @@ export const BUSINESS_CONFIG = {
   selfieRetentionHours: 24,
   selfieRetentionLabel: '24 jam',
   pdpComplianceLaw: 'UU PDP No. 27 Tahun 2022',
+  retentionPolicy: {
+    selfieRetentionHours: 24,
+    aiResultRetentionDays: 14,
+  },
 
   /** Sesi idle admin otomatis keluar setelah 30 menit */
   adminIdleTimeoutMinutes: 30,
@@ -408,3 +412,11 @@ export function getCourierTrackingUrl(courier: string, trackingNumber: string): 
 export function isMockMode(): boolean {
   return import.meta.env.VITE_USE_MOCK !== 'false';
 }
+
+export {
+  formatTanggalWIB,
+  maskEmail,
+  maskPhone,
+  formatRupiah,
+  formatNomorPesanan,
+} from '../utils/formatters';

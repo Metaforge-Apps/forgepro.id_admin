@@ -7,12 +7,15 @@ import {
   RotateCcw,
   UserPlus,
   Check,
+  Search,
 } from 'lucide-react';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { useLocation, Link } from 'react-router-dom';
 import { isMockMode } from '../../config/business';
 import { BRAND_CONFIG } from '../../config/branding';
 import { DIRTY_STATE_EVENT } from '../common/DirtyGuard';
+import { GlobalSearchModal } from './GlobalSearchModal';
+import { NotificationBell } from './NotificationBell';
 
 /** Halaman yang memakai tombol Simpan di header dan mengikuti status "dirty". */
 const DIRTY_AWARE_PATHS = ['/pengaturan', '/profil'];
@@ -265,8 +268,20 @@ export interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const location = useLocation();
-  const [dashboardPeriod, setDashboardPeriod] =
-    useState<DashboardPeriodKey>('Minggu');
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [dashboardPeriod, setDashboardPeriod] = useState<DashboardPeriodKey>('Minggu');
+
+  // Shortcut Ctrl+K / Cmd+K untuk Global Search Modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const isDashboard = location.pathname === '/dashboard';
   const isDirtyAwarePage = DIRTY_AWARE_PATHS.includes(location.pathname);
@@ -347,8 +362,25 @@ export function Header({ onMenuClick }: HeaderProps) {
             </p>
           </div>
 
-          {/* Sisi Kanan Header: Button Light/Dark + Pill Periode (Dashboard) atau Action Buttons */}
+          {/* Sisi Kanan Header: Quick Search (Ctrl+K), Notifikasi, ThemeToggle, Pill Periode / Action Buttons */}
           <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
+            {/* Tombol Pencarian Cepat Global (Ctrl+K) */}
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs bg-surface-card border border-border-subtle text-content-muted hover:text-content-primary hover:border-border-card transition-colors select-none"
+              title="Pencarian Global (Ctrl+K)"
+            >
+              <Search className="w-3.5 h-3.5 text-[#D9B06F]" />
+              <span className="hidden md:inline">Cari data...</span>
+              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-hover border border-border-subtle text-content-muted">
+                Ctrl K
+              </kbd>
+            </button>
+
+            {/* Pusat Notifikasi Lonceng */}
+            <NotificationBell />
+
             <ThemeToggle />
 
             {isDirtyAwarePage && isPageDirty && (
@@ -439,6 +471,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* Global Search Modal (Ctrl+K) */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 }

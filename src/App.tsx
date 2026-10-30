@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/common/Toast';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { PrintingShippingPage } from './pages/PrintingShippingPage';
@@ -22,6 +23,7 @@ import { ActivityLogsPage } from './pages/ActivityLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminProfilePage } from './pages/AdminProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { RequirePermission } from './components/common/RequirePermission';
 
 /**
  * Route Guard untuk modul admin ForgePro.id
@@ -50,6 +52,9 @@ export function App() {
                 {/* Halaman Autentikasi Login */}
                 <Route path="/login" element={<LoginPage />} />
 
+                {/* Halaman Terima Undangan Anggota Tim Admin Baru */}
+                <Route path="/terima-undangan" element={<AcceptInvitePage />} />
+
                 {/* Halaman Admin Dashboard Shell */}
                 <Route
                   element={
@@ -61,22 +66,106 @@ export function App() {
                   <Route path="/dashboard" element={<DashboardPage />} />
 
                   {/* Halaman Operasional */}
-                  <Route path="/pesanan" element={<OrdersPage />} />
-                  <Route path="/cetak-pengiriman" element={<PrintingShippingPage />} />
+                  <Route
+                    path="/pesanan"
+                    element={
+                      <RequirePermission path="/pesanan">
+                        <OrdersPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/cetak-pengiriman"
+                    element={
+                      <RequirePermission path="/cetak-pengiriman">
+                        <PrintingShippingPage />
+                      </RequirePermission>
+                    }
+                  />
 
-                  {/* Halaman Katalog & Produk (Dikelola oleh style-controller & package-controller) */}
-                  <Route path="/katalog-jas" element={<SuitCatalogPage />} />
-                  <Route path="/katalog-jas/tambah" element={<AddSuitPage />} />
-                  <Route path="/katalog-jas/edit" element={<EditSuitPage />} />
-                  <Route path="/paket-harga" element={<PricingPackagesPage />} />
-                  <Route path="/paket-harga/tambah" element={<AddPackagePage />} />
-                  <Route path="/paket-harga/edit" element={<EditPackagePage />} />
-                  <Route path="/voucher-promo" element={<VouchersPage />} />
+                  {/* Halaman Katalog & Produk */}
+                  <Route
+                    path="/katalog-jas"
+                    element={
+                      <RequirePermission path="/katalog-jas">
+                        <SuitCatalogPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/katalog-jas/tambah"
+                    element={
+                      <RequirePermission path="/katalog-jas/tambah">
+                        <AddSuitPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/katalog-jas/edit"
+                    element={
+                      <RequirePermission path="/katalog-jas/edit">
+                        <EditSuitPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/paket-harga"
+                    element={
+                      <RequirePermission path="/paket-harga">
+                        <PricingPackagesPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/paket-harga/tambah"
+                    element={
+                      <RequirePermission path="/paket-harga/tambah">
+                        <AddPackagePage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/paket-harga/edit"
+                    element={
+                      <RequirePermission path="/paket-harga/edit">
+                        <EditPackagePage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/voucher-promo"
+                    element={
+                      <RequirePermission path="/voucher-promo">
+                        <VouchersPage />
+                      </RequirePermission>
+                    }
+                  />
 
                   {/* Halaman Sistem & Profil Admin Utama */}
-                  <Route path="/manajemen-admin" element={<AdminManagementPage />} />
-                  <Route path="/log-aktivitas" element={<ActivityLogsPage />} />
-                  <Route path="/pengaturan" element={<SettingsPage />} />
+                  <Route
+                    path="/manajemen-admin"
+                    element={
+                      <RequirePermission path="/manajemen-admin">
+                        <AdminManagementPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/log-aktivitas"
+                    element={
+                      <RequirePermission path="/log-aktivitas">
+                        <ActivityLogsPage />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/pengaturan"
+                    element={
+                      <RequirePermission path="/pengaturan">
+                        <SettingsPage />
+                      </RequirePermission>
+                    }
+                  />
                   <Route path="/profil" element={<AdminProfilePage />} />
                 </Route>
 

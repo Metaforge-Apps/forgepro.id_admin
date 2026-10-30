@@ -5,6 +5,7 @@ import { SidebarItem } from './SidebarItem';
 import { Logo } from '../common/Logo';
 import { BRAND_CONFIG } from '../../config/branding';
 import { useAuth } from '../../context/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export interface SidebarProps {
@@ -14,6 +15,7 @@ export interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { canAccessRoute, currentRole } = usePermission();
   const navigate = useNavigate();
   const location = useLocation();
   const isProfileActive = location.pathname === '/profil';
@@ -95,8 +97,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <span className="text-xs font-semibold text-content-primary leading-tight truncate">
                 {adminName}
               </span>
-              <span className="text-[11px] text-content-muted leading-tight mt-0.5 truncate">
-                ForgePro.id Admin
+              <span className="text-[11px] text-[#D9B06F] font-medium leading-tight mt-0.5 truncate">
+                {currentRole}
               </span>
             </div>
           </button>
@@ -109,27 +111,34 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                      [scrollbar-width:none]
                      [&::-webkit-scrollbar]:hidden"
         >
-          {NAVIGATION_SECTIONS.map((section) => (
-            <div key={section.title} className="flex flex-col gap-1.5">
-              <span
-                className="mb-1 select-none px-1.5
-                           text-[11px] font-semibold uppercase
-                           tracking-[0.15em] text-content-muted"
-              >
-                {section.title}
-              </span>
+          {NAVIGATION_SECTIONS.map((section) => {
+            const accessibleItems = section.items.filter((item) =>
+              canAccessRoute(item.path)
+            );
+            if (accessibleItems.length === 0) return null;
 
-              <div className="flex flex-col gap-1">
-                {section.items.map((item) => (
-                  <SidebarItem
-                    key={item.id}
-                    item={item}
-                    onClick={() => onClose?.()}
-                  />
-                ))}
+            return (
+              <div key={section.title} className="flex flex-col gap-1.5">
+                <span
+                  className="mb-1 select-none px-1.5
+                             text-[11px] font-semibold uppercase
+                             tracking-[0.15em] text-content-muted"
+                >
+                  {section.title}
+                </span>
+
+                <div className="flex flex-col gap-1">
+                  {accessibleItems.map((item) => (
+                    <SidebarItem
+                      key={item.id}
+                      item={item}
+                      onClick={() => onClose?.()}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Logout */}

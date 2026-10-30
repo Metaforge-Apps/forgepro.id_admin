@@ -180,6 +180,103 @@ export function PricingPackagesPage() {
         </div>
       </Card>
 
+      {/* Simulasi Biaya Unit & Estimasi Margin (Fase 4: Item 20) */}
+      <Card padding="p-6 sm:p-7" className="flex flex-col gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-content-primary">
+              Simulasi Biaya Unit &amp; Estimasi Margin Paket
+            </h3>
+            <span className="text-xs text-content-muted">
+              Dihitung otomatis: Potongan Google Play (15%) + Biaya Fal.ai FLUX (Rp175/foto) + Cloud Storage
+            </span>
+          </div>
+          <span className="self-start sm:self-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+            ✓ Seluruh Margin Paket Sehat (&gt; 75%)
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Esensial */}
+          <div className="p-4 rounded-xl bg-surface-hover/30 border border-border-subtle space-y-3 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-content-primary text-sm">Paket Esensial</span>
+              <span className="font-mono font-bold text-content-primary">Rp59.000</span>
+            </div>
+            <div className="space-y-1.5 text-content-muted pt-2 border-t border-border-subtle/60">
+              <div className="flex justify-between">
+                <span>Fee Google Play (15%):</span>
+                <span>-Rp8.850</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Biaya FLUX (12 foto):</span>
+                <span>-Rp2.100</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Storage &amp; Server:</span>
+                <span>-Rp500</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border-subtle font-bold text-content-primary">
+                <span>Laba Bersih / Unit:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Rp47.550 (80,6%)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Profesional */}
+          <div className="p-4 rounded-xl bg-[#D9B06F]/5 border border-[#D9B06F]/30 space-y-3 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-content-primary text-sm">Paket Profesional</span>
+              <span className="font-mono font-bold text-[#9A7432] dark:text-[#D9B06F]">Rp99.000</span>
+            </div>
+            <div className="space-y-1.5 text-content-muted pt-2 border-t border-border-subtle/60">
+              <div className="flex justify-between">
+                <span>Fee Google Play (15%):</span>
+                <span>-Rp14.850</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Biaya FLUX (24 foto):</span>
+                <span>-Rp4.200</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Storage &amp; Server:</span>
+                <span>-Rp1.000</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border-subtle font-bold text-content-primary">
+                <span>Laba Bersih / Unit:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Rp78.950 (79,7%)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Eksklusif */}
+          <div className="p-4 rounded-xl bg-surface-hover/30 border border-border-subtle space-y-3 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-content-primary text-sm">Paket Eksklusif</span>
+              <span className="font-mono font-bold text-content-primary">Rp169.000</span>
+            </div>
+            <div className="space-y-1.5 text-content-muted pt-2 border-t border-border-subtle/60">
+              <div className="flex justify-between">
+                <span>Fee Google Play (15%):</span>
+                <span>-Rp25.350</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Biaya FLUX (48 foto):</span>
+                <span>-Rp8.400</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Storage &amp; Server:</span>
+                <span>-Rp2.000</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border-subtle font-bold text-content-primary">
+                <span>Laba Bersih / Unit:</span>
+                <span className="text-emerald-600 dark:text-emerald-400">Rp133.250 (78,8%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Bottom Info Notice: Google Play Billing */}
       <div className="flex items-start gap-2.5 px-1 pt-1">
         <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />

@@ -28,6 +28,8 @@ import {
   SuitStyleItem,
   SuitAspectRatio,
 } from '../controllers/style-controller';
+import { useToast } from '../components/common/Toast';
+import { mockDb } from '../mocks/db';
 
 type CardAspectMode = '3:4' | '9:16' | '16:9' | '1:1';
 type ImageFitMode = 'cover' | 'contain';
@@ -72,6 +74,7 @@ function lintPrompt(prompt?: string): { hasWarning: boolean; flaggedWords: strin
 
 export function SuitCatalogPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const {
     filteredSuits,
     categoryTabs,
@@ -89,7 +92,19 @@ export function SuitCatalogPage() {
     handleToggleStatus,
     handleConfirmDelete,
     getStatusBadgeStyle,
+    createStyle,
+    updateStyle,
   } = useStyleController();
+
+  // Test Generate AI state
+  const [testGenerateSuit, setTestGenerateSuit] = useState<SuitStyleItem | null>(null);
+  const [isGeneratingTest, setIsGeneratingTest] = useState<boolean>(false);
+  const [testStep, setTestStep] = useState<number>(0);
+  const [testResultUrl, setTestResultUrl] = useState<string | null>(null);
+  const [sampleGender, setSampleGender] = useState<'pria' | 'wanita'>('pria');
+
+  // Prompt Version History state
+  const [promptVersionSuit, setPromptVersionSuit] = useState<SuitStyleItem | null>(null);
 
   // Pengaturan tampilan kartu & grid (tersimpan di localStorage)
   const [gridCols, setGridCols] = useState<GridColsMode>(() => {
@@ -152,6 +167,71 @@ export function SuitCatalogPage() {
       setTimeout(() => setCopiedPrompt(false), 2000);
     } catch {
       // ignore
+    }
+  };
+
+  const handleDuplicate = (suit: SuitStyleItem) => {
+    createStyle({
+      name: `${suit.name} (Salinan)`,
+      category: suit.category,
+      description: suit.description,
+      image: suit.image,
+      prompt: suit.prompt,
+      aspectRatio: suit.aspectRatio,
+      tags: [...(suit.tags || [])],
+      status: 'Draf',
+    });
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Katalog',
+      activity: `Menduplikasi gaya jas: ${suit.name} -> ${suit.name} (Salinan)`,
+      result: 'Berhasil',
+      targetId: suit.id,
+    });
+    showToast(`Gaya "${suit.name}" berhasil diduplikasi ke draf`, 'success');
+  };
+
+  const handleRunTestGenerate = (suit: SuitStyleItem) => {
+    setIsGeneratingTest(true);
+    setTestStep(1);
+    setTestResultUrl(null);
+
+    const stepInterval = setInterval(() => {
+      setTestStep((prev) => {
+        if (prev >= 28) {
+          clearInterval(stepInterval);
+          setIsGeneratingTest(false);
+          // Set result image based on gender
+          const res = sampleGender === 'wanita' ? '/images/templates/women/template-1.png' : suit.image;
+          setTestResultUrl(res);
+          mockDb.appendActivityLog({
+            source: 'Admin Utama',
+            category: 'AI',
+            activity: `Simulasi tes generate Fal.ai FLUX untuk gaya "${suit.name}" (${sampleGender})`,
+            result: 'Berhasil',
+            targetId: suit.id,
+          });
+          showToast(`Tes generate FLUX untuk ${suit.name} berhasil (28 steps, 2.8s)`, 'success');
+          return 28;
+        }
+        return prev + 4;
+      });
+    }, 180);
+  };
+
+  const handleRestorePromptVersion = (suit: SuitStyleItem, restoredPrompt: string, versionNumber: number) => {
+    updateStyle(suit.id, { prompt: restoredPrompt });
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Katalog',
+      activity: `Mengembalikan prompt gaya "${suit.name}" ke versi v${versionNumber}`,
+      result: 'Berhasil',
+      targetId: suit.id,
+    });
+    showToast(`Prompt "${suit.name}" berhasil dikembalikan ke versi v${versionNumber}`, 'success');
+    setPromptVersionSuit(null);
+    if (previewSuit && previewSuit.id === suit.id) {
+      setPreviewSuit({ ...previewSuit, prompt: restoredPrompt });
     }
   };
 
@@ -628,6 +708,43 @@ export function SuitCatalogPage() {
                     ))}
                   </div>
                 )}
+
+                {/* Quick Tools Row: Tes Generate, Riwayat Prompt, Duplikat */}
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTestGenerateSuit(previewSuit);
+                      setTestResultUrl(null);
+                      setTestStep(0);
+                    }}
+                    className="px-2.5 py-2 rounded-xl text-[11px] font-semibold border border-[#D9B06F]/40 bg-[#D9B06F]/10 hover:bg-[#D9B06F]/20 text-[#8A6528] dark:text-[#D9B06F] transition-colors flex items-center justify-center gap-1.5"
+                    title="Jalankan simulasi tes render AI FLUX"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Tes Generate</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPromptVersionSuit(previewSuit)}
+                    className="px-2.5 py-2 rounded-xl text-[11px] font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors flex items-center justify-center gap-1.5"
+                    title="Lihat riwayat versi prompt"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-content-muted" />
+                    <span>Versi (3)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(previewSuit)}
+                    className="px-2.5 py-2 rounded-xl text-[11px] font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors flex items-center justify-center gap-1.5"
+                    title="Duplikat gaya ini sebagai draf"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-content-muted" />
+                    <span>Duplikat</span>
+                  </button>
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -802,6 +919,274 @@ export function SuitCatalogPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tes Generate AI (Fal.ai FLUX) */}
+      {testGenerateSuit && (
+        <div
+          onClick={() => {
+            if (!isGeneratingTest) setTestGenerateSuit(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl rounded-3xl bg-surface-card border border-border-card p-6 sm:p-8 shadow-2xl relative space-y-5"
+          >
+            <button
+              type="button"
+              disabled={isGeneratingTest}
+              onClick={() => setTestGenerateSuit(null)}
+              className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors disabled:opacity-30"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#D9B06F]/10 border border-[#D9B06F]/30 flex items-center justify-center text-[#D9B06F]">
+                <Play className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-xl sm:text-2xl font-semibold text-content-primary">
+                  Tes Generate AI (Fal.ai FLUX 1.1 Pro)
+                </h3>
+                <span className="text-xs text-content-muted">
+                  Simulasi uji coba gaya <strong>{testGenerateSuit.name}</strong> dengan foto selfie sampel.
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2 p-4 rounded-xl bg-surface-hover/40 border border-border-subtle">
+                <span className="font-semibold text-content-primary block">Pilih Sampel Selfie</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSampleGender('pria')}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      sampleGender === 'pria'
+                        ? 'bg-[#D9B06F]/20 border-[#D9B06F] text-[#8A6528] dark:text-[#D9B06F] font-semibold'
+                        : 'border-border-subtle hover:bg-surface-card text-content-muted'
+                    }`}
+                  >
+                    Sampel Pria (Studio)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSampleGender('wanita')}
+                    className={`p-2.5 rounded-xl border text-center transition-all ${
+                      sampleGender === 'wanita'
+                        ? 'bg-[#D9B06F]/20 border-[#D9B06F] text-[#8A6528] dark:text-[#D9B06F] font-semibold'
+                        : 'border-border-subtle hover:bg-surface-card text-content-muted'
+                    }`}
+                  >
+                    Sampel Wanita (Studio)
+                  </button>
+                </div>
+
+                <div className="pt-2 text-[11px] text-content-muted space-y-1">
+                  <div className="flex justify-between">
+                    <span>Model:</span>
+                    <span className="font-mono font-medium text-content-primary">fal-ai/flux-pro/v1.1</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Inference Steps:</span>
+                    <span className="font-mono font-medium text-content-primary">28 Steps (DPM++ 2M)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Estimasi Biaya:</span>
+                    <span className="font-mono text-emerald-500 font-medium">Rp175 / render</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Area Hasil Tes */}
+              <div className="aspect-[3/4] max-h-[240px] rounded-2xl bg-black/40 border border-border-subtle flex items-center justify-center relative overflow-hidden mx-auto sm:mx-0 w-full">
+                {isGeneratingTest ? (
+                  <div className="text-center p-4 space-y-3 w-full max-w-[200px]">
+                    <Sparkles className="w-8 h-8 text-[#D9B06F] animate-spin mx-auto" />
+                    <div className="space-y-1">
+                      <span className="font-semibold text-xs text-content-primary block">
+                        Merender FLUX v1.1...
+                      </span>
+                      <span className="font-mono text-[11px] text-[#D9B06F] block">
+                        Step {testStep} / 28
+                      </span>
+                      <div className="w-full h-1.5 bg-surface-hover rounded-full overflow-hidden mt-2">
+                        <div
+                          className="h-full bg-[#D9B06F] transition-all duration-200"
+                          style={{ width: `${(testStep / 28) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : testResultUrl ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={testResultUrl}
+                      alt="Hasil Tes Render"
+                      className="w-full h-full object-cover animate-fade-in"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/90 text-white backdrop-blur-md">
+                        ✓ Lolos QC Tes
+                      </span>
+                    </div>
+                    <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white">
+                      2.8s · 3000x4000
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-4 text-content-muted space-y-1">
+                    <Play className="w-6 h-6 mx-auto opacity-40 mb-1" />
+                    <span className="text-xs block">Pratinjau Hasil Tes</span>
+                    <span className="text-[10px] block">Klik &ldquo;Jalankan Tes Render&rdquo; untuk memulai</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-subtle">
+              <button
+                type="button"
+                disabled={isGeneratingTest}
+                onClick={() => setTestGenerateSuit(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary transition-colors"
+              >
+                Tutup
+              </button>
+
+              <button
+                type="button"
+                disabled={isGeneratingTest}
+                onClick={() => handleRunTestGenerate(testGenerateSuit)}
+                className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{isGeneratingTest ? 'Merender...' : 'Jalankan Tes Render'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Riwayat Versi Prompt AI */}
+      {promptVersionSuit && (
+        <div
+          onClick={() => setPromptVersionSuit(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl rounded-3xl bg-surface-card border border-border-card p-6 sm:p-8 shadow-2xl relative space-y-5"
+          >
+            <button
+              type="button"
+              onClick={() => setPromptVersionSuit(null)}
+              className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-[#D9B06F]/10 border border-[#D9B06F]/30 flex items-center justify-center text-[#D9B06F]">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-xl sm:text-2xl font-semibold text-content-primary">
+                  Riwayat Versi Prompt
+                </h3>
+                <span className="text-xs text-content-muted">
+                  Gaya: <strong>{promptVersionSuit.name}</strong> · Kembalikan (restore) prompt ke versi terdahulu.
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 text-xs">
+              {/* Versi 3 - Aktif */}
+              <div className="p-4 rounded-2xl bg-surface-hover/40 border border-[#D9B06F]/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#D9B06F] text-[#0A111C]">
+                      v3 (Aktif Saat Ini)
+                    </span>
+                    <span className="text-[11px] text-content-muted">Ditinjau oleh Admin Utama</span>
+                  </div>
+                  <span className="text-[11px] text-content-muted">Hari ini, 14:20 WIB</span>
+                </div>
+                <p className="p-3 rounded-xl bg-black/20 font-mono text-[11px] text-content-primary leading-relaxed">
+                  {promptVersionSuit.prompt}
+                </p>
+              </div>
+
+              {/* Versi 2 */}
+              <div className="p-4 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-card border border-border-subtle text-content-primary">
+                      v2 (Kemarin)
+                    </span>
+                    <span className="text-[11px] text-content-muted">Penyesuaian pencahayaan studio Rembrandt</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRestorePromptVersion(
+                        promptVersionSuit,
+                        `${promptVersionSuit.prompt}, soft ambient daylight rim lighting, 8k professional headshot portrait`,
+                        2
+                      )
+                    }
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#D9B06F]/15 border border-[#D9B06F]/40 text-[#8A6528] dark:text-[#D9B06F] hover:bg-[#D9B06F]/25 transition-colors"
+                  >
+                    Kembalikan Versi Ini
+                  </button>
+                </div>
+                <p className="p-3 rounded-xl bg-black/20 font-mono text-[11px] text-content-muted leading-relaxed">
+                  {`${promptVersionSuit.prompt}, soft ambient daylight rim lighting, 8k professional headshot portrait`}
+                </p>
+              </div>
+
+              {/* Versi 1 */}
+              <div className="p-4 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-card border border-border-subtle text-content-primary">
+                      v1 (Draf Awal)
+                    </span>
+                    <span className="text-[11px] text-content-muted">Prompt inisialisasi gaya katalog</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleRestorePromptVersion(
+                        promptVersionSuit,
+                        `Formal business executive suit, elegant tailoring, solid dark studio backdrop, ultra-sharp focus, FLUX 1.1`,
+                        1
+                      )
+                    }
+                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-[#D9B06F]/15 border border-[#D9B06F]/40 text-[#8A6528] dark:text-[#D9B06F] hover:bg-[#D9B06F]/25 transition-colors"
+                  >
+                    Kembalikan Versi Ini
+                  </button>
+                </div>
+                <p className="p-3 rounded-xl bg-black/20 font-mono text-[11px] text-content-muted leading-relaxed">
+                  Formal business executive suit, elegant tailoring, solid dark studio backdrop, ultra-sharp focus, FLUX 1.1
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={() => setPromptVersionSuit(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

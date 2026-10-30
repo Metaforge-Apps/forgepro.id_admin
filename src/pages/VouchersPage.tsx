@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/common/Card';
 import {
   Search,
@@ -6,7 +7,10 @@ import {
   Download,
   X,
   Trash2,
+  ExternalLink,
 } from 'lucide-react';
+import { useToast } from '../components/common/Toast';
+import { mockDb } from '../mocks/db';
 import {
   useVoucherController,
   getVoucherStatus,
@@ -129,6 +133,8 @@ function Field({
 }
 
 export function VouchersPage() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const {
     vouchers,
     summary,
@@ -157,6 +163,14 @@ export function VouchersPage() {
     () => vouchers.find((v) => v.id === selectedVoucherId) ?? null,
     [vouchers, selectedVoucherId]
   );
+
+  // Pesanan nyata yang menggunakan voucher ini
+  const voucherOrders = useMemo(() => {
+    if (!selectedVoucher) return [];
+    return mockDb.getState().orders.filter(
+      (o: any) => o.voucherCode?.toUpperCase() === selectedVoucher.code.toUpperCase()
+    );
+  }, [selectedVoucher]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -366,13 +380,23 @@ export function VouchersPage() {
           <h2 className="text-base sm:text-lg font-semibold text-content-primary">
             Daftar voucher
           </h2>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] transition-colors"
-          >
-            + Buat voucher
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors inline-flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5 text-[#D9B06F]" />
+              <span>Ekspor CSV</span>
+            </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] transition-colors"
+            >
+              + Buat voucher
+            </button>
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -931,6 +955,45 @@ export function VouchersPage() {
                   {getVoucherStatus(selectedVoucher)}
                 </span>
               </div>
+            </div>
+
+            {/* Riwayat Pesanan Pengguna Voucher */}
+            <div className="space-y-2 py-3 border-b border-border-subtle text-xs">
+              <span className="font-semibold text-content-primary block">
+                Pesanan Terkait ({voucherOrders.length}):
+              </span>
+              {voucherOrders.length === 0 ? (
+                <p className="text-content-muted italic text-[11px]">
+                  Belum ada pesanan yang menggunakan kode voucher ini.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {voucherOrders.map((ord: any) => (
+                    <div
+                      key={ord.id}
+                      onClick={() => {
+                        setSelectedVoucherId(null);
+                        navigate('/pesanan', { state: { selectedOrderId: ord.orderNumber } });
+                      }}
+                      className="p-2.5 rounded-xl bg-surface-hover/50 hover:bg-surface-hover border border-border-subtle flex items-center justify-between cursor-pointer transition-colors"
+                      title="Klik untuk melihat detail pesanan ini"
+                    >
+                      <div>
+                        <span className="font-mono font-bold text-content-primary block text-xs">
+                          {ord.orderNumber}
+                        </span>
+                        <span className="text-[10px] text-content-muted">
+                          {ord.customerEmail} · {ord.packageName}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                        <span>-Rp{ord.discount.toLocaleString('id-ID')}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {confirmDelete ? (

@@ -28,6 +28,18 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         path: '/cetak-pengiriman',
         icon: 'Activity',
       },
+      {
+        id: 'refund-komplain',
+        label: 'Refund & Komplain',
+        path: '/refund-komplain',
+        icon: 'LifeBuoy',
+      },
+      {
+        id: 'keuangan',
+        label: 'Keuangan & Laba',
+        path: '/keuangan',
+        icon: 'DollarSign',
+      },
     ],
   },
   {

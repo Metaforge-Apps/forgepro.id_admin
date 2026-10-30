@@ -1,9 +1,10 @@
 import type { OrderItem } from './order.types';
 
 /**
- * 12 Data Pesanan Terpusat ForgePro.id (Fase 0: 0.3 & 0.10)
+ * 12 Data Pesanan Terpusat ForgePro.id (Fase 0 & Fase 2)
  * Format nomor pesanan tunggal: PRO-YYYYMMDD-NNN.
- * Mencakup semua status bayar, semua status AI, penggunaan voucher, dan pesanan cetak fisik.
+ * Mencakup data Google Play Billing, moderasi prompt, retensi selfie UU PDP,
+ * rating pelanggan, catatan internal, dan status pembayaran cetak fisik.
  */
 export const INITIAL_ORDERS: OrderItem[] = [
   {
@@ -26,6 +27,8 @@ export const INITIAL_ORDERS: OrderItem[] = [
     results: [
       { templateId: 'navy-eksekutif', variant: 0 },
       { templateId: 'navy-eksekutif', variant: 1 },
+      { templateId: 'navy-eksekutif', variant: 2 },
+      { templateId: 'navy-eksekutif', variant: 3 },
     ],
     customPrompt: 'Pencahayaan Rembrandt studio foto profesional',
     bundleCount: 1,
@@ -35,6 +38,21 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Selesai',
     hasPhysicalPrint: false,
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38191',
+    purchaseToken: 'gpa.tok_91fa8e2b814a09c391e4a10c2847',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-11-02T16:12:00.000Z',
+    originalSelfieDeleted: false,
+    rating: 5,
+    ratingReview: 'Hasil foto sangat memuaskan, proporsi jas navy pas sekali dan pencahayaan Rembrandt studio terlihat natural.',
+    internalNotes: [
+      {
+        id: 'note-1',
+        author: 'Maya Lestari',
+        note: 'Pelanggan sempat bertanya format foto via WhatsApp, sudah dikonfirmasi resolusi 3000x4000 300DPI.',
+        timestamp: '19 Okt 2026, 16:25 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261019_002',
@@ -62,6 +80,16 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Belum mulai',
     hasPhysicalPrint: false,
     downloadUrl: null,
+    downloadExpiresAtIso: '2026-11-02T15:48:00.000Z',
+    originalSelfieDeleted: false,
+    internalNotes: [
+      {
+        id: 'note-2',
+        author: 'Sistem',
+        note: 'Menunggu callback RTDN purchaseToken dari Google Play Console.',
+        timestamp: '19 Okt 2026, 15:48 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261019_003',
@@ -80,7 +108,10 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoCount: 48,
     templateIds: ['tuxedo-hitam', 'charcoal-klasik', 'navy-eksekutif'],
     suitType: 'Tuxedo Hitam & Charcoal Klasik',
-    results: [],
+    results: [
+      { templateId: 'tuxedo-hitam', variant: 0 },
+      { templateId: 'tuxedo-hitam', variant: 1 },
+    ],
     customPrompt: 'Potret eksekutif C-Level untuk majalah bisnis',
     bundleCount: 1,
     creditsRemaining: 180,
@@ -96,6 +127,21 @@ export const INITIAL_ORDERS: OrderItem[] = [
     shippingTrackingNumber: 'Belum tersedia',
     shippingStatus: 'Antre cetak',
     downloadUrl: null,
+    googlePlayOrderId: 'GPA.3312-4982-1192-38193',
+    purchaseToken: 'gpa.tok_77aa91b0021c38192a838dfa0021',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-11-02T15:20:00.000Z',
+    originalSelfieDeleted: false,
+    printPaymentId: 'pay-pr-003',
+    printPaymentStatus: 'menunggu',
+    internalNotes: [
+      {
+        id: 'note-3',
+        author: 'Andi Prasetyo',
+        note: 'Menunggu pelunasan invoice cetak fisik via QRIS sebelum berkas dikirim ke lab cetak.',
+        timestamp: '19 Okt 2026, 15:35 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261019_004',
@@ -117,6 +163,7 @@ export const INITIAL_ORDERS: OrderItem[] = [
     results: [
       { templateId: 'charcoal-pinstripe-wanita', variant: 0 },
       { templateId: 'charcoal-pinstripe-wanita', variant: 1 },
+      { templateId: 'charcoal-pinstripe-wanita', variant: 2 },
     ],
     customPrompt: 'Pasfoto formal untuk sertifikasi advokat dan ijazah',
     bundleCount: 1,
@@ -126,6 +173,13 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Selesai',
     hasPhysicalPrint: false,
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38194',
+    purchaseToken: 'gpa.tok_5510ab99120c4871aa99182048aa',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-11-02T14:55:00.000Z',
+    originalSelfieDeleted: false,
+    rating: 5,
+    ratingReview: 'Sangat rapi dan profesional! Latar belakang abu polosnya sesuai dengan standar KTA advokat.',
   },
   {
     id: 'ord_261018_005',
@@ -153,6 +207,16 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Dibatalkan',
     hasPhysicalPrint: false,
     downloadUrl: null,
+    downloadExpiresAtIso: '2026-11-01T21:30:00.000Z',
+    originalSelfieDeleted: true,
+    internalNotes: [
+      {
+        id: 'note-5',
+        author: 'Sistem',
+        note: 'Sesi kedaluwarsa tanpa token Google Play. Tiket komplain TIK-20261019-001 dibuka oleh pelanggan.',
+        timestamp: '18 Okt 2026, 21:45 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261018_006',
@@ -171,7 +235,10 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoCount: 24,
     templateIds: ['ivory-satin-wanita'],
     suitType: 'Ivory Satin Direksi',
-    results: [{ templateId: 'ivory-satin-wanita', variant: 0 }],
+    results: [
+      { templateId: 'ivory-satin-wanita', variant: 0 },
+      { templateId: 'ivory-satin-wanita', variant: 1 },
+    ],
     customPrompt: undefined,
     bundleCount: 1,
     creditsRemaining: 80,
@@ -180,6 +247,13 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Selesai',
     hasPhysicalPrint: false,
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38196',
+    purchaseToken: 'gpa.tok_1928374650192837465019283746',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-11-01T20:14:00.000Z',
+    originalSelfieDeleted: true,
+    rating: 5,
+    ratingReview: 'Bagus banget untuk foto profil LinkedIn! Tekstur bahan jas ivory satin terlihat sangat mewah.',
   },
   {
     id: 'ord_261018_007',
@@ -198,7 +272,10 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoCount: 48,
     templateIds: ['hitam-formal', 'navy-eksekutif', 'double-breasted-navy'],
     suitType: 'Hitam Formal & Double Breasted',
-    results: [{ templateId: 'hitam-formal', variant: 0 }],
+    results: [
+      { templateId: 'hitam-formal', variant: 0 },
+      { templateId: 'hitam-formal', variant: 1 },
+    ],
     customPrompt: 'Potret formal korporat 85mm f/1.8 studio',
     bundleCount: 1,
     creditsRemaining: 160,
@@ -214,6 +291,23 @@ export const INITIAL_ORDERS: OrderItem[] = [
     shippingTrackingNumber: 'Belum tersedia',
     shippingStatus: 'Dicetak',
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38197',
+    purchaseToken: 'gpa.tok_4829104928104928104928104928',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-11-01T19:46:00.000Z',
+    originalSelfieDeleted: true,
+    printPaymentId: 'pay-pr-007',
+    printPaymentStatus: 'dibayar',
+    rating: 4,
+    ratingReview: 'Hasil foto bagus dan pencahayaannya pas. Sedang menunggu hasil cetak fisik tiba.',
+    internalNotes: [
+      {
+        id: 'note-7',
+        author: 'Maya Lestari',
+        note: 'Cetak foto sudah selesai proses laminasi doff, masuk ke antrean pengemasan Siap Dikirim.',
+        timestamp: '19 Okt 2026, 11:00 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261017_008',
@@ -247,6 +341,15 @@ export const INITIAL_ORDERS: OrderItem[] = [
     shippingTrackingNumber: '004871220691',
     shippingStatus: 'Siap dikirim',
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38198',
+    purchaseToken: 'gpa.tok_9918273645102938475610293847',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-10-31T11:20:00.000Z',
+    originalSelfieDeleted: true,
+    printPaymentId: 'pay-pr-008',
+    printPaymentStatus: 'dibayar',
+    rating: 5,
+    ratingReview: 'Warna burgundy-nya elegan sekali, pas untuk kartu nama eksekutif dan website portofolio.',
   },
   {
     id: 'ord_261017_009',
@@ -280,6 +383,13 @@ export const INITIAL_ORDERS: OrderItem[] = [
     shippingTrackingNumber: 'JT0218460091',
     shippingStatus: 'Dikirim',
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38199',
+    purchaseToken: 'gpa.tok_8829102938475610293847561029',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-10-31T09:15:00.000Z',
+    originalSelfieDeleted: true,
+    printPaymentId: 'pay-pr-009',
+    printPaymentStatus: 'dibayar',
   },
   {
     id: 'ord_261017_010',
@@ -314,6 +424,15 @@ export const INITIAL_ORDERS: OrderItem[] = [
     shippingTrackingNumber: 'JNE9910283712',
     shippingStatus: 'Diterima',
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38200',
+    purchaseToken: 'gpa.tok_7719283746501928374650192837',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-10-31T08:05:00.000Z',
+    originalSelfieDeleted: true,
+    printPaymentId: 'pay-pr-010',
+    printPaymentStatus: 'dibayar',
+    rating: 5,
+    ratingReview: 'Hasil cetak fisik tajam, warna akurat persis di layar HP. Packaging aman dengan bubble wrap tebal.',
   },
   {
     id: 'ord_261016_011',
@@ -341,6 +460,19 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Diproses',
     hasPhysicalPrint: false,
     downloadUrl: null,
+    googlePlayOrderId: 'GPA.3312-4982-1192-38201',
+    purchaseToken: 'gpa.tok_6628192837465019283746501928',
+    promptModerationStatus: 'Ditandai',
+    downloadExpiresAtIso: '2026-10-30T15:30:00.000Z',
+    originalSelfieDeleted: true,
+    internalNotes: [
+      {
+        id: 'note-11',
+        author: 'Andi Prasetyo',
+        note: 'Prompt mengandung kata kunci "tokoh politik", ditandai untuk review visual sebelum hasil diserahkan ke pelanggan.',
+        timestamp: '16 Okt 2026, 15:35 WIB',
+      },
+    ],
   },
   {
     id: 'ord_261016_012',
@@ -367,5 +499,14 @@ export const INITIAL_ORDERS: OrderItem[] = [
     photoStatus: 'Selesai',
     hasPhysicalPrint: false,
     downloadUrl: '#',
+    googlePlayOrderId: 'GPA.3312-4982-1192-38202',
+    purchaseToken: 'gpa.tok_5518293847561029384756102938',
+    promptModerationStatus: 'Lolos',
+    downloadExpiresAtIso: '2026-10-30T11:10:00.000Z',
+    originalSelfieDeleted: true,
+    rating: 4,
+    ratingReview: 'Jas krem linen terlihat natural dan cocok untuk profile CV remote worker.',
   },
 ];
+
+export default INITIAL_ORDERS;

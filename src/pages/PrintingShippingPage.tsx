@@ -7,12 +7,22 @@ import {
   X,
   CheckCircle2,
   Truck,
+  Copy,
+  Check,
+  ExternalLink,
+  AlertTriangle,
+  FileText,
+  RotateCcw,
 } from 'lucide-react';
 import {
   useOrderController,
   type OrderItem,
   type ShippingStatus,
 } from '../controllers/order-controller';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { useToast } from '../components/common/Toast';
+import { getCourierTrackingUrl } from '../config/business';
+import { mockDb } from '../mocks/db';
 
 const TABS: { label: string; filter: string }[] = [
   { label: 'Semua', filter: 'Semua' },
@@ -32,12 +42,46 @@ const STATUS_OPTIONS: ShippingStatus[] = [
   'Diterima',
 ];
 
+const STATUS_ORDER_INDEX: Record<ShippingStatus, number> = {
+  'Antre cetak': 0,
+  'Dicetak': 1,
+  'Siap dikirim': 2,
+  'Dikirim': 3,
+  'Diterima': 4,
+};
+
+function validateTrackingNumber(courier: string, tracking: string): { valid: boolean; hint: string } {
+  const clean = tracking.trim();
+  if (!clean || clean === 'Belum tersedia') {
+    return { valid: false, hint: 'Nomor resi wajib diisi saat pengiriman' };
+  }
+  const norm = courier.toUpperCase();
+  if (norm.includes('SICEPAT')) {
+    const valid = /^[0-9]{12}$/.test(clean);
+    return { valid, hint: valid ? 'Format SiCepat valid (12 digit angka)' : 'Resi SiCepat harus 12 digit angka' };
+  }
+  if (norm.includes('ANTERAJA')) {
+    const valid = /^[0-9]{13,14}$/.test(clean);
+    return { valid, hint: valid ? 'Format Anteraja valid (13-14 digit angka)' : 'Resi Anteraja harus 13–14 digit angka' };
+  }
+  if (norm.includes('J&T')) {
+    const valid = /^(JP|JT)?[0-9]{10,14}$/i.test(clean);
+    return { valid, hint: valid ? 'Format J&T valid' : 'Resi J&T harus berawalan JP/JT atau 10-14 angka' };
+  }
+  // JNE & default
+  const valid = /^[A-Z0-9]{10,20}$/i.test(clean);
+  return { valid, hint: valid ? 'Format resi valid' : 'Nomor resi harus 10–20 karakter alfanumerik' };
+}
+
 export function PrintingShippingPage() {
   const {
     physicalPrintOrders,
     updateShipping,
     getShippingBadgeStyle,
+    getPrintPayment,
   } = useOrderController();
+
+  const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -49,7 +93,16 @@ export function PrintingShippingPage() {
   const [editCourier, setEditCourier] = useState<string>('JNE');
   const [editTrackingNumber, setEditTrackingNumber] = useState<string>('');
   const [editStatus, setEditStatus] = useState<ShippingStatus>('Antre cetak');
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [trackingValidationHint, setTrackingValidationHint] = useState<string>('');
+
+  // Backward rollback confirmation state
+  const [showRollbackConfirm, setShowRollbackConfirm] = useState<boolean>(false);
+  const [rollbackReason, setRollbackReason] = useState<string>('');
+  const [pendingRollbackStatus, setPendingRollbackStatus] = useState<ShippingStatus | null>(null);
+
+  // Bulk Label Print modal state
+  const [showBulkPrintModal, setShowBulkPrintModal] = useState<boolean>(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const selectedItem = useMemo(
     () => physicalPrintOrders.find((o) => o.id === selectedOrderId || o.orderNumber === selectedOrderId) ?? null,
@@ -59,23 +112,63 @@ export function PrintingShippingPage() {
   const openModal = (item: OrderItem) => {
     setSelectedOrderId(item.id);
     setEditCourier(item.shippingCourier || 'JNE');
-    setEditTrackingNumber(
+    const existingTracking =
       item.shippingTrackingNumber && item.shippingTrackingNumber !== 'Belum tersedia'
         ? item.shippingTrackingNumber
-        : ''
-    );
+        : '';
+    setEditTrackingNumber(existingTracking);
     setEditStatus(item.shippingStatus || 'Antre cetak');
-    setFeedbackMsg(null);
+    setTrackingValidationHint('');
   };
 
   const closeModal = () => {
     setSelectedOrderId(null);
-    setFeedbackMsg(null);
+    setTrackingValidationHint('');
+  };
+
+  const handleCopy = (text: string, key: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    showToast(`${label} disalin ke clipboard`, 'info');
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleStatusChange = (newStatus: ShippingStatus) => {
+    if (!selectedItem) return;
+    const currentStatus = selectedItem.shippingStatus || 'Antre cetak';
+    const currentIndex = STATUS_ORDER_INDEX[currentStatus] ?? 0;
+    const nextIndex = STATUS_ORDER_INDEX[newStatus] ?? 0;
+
+    // Mundur status (backward transition) membutuhkan alasan wajib
+    if (nextIndex < currentIndex) {
+      setPendingRollbackStatus(newStatus);
+      setRollbackReason('');
+      setShowRollbackConfirm(true);
+      return;
+    }
+
+    // Maju ke proses produksi/kirim dicek apakah pembayaran sudah lunas
+    const printPay = getPrintPayment(selectedItem.orderNumber);
+    if (nextIndex >= 1 && printPay && printPay.status !== 'dibayar') {
+      showToast('Peringatan: Status pembayaran cetak belum lunas ("menunggu" atau "kedaluwarsa")', 'warning');
+    }
+
+    setEditStatus(newStatus);
   };
 
   const handleSaveShipping = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+
+    // Validasi resi jika status dikirim/diterima
+    if (editStatus === 'Dikirim' || editStatus === 'Diterima') {
+      const check = validateTrackingNumber(editCourier, editTrackingNumber);
+      if (!check.valid) {
+        setTrackingValidationHint(check.hint);
+        showToast(check.hint, 'danger');
+        return;
+      }
+    }
 
     updateShipping(selectedItem.id, {
       shippingStatus: editStatus,
@@ -83,16 +176,13 @@ export function PrintingShippingPage() {
       shippingTrackingNumber: editTrackingNumber.trim() || 'Belum tersedia',
     });
 
-    setFeedbackMsg('Data pengiriman dan nomor resi berhasil disimpan!');
-    setTimeout(() => {
-      setFeedbackMsg(null);
-      closeModal();
-    }, 1200);
+    showToast('Data pengiriman & nomor resi berhasil diperbarui', 'success');
+    closeModal();
   };
 
   // Stat counts
   const stats = useMemo(() => {
-    const queue = physicalPrintOrders.filter((o) => o.shippingStatus === 'Antre cetak').length;
+    const queue = physicalPrintOrders.filter((o) => (o.shippingStatus || 'Antre cetak') === 'Antre cetak').length;
     const printing = physicalPrintOrders.filter((o) => o.shippingStatus === 'Dicetak').length;
     const ready = physicalPrintOrders.filter((o) => o.shippingStatus === 'Siap dikirim').length;
     const inTransit = physicalPrintOrders.filter((o) => o.shippingStatus === 'Dikirim').length;
@@ -131,7 +221,7 @@ export function PrintingShippingPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 4 Stat Cards Sesuai Referensi Figma */}
+      {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
@@ -142,22 +232,22 @@ export function PrintingShippingPage() {
               {stats.queue}
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Pesanan perlu dicetak
+          <span className="text-xs text-content-muted mt-4">
+            Pesanan menunggu proses lab cetak
           </span>
         </Card>
 
         <Card padding="p-6" className="flex flex-col justify-between">
           <div className="flex flex-col gap-2.5">
             <span className="text-xs font-medium text-content-muted">
-              Dalam produksi
+              Proses cetak lab
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
               {stats.printing}
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Sedang proses cetak doff
+          <span className="text-xs text-content-muted mt-4">
+            Sedang dicetak &amp; laminasi doff
           </span>
         </Card>
 
@@ -170,8 +260,8 @@ export function PrintingShippingPage() {
               {stats.ready}
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Menunggu nomor resi / pickup
+          <span className="text-xs text-content-muted mt-4">
+            Selesai QC &amp; siap pickup kurir
           </span>
         </Card>
 
@@ -184,21 +274,32 @@ export function PrintingShippingPage() {
               {stats.inTransit}
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Sedang dibawa kurir ekspedisi
+          <span className="text-xs text-content-muted mt-4">
+            Resi aktif &amp; dibawa ekspedisi
           </span>
         </Card>
       </div>
 
-      {/* Main Table Card: Antrean Cetak & Pengiriman */}
-      <Card padding="p-6 sm:p-7" className="flex flex-col gap-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-base sm:text-lg font-semibold text-content-primary">
-            Antrean cetak &amp; pengiriman fisik
-          </h2>
-          <span className="text-xs text-content-muted">
-            Tersambung dengan pesanan yang memilih cetak fisik
-          </span>
+      {/* Main Table Card */}
+      <Card padding="p-6 sm:p-7" className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="font-serif text-xl sm:text-2xl font-medium text-content-primary">
+              Daftar Pesanan Cetak Fisik &amp; Resi
+            </h2>
+            <span className="text-xs text-content-muted mt-1 block">
+              Diverifikasi bersama pembayaran gateway eksternal (Midtrans / Xendit)
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowBulkPrintModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#D9B06F] border border-[#D9B06F]/40 hover:bg-[#1A2844] transition-colors self-start sm:self-auto"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Cetak Label Massal ({filteredData.length})</span>
+          </button>
         </div>
 
         {/* Tab Filters */}
@@ -276,82 +377,142 @@ export function PrintingShippingPage() {
               <tr className="border-b border-border-subtle text-content-muted font-semibold tracking-wider text-[10px] uppercase">
                 <th className="pb-3 pr-4">NO. PESANAN / SPESIFIKASI</th>
                 <th className="pb-3 px-4">PENERIMA &amp; ALAMAT</th>
+                <th className="pb-3 px-4">STATUS BAYAR CETAK</th>
                 <th className="pb-3 px-4">EKSPEDISI</th>
                 <th className="pb-3 px-4">NOMOR RESI</th>
-                <th className="pb-3 px-4">STATUS</th>
+                <th className="pb-3 px-4">STATUS KIRIM</th>
                 <th className="pb-3 pl-4 pr-6 text-left sticky right-0 bg-surface-card z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
-              {filteredData.map((item) => (
-                <tr
-                  key={item.id}
-                  onClick={() => openModal(item)}
-                  className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 pr-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-mono font-bold text-content-primary">
-                        {item.orderNumber}
+              {filteredData.map((item) => {
+                const printPay = getPrintPayment(item.orderNumber);
+                const payStatus = printPay?.status || item.printPaymentStatus || 'belum_dibayar';
+
+                return (
+                  <tr
+                    key={item.id}
+                    onClick={() => openModal(item)}
+                    className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
+                  >
+                    <td className="py-4 pr-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-mono font-bold text-content-primary">
+                          {item.orderNumber}
+                        </span>
+                        <span className="text-[11px] text-content-muted">
+                          {item.printSpec || 'Cetak Pasfoto 4 × 6 cm'}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-4 max-w-xs">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-content-primary truncate">
+                            {item.recipientName || item.customerName || '-'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(
+                                `${item.recipientName || item.customerName}\n${item.customerPhone}\n${item.shippingAddress}`,
+                                `addr-${item.id}`,
+                                'Alamat penerima'
+                              );
+                            }}
+                            className="text-content-muted hover:text-content-primary shrink-0"
+                            title="Salin alamat penerima"
+                          >
+                            {copiedKey === `addr-${item.id}` ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-[#D9B06F]" />
+                            )}
+                          </button>
+                        </div>
+                        <span className="text-[11px] text-content-muted line-clamp-1">
+                          {item.shippingAddress || '-'}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Status Bayar Cetak */}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          payStatus === 'dibayar'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                            : payStatus === 'menunggu'
+                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                            : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                        }`}
+                      >
+                        {payStatus === 'dibayar'
+                          ? '✓ Lunas Gateway'
+                          : payStatus === 'menunggu'
+                          ? 'Menunggu Bayar'
+                          : payStatus.toUpperCase()}
                       </span>
-                      <span className="text-[11px] text-content-muted">
-                        {item.printSpec || 'Cetak Pasfoto 4 × 6 cm'}
+                    </td>
+
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 font-medium text-content-primary">
+                        <Truck className="w-3.5 h-3.5 text-[#D9B06F]" />
+                        <span>{item.shippingCourier || 'JNE'}</span>
                       </span>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="py-4 px-4 max-w-xs">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-content-primary">
-                        {item.recipientName || item.customerName || '-'}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-content-primary">
+                          {item.shippingTrackingNumber || 'Belum tersedia'}
+                        </span>
+                        {item.shippingTrackingNumber && item.shippingTrackingNumber !== 'Belum tersedia' && (
+                          <a
+                            href={getCourierTrackingUrl(item.shippingCourier || 'JNE', item.shippingTrackingNumber)}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[#9A7432] dark:text-[#D9B06F] hover:underline"
+                            title="Lacak di tab baru"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getShippingBadgeStyle(
+                          item.shippingStatus || 'Antre cetak'
+                        )}`}
+                      >
+                        {item.shippingStatus || 'Antre cetak'}
                       </span>
-                      <span className="text-[11px] text-content-muted line-clamp-1">
-                        {item.shippingAddress || '-'}
-                      </span>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 font-medium text-content-primary">
-                      <Truck className="w-3.5 h-3.5 text-[#D9B06F]" />
-                      <span>{item.shippingCourier || 'JNE'}</span>
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    <span className="font-mono text-content-primary">
-                      {item.shippingTrackingNumber || 'Belum tersedia'}
-                    </span>
-                  </td>
-
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getShippingBadgeStyle(
-                        item.shippingStatus || 'Antre cetak'
-                      )}`}
-                    >
-                      {item.shippingStatus || 'Antre cetak'}
-                    </span>
-                  </td>
-
-                  <td className="py-4 pl-4 pr-6 whitespace-nowrap sticky right-0 bg-surface-card group-hover:bg-surface-hover/80 z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openModal(item);
-                      }}
-                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
-                    >
-                      <span>Kelola resi</span>
-                      <span>&rarr;</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="py-4 pl-4 pr-6 whitespace-nowrap sticky right-0 bg-surface-card group-hover:bg-surface-hover/80 z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openModal(item);
+                        }}
+                        className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
+                      >
+                        <span>Kelola resi</span>
+                        <span>&rarr;</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-content-muted">
+                  <td colSpan={7} className="py-10 text-center text-content-muted">
                     Tidak ada pesanan cetak fisik yang cocok dengan filter.
                   </td>
                 </tr>
@@ -431,13 +592,6 @@ export function PrintingShippingPage() {
               {selectedItem.shippingAddress || 'Alamat tidak tersedia'}
             </p>
 
-            {feedbackMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{feedbackMsg}</span>
-              </div>
-            )}
-
             <form onSubmit={handleSaveShipping} className="flex flex-col gap-4 text-xs">
               <div className="space-y-2 border-t border-b border-border-subtle py-3">
                 <div className="flex items-center justify-between">
@@ -491,7 +645,7 @@ export function PrintingShippingPage() {
                   <div className="relative">
                     <select
                       value={editStatus}
-                      onChange={(e) => setEditStatus(e.target.value as ShippingStatus)}
+                      onChange={(e) => handleStatusChange(e.target.value as ShippingStatus)}
                       className="w-full appearance-none px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
                     >
                       {STATUS_OPTIONS.map((st) => (
@@ -511,13 +665,21 @@ export function PrintingShippingPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Contoh: JNE0192837465 atau SiCepat-004871220691"
+                  placeholder="Contoh: JNE9910283712 atau 004871220691"
                   value={editTrackingNumber}
-                  onChange={(e) => setEditTrackingNumber(e.target.value)}
+                  onChange={(e) => {
+                    setEditTrackingNumber(e.target.value);
+                    setTrackingValidationHint('');
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-subtle text-content-primary font-mono placeholder-content-muted focus:outline-none focus:border-[#D9B06F] transition-colors"
                 />
+                {trackingValidationHint && (
+                  <span className="text-[11px] text-rose-500 font-medium">
+                    {trackingValidationHint}
+                  </span>
+                )}
                 <span className="text-[11px] text-content-muted">
-                  Nomor ini akan dapat disalin pelanggan di menu Riwayat Pesanan aplikasi.
+                  Format resi divalidasi sesuai kurir ({editCourier}) dan dapat langsung dilacak oleh pelanggan.
                 </span>
               </div>
 
@@ -525,7 +687,7 @@ export function PrintingShippingPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    alert(`Mencetak label thermal 100x150mm untuk ${selectedItem.orderNumber}...`);
+                    showToast(`Mencetak label thermal untuk ${selectedItem.orderNumber}...`, 'info');
                   }}
                   className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary inline-flex items-center gap-1.5 transition-colors"
                 >
@@ -550,6 +712,138 @@ export function PrintingShippingPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rollback Status (Backward Transition) */}
+      <ConfirmDialog
+        open={showRollbackConfirm}
+        onClose={() => {
+          setShowRollbackConfirm(false);
+          setPendingRollbackStatus(null);
+        }}
+        title="Konfirmasi Penurunan Status Pengiriman"
+        description={`Anda sedang mengembalikan status dari "${selectedItem?.shippingStatus}" mundur ke "${pendingRollbackStatus}". Masukkan alasan untuk catatan audit.`}
+        confirmLabel="Konfirmasi Mundur Status"
+        variant="danger"
+        onConfirm={() => {
+          if (!rollbackReason.trim()) {
+            showToast('Alasan perubahan status mundur wajib diisi', 'danger');
+            return;
+          }
+          if (pendingRollbackStatus) {
+            setEditStatus(pendingRollbackStatus);
+            mockDb.appendActivityLog({
+              source: 'Admin Utama',
+              category: 'Pesanan',
+              activity: `Koreksi mundur status pengiriman · ${selectedItem?.orderNumber} (${selectedItem?.shippingStatus} -> ${pendingRollbackStatus})`,
+              result: 'Berhasil',
+              targetId: selectedItem?.orderNumber || '',
+              afterData: { reason: rollbackReason.trim() },
+            });
+          }
+          setShowRollbackConfirm(false);
+          setPendingRollbackStatus(null);
+          showToast('Status mundur berhasil dikonfirmasi', 'info');
+        }}
+      >
+        <div className="space-y-3 text-xs my-3">
+          <div>
+            <label className="text-content-muted block mb-1">Alasan Penurunan Status (Wajib):</label>
+            <textarea
+              value={rollbackReason}
+              onChange={(e) => setRollbackReason(e.target.value)}
+              placeholder="Contoh: Salah klik status oleh operator, cetak ulang karena kertas terlipat..."
+              rows={2}
+              className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
+            />
+          </div>
+        </div>
+      </ConfirmDialog>
+
+      {/* Modal Cetak Label Massal */}
+      {showBulkPrintModal && (
+        <div
+          onClick={() => setShowBulkPrintModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
+          >
+            <button
+              type="button"
+              onClick={() => setShowBulkPrintModal(false)}
+              className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-1">
+              <Printer className="w-5 h-5 text-[#D9B06F]" />
+              <h3 className="font-serif text-xl font-medium text-content-primary">
+                Pratinjau Label Pengiriman Thermal Massal (100 × 150 mm)
+              </h3>
+            </div>
+            <p className="text-xs text-content-muted mb-4">
+              Siap cetak untuk {filteredData.length} paket pesanan fisik yang sedang difilter.
+            </p>
+
+            <div className="space-y-4 my-4 max-h-[50vh] overflow-y-auto pr-1">
+              {filteredData.map((order, idx) => (
+                <div
+                  key={order.id}
+                  className="p-4 rounded-xl border border-border-subtle bg-surface-main text-xs space-y-2 font-mono"
+                >
+                  <div className="flex justify-between items-center border-b border-border-subtle pb-2 font-sans font-bold">
+                    <span className="text-[#D9B06F]">FORGEPRO.ID — STUDIO CETAK</span>
+                    <span className="px-2 py-0.5 rounded bg-[#111A2C] text-[#D9B06F] text-[10px]">
+                      {order.shippingCourier} • REGULER
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-content-muted block">Penerima:</span>
+                      <span className="font-bold text-content-primary">{order.recipientName || order.customerName}</span>
+                      <span className="text-content-muted block">{order.customerPhone}</span>
+                      <p className="text-content-primary font-sans mt-1">{order.shippingAddress}</p>
+                    </div>
+                    <div>
+                      <span className="text-content-muted block">No. Pesanan:</span>
+                      <span className="font-bold text-[#D9B06F]">{order.orderNumber}</span>
+                      <span className="text-content-muted block mt-1">Item: {order.printSpec || 'Pasfoto 4x6'}</span>
+                      <span className="text-content-muted block">Resi: {order.shippingTrackingNumber || 'AUTO-BARCODE'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-border-subtle">
+              <span className="text-xs text-content-muted">
+                Format: 100x150 mm Thermal Printer Ready (ZPL / PDF)
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkPrintModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle hover:bg-surface-hover text-content-primary"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    showToast(`Mengirim ${filteredData.length} label thermal ke antrean cetak...`, 'success');
+                    setShowBulkPrintModal(false);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#D9B06F] border border-[#D9B06F]/40 hover:bg-[#1A2844]"
+                >
+                  Kirim ke Printer Thermal
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

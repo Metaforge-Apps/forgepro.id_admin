@@ -24,6 +24,7 @@ import type {
   PrivacyManualDeletionRequest,
   SentMessageLog,
   WebhookItem,
+  PrintPayment,
 } from '../types';
 import { BUSINESS_CONFIG } from '../config/business';
 
@@ -36,6 +37,7 @@ const DB_STORAGE_KEY = 'forgepro_central_mock_db_v2';
 
 export interface MockDatabaseState {
   orders: ControllerOrderItem[];
+  printPayments: PrintPayment[];
   packages: ControllerPackageItem[];
   styles: ControllerSuitStyleItem[];
   vouchers: ControllerVoucherItem[];
@@ -485,6 +487,97 @@ export const SEED_WEBHOOKS: WebhookItem[] = [
   },
 ];
 
+export const SEED_PRINT_PAYMENTS: PrintPayment[] = [
+  {
+    id: 'pay-pr-003',
+    orderNumber: 'PRO-20261019-003',
+    provider: 'midtrans',
+    channelLabel: 'QRIS Dinamis',
+    externalRefId: 'MID-PR-20261019003',
+    paymentUrl: 'https://pay.forgepro.id/invoice/MID-PR-20261019003',
+    printCostRp: 35000,
+    shippingCostRp: 15000,
+    gatewayFeeRp: 750,
+    totalAmountRp: 50750,
+    status: 'menunggu',
+    expiresAt: '2026-10-20T17:30:00.000Z',
+  },
+  {
+    id: 'pay-pr-007',
+    orderNumber: 'PRO-20261018-007',
+    provider: 'xendit',
+    channelLabel: 'BCA Virtual Account',
+    externalRefId: 'XEN-PR-20261018007',
+    paymentUrl: 'https://pay.forgepro.id/invoice/XEN-PR-20261018007',
+    printCostRp: 25000,
+    shippingCostRp: 15000,
+    gatewayFeeRp: 2000,
+    totalAmountRp: 42000,
+    status: 'dibayar',
+    paidAt: '2026-10-18T19:55:10.000Z',
+    expiresAt: '2026-10-19T19:30:00.000Z',
+  },
+  {
+    id: 'pay-pr-008',
+    orderNumber: 'PRO-20261017-008',
+    provider: 'midtrans',
+    channelLabel: 'GoPay / QRIS',
+    externalRefId: 'MID-PR-20261017008',
+    paymentUrl: 'https://pay.forgepro.id/invoice/MID-PR-20261017008',
+    printCostRp: 25000,
+    shippingCostRp: 12000,
+    gatewayFeeRp: 740,
+    totalAmountRp: 37740,
+    status: 'dibayar',
+    paidAt: '2026-10-17T11:28:44.000Z',
+    expiresAt: '2026-10-18T11:20:00.000Z',
+  },
+  {
+    id: 'pay-pr-009',
+    orderNumber: 'PRO-20261017-009',
+    provider: 'xendit',
+    channelLabel: 'Mandiri Virtual Account',
+    externalRefId: 'XEN-PR-20261017009',
+    paymentUrl: 'https://pay.forgepro.id/invoice/XEN-PR-20261017009',
+    printCostRp: 35000,
+    shippingCostRp: 18000,
+    gatewayFeeRp: 2000,
+    totalAmountRp: 55000,
+    status: 'dibayar',
+    paidAt: '2026-10-17T09:22:15.000Z',
+    expiresAt: '2026-10-18T09:15:00.000Z',
+  },
+  {
+    id: 'pay-pr-010',
+    orderNumber: 'PRO-20261017-010',
+    provider: 'midtrans',
+    channelLabel: 'ShopeePay',
+    externalRefId: 'MID-PR-20261017010',
+    paymentUrl: 'https://pay.forgepro.id/invoice/MID-PR-20261017010',
+    printCostRp: 25000,
+    shippingCostRp: 10000,
+    gatewayFeeRp: 700,
+    totalAmountRp: 35700,
+    status: 'dibayar',
+    paidAt: '2026-10-17T08:14:02.000Z',
+    expiresAt: '2026-10-18T08:05:00.000Z',
+  },
+  {
+    id: 'pay-pr-012',
+    orderNumber: 'PRO-20261016-012',
+    provider: 'midtrans',
+    channelLabel: 'QRIS',
+    externalRefId: 'MID-PR-20261016012',
+    paymentUrl: 'https://pay.forgepro.id/invoice/MID-PR-20261016012',
+    printCostRp: 25000,
+    shippingCostRp: 15000,
+    gatewayFeeRp: 800,
+    totalAmountRp: 40800,
+    status: 'kedaluwarsa',
+    expiresAt: '2026-10-17T14:10:00.000Z',
+  },
+];
+
 export const SEED_COMPLAINTS: ComplaintTicket[] = [
   {
     id: 'cmp-1',
@@ -502,6 +595,16 @@ export const SEED_COMPLAINTS: ComplaintTicket[] = [
     createdAtWib: '19 Okt 2026, 13:50 WIB',
     updatedAtWib: '19 Okt 2026, 13:50 WIB',
     assignedTo: 'Maya Lestari',
+    replies: [
+      {
+        id: 'rep-1',
+        sender: 'customer',
+        senderName: 'Bayu Santoso',
+        message:
+          'Halo tim admin ForgePro, saldo Google Play saya sudah terpotong Rp59.000 dengan Order ID GPA.3312-4982-1192-38195, tetapi di aplikasi statusnya Gagal karena WiFi terputus. Mohon bantuannya verifikasi.',
+        timestampWib: '19 Okt 2026, 13:50 WIB',
+      },
+    ],
   },
   {
     id: 'cmp-2',
@@ -521,6 +624,24 @@ export const SEED_COMPLAINTS: ComplaintTicket[] = [
     assignedTo: 'Maya Lestari',
     resolutionType: 'regenerasi_gratis',
     resolutionNote: 'Dijadwalkan regenerasi ulang dengan tambahan prompt kacamata.',
+    replies: [
+      {
+        id: 'rep-2',
+        sender: 'customer',
+        senderName: 'Rizky Pratama',
+        message:
+          'Kacamata di selfie saya tidak terlihat di beberapa hasil jas eksekutif. Mohon bantu render ulang 5 foto.',
+        timestampWib: '19 Okt 2026, 15:40 WIB',
+      },
+      {
+        id: 'rep-3',
+        sender: 'admin',
+        senderName: 'Maya Lestari',
+        message:
+          'Halo Kak Rizky, kami sudah memeriksa dan menambahkan penekanan atribut kacamata pada antrean render AI. Mohon ditunggu dalam beberapa menit.',
+        timestampWib: '19 Okt 2026, 15:55 WIB',
+      },
+    ],
   },
   {
     id: 'cmp-3',
@@ -539,6 +660,24 @@ export const SEED_COMPLAINTS: ComplaintTicket[] = [
     assignedTo: 'Maya Lestari',
     resolutionType: 'cetak_ulang',
     resolutionNote: 'Ukuran cetak telah disesuaikan menjadi 4x6 cm (4 lembar).',
+    replies: [
+      {
+        id: 'rep-4',
+        sender: 'customer',
+        senderName: 'Fajar Nugroho',
+        message:
+          'Tolong ubah ukuran cetak fisik dari 3x4 ke 4x6 cm sebelum dikirim, untuk keperluan berkas BUMN.',
+        timestampWib: '18 Okt 2026, 16:30 WIB',
+      },
+      {
+        id: 'rep-5',
+        sender: 'admin',
+        senderName: 'Maya Lestari',
+        message:
+          'Baik Kak Fajar, ukuran cetak sudah berhasil disesuaikan menjadi 4x6 cm (4 lembar) pada mesin cetak kami.',
+        timestampWib: '18 Okt 2026, 17:10 WIB',
+      },
+    ],
   },
   {
     id: 'cmp-4',
@@ -555,6 +694,24 @@ export const SEED_COMPLAINTS: ComplaintTicket[] = [
     createdAtWib: '17 Okt 2026, 16:40 WIB',
     updatedAtWib: '17 Okt 2026, 17:05 WIB',
     assignedTo: 'Maya Lestari',
+    replies: [
+      {
+        id: 'rep-6',
+        sender: 'customer',
+        senderName: 'Doni Pratama',
+        message:
+          'Kenapa pesanan saya PRO-20261016-011 belum selesai di-generate padahal sudah bayar?',
+        timestampWib: '17 Okt 2026, 16:40 WIB',
+      },
+      {
+        id: 'rep-7',
+        sender: 'admin',
+        senderName: 'Maya Lestari',
+        message:
+          'Prompt Anda mengandung istilah spesifik seragam institusi negara yang otomatis memerlukan review kepatuhan Google Play. Tim kami sedang meninjau visualnya.',
+        timestampWib: '17 Okt 2026, 17:05 WIB',
+      },
+    ],
   },
   {
     id: 'cmp-5',
@@ -572,6 +729,23 @@ export const SEED_COMPLAINTS: ComplaintTicket[] = [
     updatedAtWib: '18 Okt 2026, 14:15 WIB',
     assignedTo: 'Maya Lestari',
     resolutionNote: 'Tautan unduh telah dikirim ulang via Email dan WhatsApp.',
+    replies: [
+      {
+        id: 'rep-8',
+        sender: 'customer',
+        senderName: 'Kevin Sanjaya',
+        message: 'Saya belum terima email tautan download hasil foto.',
+        timestampWib: '18 Okt 2026, 14:00 WIB',
+      },
+      {
+        id: 'rep-9',
+        sender: 'admin',
+        senderName: 'Maya Lestari',
+        message:
+          'Tautan telah kami kirimkan ulang ke WhatsApp dan email terdaftar. Sudah terkonfirmasi dapat diakses.',
+        timestampWib: '18 Okt 2026, 14:15 WIB',
+      },
+    ],
   },
 ];
 
@@ -859,6 +1033,7 @@ function buildInitialState(): MockDatabaseState {
 
   return {
     orders,
+    printPayments: SEED_PRINT_PAYMENTS.map((p) => ({ ...p })),
     packages: INITIAL_PACKAGES.map((p) => ({ ...p, features: [...p.features] })),
     styles: derived.styles,
     vouchers: derived.vouchers,
@@ -900,6 +1075,10 @@ class CentralMockDatabase {
         Array.isArray(parsed.orders) && parsed.orders.length > 0
           ? parsed.orders
           : initial.orders;
+      const printPayments =
+        Array.isArray(parsed.printPayments) && parsed.printPayments.length > 0
+          ? parsed.printPayments
+          : initial.printPayments;
       const styles =
         Array.isArray(parsed.styles) && parsed.styles.length > 0
           ? parsed.styles
@@ -908,11 +1087,17 @@ class CentralMockDatabase {
         Array.isArray(parsed.vouchers) && parsed.vouchers.length > 0
           ? parsed.vouchers
           : initial.vouchers;
+      const complaints =
+        Array.isArray(parsed.complaints) && parsed.complaints.length > 0
+          ? parsed.complaints
+          : initial.complaints;
       const derived = computeDerivedState(orders, styles, vouchers);
       return {
         ...initial,
         ...parsed,
         orders,
+        printPayments,
+        complaints,
         packages:
           Array.isArray(parsed.packages) && parsed.packages.length > 0
             ? parsed.packages
@@ -976,6 +1161,119 @@ class CentralMockDatabase {
     };
     this.saveToStorage();
     this.emitChange();
+  }
+
+  public updatePrintPayment(
+    orderNumber: string,
+    update: Partial<PrintPayment>
+  ): PrintPayment | null {
+    let updated: PrintPayment | null = null;
+    this.updateState((prev) => {
+      const exists = prev.printPayments.find((p) => p.orderNumber === orderNumber);
+      if (!exists) return prev;
+      updated = { ...exists, ...update };
+      return {
+        ...prev,
+        printPayments: prev.printPayments.map((p) =>
+          p.orderNumber === orderNumber ? updated! : p
+        ),
+      };
+    });
+    return updated;
+  }
+
+  public updateComplaintTicket(
+    idOrNumber: string,
+    update: Partial<ComplaintTicket>
+  ): ComplaintTicket | null {
+    let updated: ComplaintTicket | null = null;
+    this.updateState((prev) => {
+      const exists = prev.complaints.find(
+        (c) => c.id === idOrNumber || c.ticketNumber === idOrNumber
+      );
+      if (!exists) return prev;
+      updated = {
+        ...exists,
+        ...update,
+        updatedAtWib: `19 Okt 2026, ${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')} WIB`,
+      };
+      return {
+        ...prev,
+        complaints: prev.complaints.map((c) =>
+          c.id === exists.id ? updated! : c
+        ),
+      };
+    });
+    return updated;
+  }
+
+  public addComplaintReply(
+    idOrNumber: string,
+    reply: {
+      sender: 'admin' | 'customer' | 'system';
+      senderName: string;
+      message: string;
+    }
+  ): ComplaintTicket | null {
+    let updated: ComplaintTicket | null = null;
+    const nowWib = `19 Okt 2026, ${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')} WIB`;
+    const newReplyItem = {
+      id: `rep-${Date.now()}`,
+      ...reply,
+      timestampWib: nowWib,
+    };
+    this.updateState((prev) => {
+      const exists = prev.complaints.find(
+        (c) => c.id === idOrNumber || c.ticketNumber === idOrNumber
+      );
+      if (!exists) return prev;
+      const currentReplies = exists.replies || [];
+      updated = {
+        ...exists,
+        updatedAtWib: nowWib,
+        replies: [...currentReplies, newReplyItem],
+      };
+      return {
+        ...prev,
+        complaints: prev.complaints.map((c) =>
+          c.id === exists.id ? updated! : c
+        ),
+      };
+    });
+    return updated;
+  }
+
+  public addInternalOrderNote(
+    orderNumber: string,
+    note: string,
+    author: string = 'Admin Utama'
+  ): ControllerOrderItem | null {
+    let updatedOrder: ControllerOrderItem | null = null;
+    const nowWib = `19 Okt 2026, ${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')} WIB`;
+    this.updateState((prev) => {
+      const target = prev.orders.find(
+        (o) => o.orderNumber === orderNumber || o.id === orderNumber
+      );
+      if (!target) return prev;
+      const notes = target.internalNotes || [];
+      const newNote = {
+        id: `note-${Date.now()}`,
+        author,
+        note: note.trim(),
+        timestamp: nowWib,
+      };
+      updatedOrder = {
+        ...target,
+        internalNotes: [newNote, ...notes],
+      };
+      return {
+        ...prev,
+        orders: prev.orders.map((o) =>
+          o.id === target.id ? updatedOrder! : o
+        ),
+      };
+    });
+    return updatedOrder;
   }
 
   public resetToSeed(): MockDatabaseState {

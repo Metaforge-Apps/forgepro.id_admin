@@ -21,6 +21,8 @@ import { AdminManagementPage } from './pages/AdminManagementPage';
 import { ActivityLogsPage } from './pages/ActivityLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminProfilePage } from './pages/AdminProfilePage';
+import { RefundComplaintsPage } from './pages/RefundComplaintsPage';
+import { FinancePage } from './pages/FinancePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 /**
@@ -63,6 +65,8 @@ export function App() {
                   {/* Halaman Operasional */}
                   <Route path="/pesanan" element={<OrdersPage />} />
                   <Route path="/cetak-pengiriman" element={<PrintingShippingPage />} />
+                  <Route path="/refund-komplain" element={<RefundComplaintsPage />} />
+                  <Route path="/keuangan" element={<FinancePage />} />
 
                   {/* Halaman Katalog & Produk (Dikelola oleh style-controller & package-controller) */}
                   <Route path="/katalog-jas" element={<SuitCatalogPage />} />

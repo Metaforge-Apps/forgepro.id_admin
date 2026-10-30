@@ -395,6 +395,14 @@ export function validateOrderStateCombination(
 }
 
 /**
+ * URL Pelacakan kurir ekspedisi pihak ketiga
+ */
+export function getCourierTrackingUrl(courier: string, trackingNumber: string): string {
+  const clean = encodeURIComponent(trackingNumber.trim());
+  return `https://cekresi.com/?noresi=${clean}`;
+}
+
+/**
  * Mengecek apakah aplikasi berjalan dalam mode data contoh (mock)
  */
 export function isMockMode(): boolean {

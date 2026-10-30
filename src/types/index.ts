@@ -3,6 +3,8 @@ import type {
   WebhookEventName,
 } from '../config/business';
 
+export type { PrintPaymentStatus, WebhookEventName };
+
 export type ThemeMode = 'dark' | 'light';
 
 export interface AdminUser {
@@ -251,6 +253,14 @@ export type RefundResolutionType =
   | 'refund_cetak'
   | 'ditolak';
 
+export interface ComplaintTicketReply {
+  id: string;
+  sender: 'admin' | 'customer' | 'system';
+  senderName: string;
+  message: string;
+  timestampWib: string;
+}
+
 export interface ComplaintTicket {
   id: string;
   ticketNumber: string;
@@ -270,6 +280,7 @@ export interface ComplaintTicket {
   resolutionNote?: string;
   refundAmountRp?: number;
   compensationVoucherCode?: string;
+  replies?: ComplaintTicketReply[];
 }
 
 export type AiJobStatus =

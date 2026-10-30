@@ -49,7 +49,7 @@ const ADMIN_RECENT_ACTIVITIES = [
 const ACCESS_MODULES = [
   {
     group: 'Operasional',
-    desc: 'Dashboard, Pesanan & Transaksi, Cetak Fisik & Pengiriman',
+    desc: 'Dashboard, Pesanan & Transaksi, Cetak Fisik, Refund & Komplain, Keuangan',
     level: 'Baca & Kelola',
   },
   {

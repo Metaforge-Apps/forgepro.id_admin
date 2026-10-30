@@ -62,14 +62,9 @@ export function RevenueChart() {
     <Card className="flex flex-col justify-between h-full">
       {/* Header Card: Judul dan Pill Tab Periode */}
       <div className="flex items-center justify-between mb-4 gap-2">
-        <div className="flex items-center gap-2.5">
-          <h3 className="text-base sm:text-lg font-semibold tracking-tight text-content-primary">
-            Tren pendapatan
-          </h3>
-          <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            Laba: {dashboardMetrics.netProfitDisplay}
-          </span>
-        </div>
+        <h3 className="text-base sm:text-lg font-semibold tracking-tight text-content-primary">
+          Tren pendapatan
+        </h3>
 
         {/* Pill Tab Filter Periode */}
         <div className="flex items-center gap-1.5 text-xs">

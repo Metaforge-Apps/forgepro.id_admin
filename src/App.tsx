@@ -65,6 +65,7 @@ export function App() {
 
                   {/* Halaman Operasional */}
                   <Route path="/pesanan" element={<OrdersPage />} />
+                  <Route path="/pesanan/:orderId" element={<OrdersPage />} />
                   <Route path="/cetak-pengiriman" element={<Navigate to="/pesanan" replace />} />
 
                   {/* Halaman Katalog & Produk */}

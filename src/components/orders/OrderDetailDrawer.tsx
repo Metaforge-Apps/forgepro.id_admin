@@ -34,6 +34,7 @@ import { getCourierTrackingUrl } from '../../config/business';
 
 export interface OrderDetailDrawerProps {
   order: OrderItem | null;
+  orderId?: string;
   open: boolean;
   onClose: () => void;
   printPayment?: PrintPayment;
@@ -121,6 +122,7 @@ function resolvePhotoThumbnail(templateId?: string, variant: number = 0): string
  */
 export function OrderDetailDrawer({
   order,
+  orderId,
   open,
   onClose,
   printPayment,
@@ -183,7 +185,76 @@ export function OrderDetailDrawer({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose, previewPhoto, showVerifyModal, showRerenderModal, showCancelModal, showRefundModal, showPrintRefundModal]);
 
-  if (!order || !open) return null;
+  if (!open) return null;
+
+  // Empty / Not Found state handling without blank page crash
+  if (!order) {
+    return (
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in"
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-md rounded-2xl sm:rounded-3xl bg-surface-card border border-border-card shadow-2xl p-6 relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-semibold text-content-primary">
+                  Pesanan Tidak Ditemukan
+                </h3>
+                <p className="text-[11px] text-content-muted">
+                  Periksa kembali nomor atau ID pesanan
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="py-5 text-xs text-content-muted space-y-3">
+            <p className="leading-relaxed">
+              Data pesanan dengan identitas{' '}
+              <strong className="font-mono text-content-primary bg-surface-main px-1.5 py-0.5 rounded border border-border-subtle">
+                {orderId || 'Tidak Ditentukan'}
+              </strong>{' '}
+              tidak ditemukan dalam basis data atau telah dibatalkan.
+            </p>
+            <p className="text-[11px] text-content-muted leading-relaxed">
+              Silakan pastikan format nomor pesanan benar (contoh: <code className="text-[#9A7432] dark:text-[#D9B06F] font-mono">FP-20241026-0819</code>).
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border-subtle">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm"
+            >
+              Kembali ke Daftar Pesanan
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Safe defaults for array fields to guarantee zero runtime exceptions
+  const results = order.results || [];
+  const templateIds = order.templateIds || [];
+  const internalNotes = order.internalNotes || [];
 
   const handleCopy = (text: string, key: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -250,13 +321,13 @@ export function OrderDetailDrawer({
   }[] = [
     { id: 'ringkasan', label: 'Ringkasan', icon: FileText },
     { id: 'pembayaran', label: 'Pembayaran IAP', icon: CreditCard },
-    { id: 'hasil-ai', label: 'Hasil Foto FLUX', icon: Sparkles, badgeCount: order.results.length },
+    { id: 'hasil-ai', label: 'Hasil Foto FLUX', icon: Sparkles, badgeCount: results.length },
     { id: 'riwayat', label: 'Riwayat & Siklus', icon: Clock },
     {
       id: 'catatan',
       label: 'Catatan Internal',
       icon: MessageSquare,
-      badgeCount: order.internalNotes?.length || 0,
+      badgeCount: internalNotes.length,
     },
   ];
 
@@ -264,8 +335,8 @@ export function OrderDetailDrawer({
     <>
       {/* Centered Modal Backdrop */}
       <div
-        onClick={() => onClose()}
-        className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in"
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in"
       >
         {/* Modal Window Container */}
         <div
@@ -359,7 +430,7 @@ export function OrderDetailDrawer({
             {activeTab === 'ringkasan' && (
               <div className="space-y-6 animate-fade-in text-xs">
                 {/* Kontak Pelanggan dengan Masking UU PDP */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
@@ -395,7 +466,7 @@ export function OrderDetailDrawer({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
+                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-card shadow-xs">
                       <span className="text-[10px] font-semibold text-content-muted uppercase tracking-wider block mb-1">
                         Nama Pelanggan
                       </span>
@@ -404,7 +475,7 @@ export function OrderDetailDrawer({
                       </span>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
+                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-card shadow-xs">
                       <span className="text-[10px] font-semibold text-content-muted uppercase tracking-wider block mb-1">
                         Email Pesanan
                       </span>
@@ -428,7 +499,7 @@ export function OrderDetailDrawer({
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
+                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-card shadow-xs">
                       <span className="text-[10px] font-semibold text-content-muted uppercase tracking-wider block mb-1">
                         No. WhatsApp / HP
                       </span>
@@ -452,7 +523,7 @@ export function OrderDetailDrawer({
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
+                    <div className="p-3.5 rounded-xl bg-surface-card border border-border-card shadow-xs">
                       <span className="text-[10px] font-semibold text-content-muted uppercase tracking-wider block mb-1">
                         ID Database Internal
                       </span>
@@ -464,7 +535,7 @@ export function OrderDetailDrawer({
                 </div>
 
                 {/* Paket & Pilihan Jas */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
                       <Package className="w-5 h-5" />
@@ -480,7 +551,7 @@ export function OrderDetailDrawer({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-1 shadow-xs">
                       <span className="text-content-muted text-[11px] block">Paket Terpilih</span>
                       <span className="text-base font-semibold text-content-primary block">
                         {order.packageName}
@@ -490,23 +561,23 @@ export function OrderDetailDrawer({
                       </span>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-1 shadow-xs">
                       <span className="text-content-muted text-[11px] block">Kredit AI FLUX</span>
                       <span className="text-base font-semibold text-content-primary block">
                         {order.totalCredits - order.creditsRemaining} / {order.totalCredits} Kredit
                       </span>
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block">
+                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block font-medium">
                         Tersisa {order.creditsRemaining} kredit kuota render
                       </span>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-1 shadow-xs">
                       <span className="text-content-muted text-[11px] block">Kategori Gaya Jas</span>
                       <span className="text-base font-semibold text-content-primary block truncate">
                         {order.suitType}
                       </span>
                       <span className="text-[11px] text-content-muted block">
-                        {order.templateIds.length} gaya template terhubung
+                        {templateIds.length} gaya template terhubung
                       </span>
                     </div>
                   </div>
@@ -517,7 +588,7 @@ export function OrderDetailDrawer({
                       Template Jas yang Digenerate:
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {order.templateIds.map((tpl) => (
+                      {templateIds.map((tpl) => (
                         <span
                           key={tpl}
                           className="px-3 py-1 rounded-xl text-xs font-semibold bg-[#D9B06F]/10 text-[#8A6528] dark:text-[#D9B06F] border border-[#D9B06F]/30"
@@ -531,7 +602,7 @@ export function OrderDetailDrawer({
 
                 {/* Prompt Pelanggan & Moderasi */}
                 {order.customPrompt && (
-                  <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-3">
+                  <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-[#D9B06F]" />
@@ -555,12 +626,12 @@ export function OrderDetailDrawer({
                           : '⛔ Diblokir Filter'}
                       </span>
                     </div>
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle font-mono text-xs text-content-primary italic leading-relaxed flex items-start justify-between gap-3">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card font-mono text-xs text-content-primary italic leading-relaxed flex items-start justify-between gap-3 shadow-xs">
                       <span>&ldquo;{order.customPrompt}&rdquo;</span>
                       <button
                         type="button"
                         onClick={() => handleCopy(order.customPrompt!, 'prompt', 'Prompt pelanggan')}
-                        className="p-1 rounded-lg hover:bg-surface-hover text-content-muted hover:text-content-primary shrink-0"
+                        className="p-1 rounded-lg hover:bg-surface-hover text-content-muted hover:text-content-primary shrink-0 transition-colors"
                         title="Salin prompt"
                       >
                         {copiedKey === 'prompt' ? (
@@ -594,7 +665,7 @@ export function OrderDetailDrawer({
                 </div>
 
                 {/* Detail Transaksi Google Play */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
                       <CreditCard className="w-5 h-5" />
@@ -610,7 +681,7 @@ export function OrderDetailDrawer({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1.5">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-1.5 shadow-xs">
                       <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
                         Google Play Order ID
                       </span>
@@ -634,7 +705,7 @@ export function OrderDetailDrawer({
                       </div>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1.5">
+                    <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-1.5 shadow-xs">
                       <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
                         Purchase Token API
                       </span>
@@ -660,7 +731,7 @@ export function OrderDetailDrawer({
                   </div>
 
                   {/* Financial Breakdown */}
-                  <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-2.5">
+                  <div className="p-4 rounded-xl bg-surface-card border border-border-card space-y-2.5 shadow-xs">
                     <div className="flex justify-between items-center text-content-muted">
                       <span>Harga Asli Paket ({order.packageName})</span>
                       <span className="font-medium text-content-primary">
@@ -765,7 +836,7 @@ export function OrderDetailDrawer({
                 )}
 
                 {/* Masa Simpan Unduhan */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <span className="text-content-muted text-[11px] block">Batas Akses Unduhan Hasil Foto</span>
                     <span className="font-serif text-base font-semibold text-content-primary block">
@@ -802,11 +873,11 @@ export function OrderDetailDrawer({
                         Galeri Hasil Foto FLUX 1.1 Pro
                       </h4>
                       <p className="text-xs text-content-muted">
-                        {order.results.length} dari {order.photoCount} varian foto studio resolusi tinggi selesai dirender.
+                        {results.length} dari {order.photoCount} varian foto studio resolusi tinggi selesai dirender.
                       </p>
                     </div>
 
-                    {order.downloadUrl && order.results.length > 0 && (
+                    {order.downloadUrl && results.length > 0 && (
                       <button
                         type="button"
                         onClick={handleDownloadZip}
@@ -818,7 +889,7 @@ export function OrderDetailDrawer({
                     )}
                   </div>
 
-                  {order.results.length === 0 ? (
+                  {results.length === 0 ? (
                     <div className="p-10 text-center rounded-2xl border border-dashed border-border-subtle text-content-muted space-y-2 bg-surface-card">
                       <Sparkles className="w-8 h-8 mx-auto text-content-muted" />
                       <p className="font-medium text-sm text-content-primary">
@@ -830,12 +901,12 @@ export function OrderDetailDrawer({
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      {order.results.map((res: GeneratedPhotoItem, idx: number) => {
+                      {results.map((res: GeneratedPhotoItem, idx: number) => {
                         const imgUrl = res.imageUrl || resolvePhotoThumbnail(res.templateId, idx);
                         return (
                           <div
                             key={idx}
-                            className="group relative flex flex-col rounded-2xl overflow-hidden bg-surface-card border border-border-subtle hover:border-[#D9B06F]/50 transition-all shadow-sm"
+                            className="group relative flex flex-col rounded-2xl overflow-hidden bg-surface-card border border-border-card hover:border-[#D9B06F]/60 transition-all shadow-sm"
                           >
                             {/* Portrait Aspect Ratio 3:4 */}
                             <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-main">
@@ -908,7 +979,7 @@ export function OrderDetailDrawer({
 
                 {/* Ulasan & Rating Pelanggan */}
                 {order.rating && (
-                  <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-3">
+                  <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -928,7 +999,7 @@ export function OrderDetailDrawer({
                     </div>
 
                     {order.ratingReview && (
-                      <p className="text-xs text-content-primary italic bg-surface-card p-4 rounded-xl border border-border-subtle leading-relaxed">
+                      <p className="text-xs text-content-primary italic bg-surface-card p-4 rounded-xl border border-border-card leading-relaxed shadow-xs">
                         &ldquo;{order.ratingReview}&rdquo;
                       </p>
                     )}
@@ -967,7 +1038,7 @@ export function OrderDetailDrawer({
             {/* TAB 4: RIWAYAT & SIKLUS HIDUP PESANAN */}
             {activeTab === 'riwayat' && (
               <div className="space-y-6 animate-fade-in text-xs">
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-6">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
                       <Clock className="w-5 h-5" />
@@ -986,7 +1057,7 @@ export function OrderDetailDrawer({
                     {/* Event 1: Pesanan Dibuat */}
                     <div className="relative">
                       <div className="absolute -left-7 top-1 w-5 h-5 rounded-full bg-emerald-500 border-4 border-surface-card shadow-xs" />
-                      <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                      <div className="p-4 rounded-xl bg-surface-card border border-border-card shadow-xs space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-content-primary text-sm">
                             Pesanan Dibuat oleh Pelanggan (Guest First)
@@ -1013,7 +1084,7 @@ export function OrderDetailDrawer({
                             : 'bg-rose-500'
                         }`}
                       />
-                      <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                      <div className="p-4 rounded-xl bg-surface-card border border-border-card shadow-xs space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-content-primary text-sm">
                             {order.paymentStatus === 'Dibayar'
@@ -1047,11 +1118,11 @@ export function OrderDetailDrawer({
                             : 'bg-amber-500'
                         }`}
                       />
-                      <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
+                      <div className="p-4 rounded-xl bg-surface-card border border-border-card shadow-xs space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-content-primary text-sm">
                             {order.photoStatus === 'Selesai'
-                              ? `Generator AI Selesai (${order.results.length} Varian Foto)`
+                              ? `Generator AI Selesai (${results.length} Varian Foto)`
                               : order.photoStatus === 'Diproses'
                               ? 'Worker Generator Fal.ai FLUX Berjalan'
                               : order.photoStatus === 'Dibatalkan'
@@ -1078,7 +1149,7 @@ export function OrderDetailDrawer({
                 {/* Form Input Catatan Baru */}
                 <form
                   onSubmit={handleAddNote}
-                  className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4"
+                  className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-4"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
@@ -1115,21 +1186,21 @@ export function OrderDetailDrawer({
                 </form>
 
                 {/* Feed Catatan Internal */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
+                <div className="p-5 sm:p-6 rounded-2xl bg-[#F8FAFC] dark:bg-[#1A2234] border border-border-card space-y-4">
                   <span className="font-serif text-base font-semibold text-content-primary block">
-                    Riwayat Catatan ({order.internalNotes?.length || 0})
+                    Riwayat Catatan ({internalNotes.length})
                   </span>
 
-                  {!order.internalNotes || order.internalNotes.length === 0 ? (
-                    <div className="p-8 text-center rounded-xl bg-surface-card border border-border-subtle text-content-muted">
+                  {internalNotes.length === 0 ? (
+                    <div className="p-8 text-center rounded-xl bg-surface-card border border-border-card text-content-muted shadow-xs">
                       <p className="italic">Belum ada catatan internal untuk pesanan ini.</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {order.internalNotes.map((note) => (
+                      {internalNotes.map((note) => (
                         <div
                           key={note.id}
-                          className="p-4 rounded-xl bg-surface-card border border-border-subtle/80 space-y-2"
+                          className="p-4 rounded-xl bg-surface-card border border-border-card shadow-xs space-y-2"
                         >
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2">
@@ -1206,7 +1277,7 @@ export function OrderDetailDrawer({
                 Tutup
               </button>
 
-              {order.results.length > 0 && (
+              {results.length > 0 && (
                 <button
                   type="button"
                   onClick={handleDownloadZip}
@@ -1225,7 +1296,7 @@ export function OrderDetailDrawer({
       {previewPhoto && (
         <div
           onClick={() => setPreviewPhoto(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -1309,7 +1380,7 @@ export function OrderDetailDrawer({
               value={verifyGpaId}
               onChange={(e) => setVerifyGpaId(e.target.value)}
               placeholder="GPA.3312-4982-1192-38192"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary font-mono text-xs focus:outline-none focus:border-[#D9B06F]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary font-mono text-xs focus:outline-none focus:border-[#D9B06F]"
             />
           </div>
           <div>
@@ -1321,7 +1392,7 @@ export function OrderDetailDrawer({
               onChange={(e) => setVerifyReason(e.target.value)}
               placeholder="Contoh: Bukti invoice Google Play terverifikasi via email CS, token terputus saat checkout..."
               rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-[#D9B06F] resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary text-xs focus:outline-none focus:border-[#D9B06F] resize-none"
             />
           </div>
         </div>
@@ -1355,7 +1426,7 @@ export function OrderDetailDrawer({
               onChange={(e) => setRerenderReason(e.target.value)}
               placeholder="Contoh: Kompensasi perbaikan kemiripan kacamata, penyesuaian pencahayaan studio..."
               rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-[#D9B06F] resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary text-xs focus:outline-none focus:border-[#D9B06F] resize-none"
             />
           </div>
         </div>
@@ -1389,7 +1460,7 @@ export function OrderDetailDrawer({
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Contoh: Permintaan pelanggan sebelum generate, foto selfie tidak memenuhi syarat..."
               rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
             />
           </div>
         </div>
@@ -1423,7 +1494,7 @@ export function OrderDetailDrawer({
               onChange={(e) => setRefundReason(e.target.value)}
               placeholder="Contoh: Pelanggan mengajukan voided purchase di Google Play Store, resolusi tiket komplain..."
               rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
             />
           </div>
         </div>

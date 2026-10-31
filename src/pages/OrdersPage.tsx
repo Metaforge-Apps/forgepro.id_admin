@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/common/Card';
 import {
   Download,
@@ -41,17 +41,65 @@ export function OrdersPage() {
   } = useOrderController();
 
   const location = useLocation();
-  const incomingOrderId = (location.state as any)?.selectedOrderId || null;
+  const navigate = useNavigate();
+  const { orderId: routeOrderId } = useParams<{ orderId?: string }>();
+  const [searchParams] = useSearchParams();
+
+  const queryOrderId = searchParams.get('id') || searchParams.get('orderId');
+  const incomingStateOrderId = (location.state as any)?.selectedOrderId || null;
 
   const [activeTab, setActiveTab] = useState<string>('Semua pesanan');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(incomingOrderId);
-
-  const selectedOrder = useMemo(
-    () => orders.find((o) => o.id === selectedOrderId || o.orderNumber === selectedOrderId) ?? null,
-    [orders, selectedOrderId]
+  
+  // Active target ID: priority from route param, query param, location state, or local state
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(
+    routeOrderId || queryOrderId || incomingStateOrderId
   );
+
+  // Synchronize when route params or navigation state change
+  useEffect(() => {
+    if (routeOrderId) {
+      setSelectedOrderId(routeOrderId);
+    } else if (queryOrderId) {
+      setSelectedOrderId(queryOrderId);
+    } else if (incomingStateOrderId) {
+      setSelectedOrderId(incomingStateOrderId);
+    } else {
+      setSelectedOrderId(null);
+    }
+  }, [routeOrderId, queryOrderId, incomingStateOrderId]);
+
+  // Find order in mock DB (case insensitive matching on id or orderNumber)
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return null;
+    const target = selectedOrderId.trim().toLowerCase();
+    return (
+      orders.find(
+        (o) =>
+          o.id.toLowerCase() === target ||
+          o.orderNumber.toLowerCase() === target
+      ) ?? null
+    );
+  }, [orders, selectedOrderId]);
+
+  // Handler to open order detail with clean route-backed navigation
+  const handleSelectOrder = (orderNumOrId: string) => {
+    setSelectedOrderId(orderNumOrId);
+    navigate({
+      pathname: `/pesanan/${orderNumOrId}`,
+      search: location.search,
+    });
+  };
+
+  // Handler to close order detail while preserving current filter, search, and table state
+  const handleCloseDetail = () => {
+    setSelectedOrderId(null);
+    navigate({
+      pathname: '/pesanan',
+      search: location.search,
+    }, { replace: true, state: {} });
+  };
 
   // Dynamic calculations for stat cards
   const stats = useMemo(() => {
@@ -235,14 +283,22 @@ export function OrdersPage() {
               {filteredOrders.map((item) => (
                 <tr
                   key={item.id}
-                  onClick={() => setSelectedOrderId(item.id)}
-                  className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
+                  onClick={() => handleSelectOrder(item.orderNumber)}
+                  className="group hover:bg-surface-hover/50 transition-colors cursor-pointer"
                 >
                   <td className="py-4 pr-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-mono font-bold text-content-primary">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectOrder(item.orderNumber);
+                        }}
+                        className="font-mono font-bold text-content-primary hover:text-[#D9B06F] text-left transition-colors flex items-center gap-1.5 group-hover:underline underline-offset-2"
+                        title="Buka Detail Pesanan"
+                      >
                         {item.orderNumber}
-                      </span>
+                      </button>
                       <span className="text-[11px] text-content-muted">
                         {item.customerEmail}
                       </span>
@@ -302,9 +358,10 @@ export function OrdersPage() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedOrderId(item.id);
+                        handleSelectOrder(item.orderNumber);
                       }}
-                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
+                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-surface-hover"
+                      title="Buka Detail Pesanan"
                     >
                       <span>Detail</span>
                       <span>&rarr;</span>
@@ -343,11 +400,12 @@ export function OrdersPage() {
         </div>
       </div>
 
-      {/* Drawer Detail Pesanan Komprehensif (Fase 2: Rule 9) */}
+      {/* Modal Popup Detail Pesanan Komprehensif */}
       <OrderDetailDrawer
-        open={Boolean(selectedOrder)}
+        open={Boolean(selectedOrderId)}
+        orderId={selectedOrderId || undefined}
         order={selectedOrder}
-        onClose={() => setSelectedOrderId(null)}
+        onClose={handleCloseDetail}
         printPayment={selectedOrder ? getPrintPayment(selectedOrder.orderNumber) : undefined}
         onVerifyManualPayment={verifyManualPayment}
         onRequestAiRegeneration={requestAiRegeneration}

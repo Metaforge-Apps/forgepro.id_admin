@@ -6,7 +6,6 @@ import {
   Search,
   ChevronDown,
   Info,
-  Truck,
 } from 'lucide-react';
 import {
   useOrderController,
@@ -228,7 +227,6 @@ export function OrdersPage() {
                 <th className="pb-3 px-4">TOTAL</th>
                 <th className="pb-3 px-4">PEMBAYARAN</th>
                 <th className="pb-3 px-4">PROSES AI</th>
-                <th className="pb-3 px-4">CETAK FISIK</th>
                 <th className="pb-3 px-4">WAKTU</th>
                 <th className="pb-3 pl-4 pr-6 text-left sticky right-0 bg-surface-card z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">AKSI</th>
               </tr>
@@ -293,17 +291,6 @@ export function OrdersPage() {
                     >
                       {item.photoStatus}
                     </span>
-                  </td>
-
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    {item.hasPhysicalPrint ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D9B06F]">
-                        <Truck className="w-3.5 h-3.5" />
-                        <span>{item.shippingCourier || 'Ya'}</span>
-                      </span>
-                    ) : (
-                      <span className="text-content-muted text-[11px]">Digital saja</span>
-                    )}
                   </td>
 
                   <td className="py-4 px-4 text-content-muted whitespace-nowrap">

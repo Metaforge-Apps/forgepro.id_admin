@@ -75,7 +75,6 @@ export const ROLE_PERMISSIONS: Record<AdminRole, RolePermissionConfig> = {
 export const ROUTE_ACCESS_MAP: Record<string, AdminRole[]> = {
   '/dashboard': ALL_ROLES,
   '/pesanan': ALL_ROLES,
-  '/cetak-pengiriman': ALL_ROLES,
   '/katalog-jas': ALL_ROLES,
   '/katalog-jas/tambah': ALL_ROLES,
   '/katalog-jas/edit': ALL_ROLES,

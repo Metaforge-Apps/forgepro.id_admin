@@ -239,19 +239,6 @@ export function FlutterAppTab({ onShowToast }: FlutterAppTabProps) {
             <div className="divide-y divide-border-subtle/60 text-xs">
               <label className="py-2.5 flex items-center justify-between cursor-pointer">
                 <div>
-                  <span className="font-semibold text-content-primary block">Modul Cetak Fisik & Pengiriman</span>
-                  <span className="text-[11px] text-content-muted">Tampilkan tombol opsi cetak foto setelah AI selesai</span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={flags.enablePhysicalPrint}
-                  onChange={(e) => setFlags({ ...flags, enablePhysicalPrint: e.target.checked })}
-                  className="w-4 h-4 accent-[#D9B06F] rounded"
-                />
-              </label>
-
-              <label className="py-2.5 flex items-center justify-between cursor-pointer">
-                <div>
                   <span className="font-semibold text-content-primary block">Input Prompt Tambahan (Paket Pro & Eksklusif)</span>
                   <span className="text-[11px] text-content-muted">Mengizinkan pengguna mengetik preferensi jas kustom</span>
                 </div>

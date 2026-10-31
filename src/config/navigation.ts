@@ -22,12 +22,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         path: '/pesanan',
         icon: 'History',
       },
-      {
-        id: 'cetak-pengiriman',
-        label: 'Cetak Fisik & Pengiriman',
-        path: '/cetak-pengiriman',
-        icon: 'Activity',
-      },
     ],
   },
   {

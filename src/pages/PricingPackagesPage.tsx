@@ -139,7 +139,7 @@ export function PricingPackagesPage() {
                 <tr
                   key={i}
                   onClick={() => {
-                    if (r.title === 'Cetak fisik & pengiriman') {
+                    if (false) {
                       navigate('/pengaturan');
                     } else if (!r.badge) {
                       navigate('/paket-harga/edit');
@@ -161,7 +161,7 @@ export function PricingPackagesPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (r.title === 'Cetak fisik & pengiriman') {
+                          if (false) {
                             navigate('/pengaturan');
                           } else {
                             navigate('/paket-harga/edit');

@@ -8,7 +8,6 @@ import {
   ShoppingBag,
   Sparkles,
   Ticket,
-  Truck,
   ArrowRight,
   ExternalLink,
 } from 'lucide-react';
@@ -56,18 +55,13 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
       .filter((v) => v.code.toLowerCase().includes(q) || v.title.toLowerCase().includes(q))
       .slice(0, 3);
 
-    const prints = state.orders
-      .filter((o) => o.shippingTrackingNumber && o.shippingTrackingNumber.toLowerCase().includes(q))
-      .slice(0, 3);
-
-    return { orders, styles, vouchers, prints };
+    return { orders, styles, vouchers };
   }, [query, state.orders, state.styles, state.vouchers]);
 
   const hasAnyResults =
     results.orders.length > 0 ||
     results.styles.length > 0 ||
-    results.vouchers.length > 0 ||
-    results.prints.length > 0;
+    results.vouchers.length > 0;
 
   if (!isOpen) return null;
 
@@ -159,42 +153,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
             </div>
           )}
 
-          {/* Group 2: Resi & Pengiriman Cetak */}
-          {results.prints.length > 0 && (
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-content-muted tracking-wider uppercase px-2">
-                Nomor Resi Kurir ({results.prints.length})
-              </span>
-              {results.prints.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    navigate('/cetak-pengiriman', { state: { searchTracking: p.shippingTrackingNumber } });
-                  }}
-                  className="w-full p-2.5 rounded-xl hover:bg-surface-hover text-left flex items-center justify-between gap-3 transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
-                      <Truck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="font-mono text-xs font-bold text-content-primary group-hover:text-[#D9B06F]">
-                        {p.shippingTrackingNumber}
-                      </span>
-                      <span className="text-[11px] text-content-muted block">
-                        Pesanan {p.orderNumber} · {p.shippingCourier} ({p.customerName})
-                      </span>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-content-muted group-hover:text-content-primary" />
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Group 3: Gaya Jas */}
+          {/* Group 2: Gaya Jas */}
           {results.styles.length > 0 && (
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-content-muted tracking-wider uppercase px-2">

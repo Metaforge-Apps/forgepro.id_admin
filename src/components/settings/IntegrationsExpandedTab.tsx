@@ -8,7 +8,6 @@ import {
   Mail,
   HardDrive,
   CreditCard,
-  Truck,
   CheckCircle2,
   RefreshCw,
   ExternalLink,
@@ -42,16 +41,6 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
   const [senderEmail, setSenderEmail] = useState<string>('halo@forgepro.id');
   const [spfDkimVerified, setSpfDkimVerified] = useState<boolean>(true);
 
-  // Payment Gateway Cetak Fisik
-  const [pgProvider, setPgProvider] = useState<string>('Midtrans Snap');
-  const [pgClientKey, setPgClientKey] = useState<string>('SB-Mid-client-••••••••421b');
-  const [pgConnected, setPgConnected] = useState<boolean>(true);
-
-  // Courier API
-  const [courierApiProvider, setCourierApiProvider] = useState<string>('Biteship Logistics API');
-  const [courierKeyMasked, setCourierKeyMasked] = useState<string>('biteship_live_•••••••902c');
-  const [courierConnected, setCourierConnected] = useState<boolean>(true);
-
   // Google Play Developer API
   const [playPackageId, setPlayPackageId] = useState<string>('id.forgepro.android');
   const [playConnected, setPlayConnected] = useState<boolean>(true);
@@ -63,14 +52,6 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
       setFalStatus(true);
       onShowToast('Koneksi ke endpoint FLUX Fal.ai berhasil! Kuota tersedia: $142.50 (~Rp2.250.000).', 'success');
     }, 700);
-  };
-
-  const handleTestCourierConnection = () => {
-    onShowToast('Koneksi ke API Kurir (Biteship) berhasil. Tarif JNE, SiCepat, J&T aktif.', 'success');
-  };
-
-  const handleTestPgConnection = () => {
-    onShowToast('Koneksi Payment Gateway Cetak Fisik (Midtrans Snap) normal.', 'success');
   };
 
   return (
@@ -256,104 +237,7 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
 
         {/* Kolom Kanan (6 Kolom) */}
         <div className="lg:col-span-6 flex flex-col gap-5">
-          {/* Card 4: Payment Gateway Cetak Fisik (Midtrans / Xendit) */}
-          <Card padding="p-6" className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-500">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-content-primary">Payment Gateway Cetak Fisik</h4>
-                  <span className="text-xs text-content-muted">QRIS, Virtual Account, & E-Wallet untuk cetak</span>
-                </div>
-              </div>
-              <StatusBadge status={pgConnected ? 'Aktif' : 'Nonaktif'} variant={pgConnected ? 'emerald' : 'slate'} />
-            </div>
-
-            <div className="flex flex-col gap-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">Penyedia Gateway</label>
-                  <input
-                    type="text"
-                    value={pgProvider}
-                    onChange={(e) => setPgProvider(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">Client Key (Masked)</label>
-                  <input
-                    type="text"
-                    value={pgClientKey}
-                    onChange={(e) => setPgClientKey(e.target.value)}
-                    className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary font-mono focus:outline-none focus:border-[#D9B06F]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={handleTestPgConnection}
-                  className="px-3 py-2 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-semibold transition-colors"
-                >
-                  Uji Koneksi Gateway Cetak
-                </button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Card 5: API Kurir & Logistik (Biteship / RajaOngkir) */}
-          <Card padding="p-6" className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-500/15 text-purple-500">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm text-content-primary">API Kurir &amp; Pelacakan Resi</h4>
-                  <span className="text-xs text-content-muted">Cek ongkir, cetak label, & sinkronisasi status resi</span>
-                </div>
-              </div>
-              <StatusBadge status="Aktif" variant="emerald" />
-            </div>
-
-            <div className="flex flex-col gap-3 text-xs">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-content-primary">Platform Agregator Kurir</label>
-                <input
-                  type="text"
-                  value={courierApiProvider}
-                  onChange={(e) => setCourierApiProvider(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F]"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-content-primary">API Secret Key (Masked)</label>
-                <input
-                  type="text"
-                  value={courierKeyMasked}
-                  onChange={(e) => setCourierKeyMasked(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary font-mono focus:outline-none focus:border-[#D9B06F]"
-                />
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={handleTestCourierConnection}
-                  className="px-3 py-2 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-semibold transition-colors"
-                >
-                  Uji Koneksi Agregator Kurir
-                </button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Card 6: Google Play Developer API & RTDN */}
+          {/* Card 4: Google Play Developer API & RTDN */}
           <Card padding="p-6" className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">

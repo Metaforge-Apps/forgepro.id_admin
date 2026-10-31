@@ -131,9 +131,9 @@ export const INITIAL_PACKAGE_RULES: PackageRuleItem[] = [
     actionText: 'Ubah →',
   },
   {
-    title: 'Cetak fisik & pengiriman',
-    setting: 'Tambahan opsional; biaya cetak dan kirim terpisah',
-    actionText: 'Kelola →',
+    title: 'Format File Hasil AI',
+    setting: 'PNG Resolusi Tinggi (UHD 4K) & EXIF Profil Profesional',
+    actionText: 'Lihat Standar →',
   },
   {
     title: 'Penerapan perubahan',

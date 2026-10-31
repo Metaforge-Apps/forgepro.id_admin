@@ -604,7 +604,7 @@ export function EditPackagePage() {
           </Card>
 
           <span className="text-xs text-content-muted px-1 leading-relaxed">
-            Cetak fisik opsional. Biaya cetak dan pengiriman terpisah dari pembelian produk digital.
+            Seluruh paket foto merupakan produk digital profesional yang ditagih via Google Play Billing.
           </span>
         </div>
       </div>

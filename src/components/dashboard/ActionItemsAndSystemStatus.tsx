@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   RotateCcw,
   ShieldAlert,
-  Truck,
   Radio,
   CheckCircle2,
   Sparkles,
@@ -26,11 +25,8 @@ export function ActionItemsAndSystemStatus() {
   const failedJobsCount = state.aiJobs.filter((j) => j.status === 'Gagal').length;
   const reviewJobsCount = state.aiJobs.filter((j) => j.status === 'Perlu ditinjau').length;
   const failedWebhooksCount = state.webhooks.filter((w) => w.statusType === 'error').length;
-  const pendingResiPrintsCount = state.orders.filter(
-    (o) => o.printPaymentId && !o.shippingTrackingNumber
-  ).length;
 
-  const totalActionItems = failedJobsCount + reviewJobsCount + failedWebhooksCount + pendingResiPrintsCount;
+  const totalActionItems = failedJobsCount + reviewJobsCount + failedWebhooksCount;
 
   return (
     <div className="flex flex-col gap-5">
@@ -61,7 +57,7 @@ export function ActionItemsAndSystemStatus() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Item 1: Review Moderasi AI */}
           <button
             type="button"
@@ -122,37 +118,7 @@ export function ActionItemsAndSystemStatus() {
             </div>
           </button>
 
-          {/* Item 3: Cetak Fisik Menunggu Resi */}
-          <button
-            type="button"
-            onClick={() => navigate('/cetak-pengiriman')}
-            className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-2 ${
-              pendingResiPrintsCount > 0
-                ? 'bg-surface-card border-blue-500/40 hover:bg-blue-500/5 hover:border-blue-500'
-                : 'bg-surface-card/60 border-border-subtle opacity-70'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-content-primary flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-blue-500" />
-                Menunggu Resi
-              </span>
-              <span className={`text-xs font-bold ${pendingResiPrintsCount > 0 ? 'text-blue-500' : 'text-content-muted'}`}>
-                {pendingResiPrintsCount}
-              </span>
-            </div>
-            <p className="text-[11px] text-content-muted">
-              {pendingResiPrintsCount > 0
-                ? 'Cetak lunas menunggu input nomor resi kurir'
-                : 'Semua pesanan cetak memiliki resi'}
-            </p>
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-content-primary pt-1">
-              <span>Ke Modul Cetak</span>
-              <ChevronRight className="w-3 h-3 text-[#D9B06F]" />
-            </div>
-          </button>
-
-          {/* Item 4: Webhook Gagal */}
+          {/* Item 3: Webhook Gagal */}
           <button
             type="button"
             onClick={() => navigate('/log-aktivitas')}
@@ -228,10 +194,10 @@ export function ActionItemsAndSystemStatus() {
 
         <div className="p-3 rounded-xl bg-surface-card border border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Truck className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-xs font-medium text-content-primary">Biteship API</span>
+            <Server className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="text-xs font-medium text-content-primary">Worker Queue</span>
           </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Siap" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Normal" />
         </div>
       </div>
     </div>

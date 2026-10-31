@@ -51,7 +51,6 @@ type TabType =
   | 'ringkasan'
   | 'pembayaran'
   | 'hasil-ai'
-  | 'cetak-pengiriman'
   | 'riwayat'
   | 'catatan';
 
@@ -252,12 +251,6 @@ export function OrderDetailDrawer({
     { id: 'ringkasan', label: 'Ringkasan', icon: FileText },
     { id: 'pembayaran', label: 'Pembayaran IAP', icon: CreditCard },
     { id: 'hasil-ai', label: 'Hasil Foto FLUX', icon: Sparkles, badgeCount: order.results.length },
-    {
-      id: 'cetak-pengiriman',
-      label: 'Cetak & Pengiriman',
-      icon: Truck,
-      badgeCount: order.hasPhysicalPrint ? 1 : undefined,
-    },
     { id: 'riwayat', label: 'Riwayat & Siklus', icon: Clock },
     {
       id: 'catatan',
@@ -304,13 +297,6 @@ export function OrderDetailDrawer({
                 {/* Status Badges */}
                 <StatusBadge status={order.paymentStatus} size="sm" />
                 <StatusBadge status={order.photoStatus} size="sm" />
-
-                {order.hasPhysicalPrint && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#D9B06F]/15 text-[#8A6528] dark:text-[#D9B06F] border border-[#D9B06F]/30">
-                    <Truck className="w-3 h-3" />
-                    <span>Cetak Fisik ({order.shippingCourier || 'Kurir'})</span>
-                  </span>
-                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 text-xs text-content-muted">
@@ -978,239 +964,7 @@ export function OrderDetailDrawer({
               </div>
             )}
 
-            {/* TAB 4: CETAK FISIK & PENGIRIMAN */}
-            {activeTab === 'cetak-pengiriman' && (
-              <div className="space-y-6 animate-fade-in text-xs">
-                {!order.hasPhysicalPrint ? (
-                  <div className="p-10 text-center rounded-2xl border border-dashed border-border-subtle text-content-muted space-y-2 bg-surface-card">
-                    <Truck className="w-8 h-8 mx-auto text-content-muted" />
-                    <p className="font-medium text-sm text-content-primary">
-                      Tidak Ada Pesanan Cetak Fisik
-                    </p>
-                    <p className="text-xs max-w-md mx-auto">
-                      Pesanan ini merupakan paket digital foto AI murni dan tidak mencakup layanan cetak fisik atau pengiriman kurir.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Status Pembayaran Cetak Fisik (Payment Gateway) */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
-                            <CreditCard className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-serif text-base font-semibold text-content-primary">
-                              Pembayaran Cetak Fisik &amp; Ongkir (Gateway)
-                            </h4>
-                            <p className="text-[11px] text-content-muted">
-                              Cetak fisik tidak melalui Google Play melainkan payment gateway lokal (QRIS/VA).
-                            </p>
-                          </div>
-                        </div>
-
-                        <StatusBadge
-                          status={printPayment?.status || order.printPaymentStatus || 'Menunggu'}
-                          size="sm"
-                        />
-                      </div>
-
-                      {printPayment && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
-                          <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
-                            <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                              Provider Gateway
-                            </span>
-                            <span className="font-semibold text-content-primary block uppercase">
-                              {printPayment.provider} • {printPayment.channelLabel}
-                            </span>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
-                            <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                              Ref ID Transaksi
-                            </span>
-                            <span className="font-mono text-xs text-content-primary block truncate">
-                              {printPayment.externalRefId}
-                            </span>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
-                            <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                              Rincian Biaya
-                            </span>
-                            <span className="font-medium text-content-primary block text-xs">
-                              {formatRupiah(printPayment.printCostRp)} (Ctk) + {formatRupiah(printPayment.shippingCostRp)} (Ongkir)
-                            </span>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-surface-card border border-border-subtle/70">
-                            <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block mb-1">
-                              Total Ditagihkan
-                            </span>
-                            <span className="font-serif text-base font-bold text-[#9A7432] dark:text-[#D9B06F] block">
-                              {formatRupiah(printPayment.totalAmountRp)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Data Pengiriman & Alamat */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#D9B06F]/10 border border-[#D9B06F]/20 flex items-center justify-center text-[#D9B06F] shrink-0">
-                            <Truck className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-serif text-base font-semibold text-content-primary">
-                              Alamat Pengiriman &amp; Ekspedisi Kurir
-                            </h4>
-                            <p className="text-[11px] text-content-muted">
-                              Penerima, spesifikasi bingkai fisik, dan nomor resi pengiriman.
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const full = `${order.recipientName || order.customerName}\n${order.customerPhone}\n${order.shippingAddress}`;
-                            handleCopy(full, 'addr', 'Alamat lengkap');
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors shadow-xs"
-                        >
-                          {copiedKey === 'addr' ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                          <span>Salin Alamat</span>
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                        <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
-                            Nama Penerima &amp; Kontak
-                          </span>
-                          <span className="font-semibold text-content-primary text-sm block">
-                            {order.recipientName || order.customerName}
-                          </span>
-                          <span className="font-mono text-content-muted text-xs block">
-                            {order.customerPhone || '-'}
-                          </span>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
-                            Spesifikasi Cetak
-                          </span>
-                          <span className="font-semibold text-content-primary text-sm block">
-                            {order.printSpec || 'Cetak 4 × 6 cm · Bingkai Premium'}
-                          </span>
-                          <span className="text-content-muted text-xs block">
-                            Laminasi doff anti sidik jari
-                          </span>
-                        </div>
-
-                        <div className="sm:col-span-2 p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
-                            Alamat Pengiriman Lengkap
-                          </span>
-                          <p className="font-medium text-content-primary text-xs leading-relaxed">
-                            {order.shippingAddress || 'Alamat belum diisi oleh pelanggan.'}
-                          </p>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
-                            Ekspedisi Kurir
-                          </span>
-                          <span className="font-semibold text-content-primary text-sm block">
-                            {order.shippingCourier || 'JNE Regular'}
-                          </span>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <span className="text-content-muted text-[10px] font-semibold uppercase tracking-wider block">
-                            Nomor Resi Pelacakan
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-semibold text-content-primary">
-                              {order.shippingTrackingNumber || 'Belum tersedia'}
-                            </span>
-                            {order.shippingTrackingNumber && order.shippingTrackingNumber !== 'Belum tersedia' && (
-                              <a
-                                href={getCourierTrackingUrl(order.shippingCourier || 'JNE', order.shippingTrackingNumber)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#9A7432] dark:text-[#D9B06F] hover:underline inline-flex items-center gap-1 font-semibold text-xs ml-1"
-                                title="Buka website kurir"
-                              >
-                                <span>Lacak Resi</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Aksi Pembayaran Cetak */}
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                      {printPayment && printPayment.status !== 'dibayar' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              showToast(`Tautan bayar cetak dikirim ulang ke ${order.customerEmail} dan WhatsApp!`, 'success');
-                              mockDb.appendActivityLog({
-                                source: 'Admin Utama',
-                                category: 'Pesanan',
-                                activity: `Kirim ulang tautan tagihan cetak fisik · ${order.orderNumber}`,
-                                result: 'Berhasil',
-                                targetId: order.orderNumber,
-                              });
-                            }}
-                            className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm"
-                          >
-                            Kirim Ulang Tautan Bayar Cetak
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onExtendPrintPayment(order.orderNumber, 24);
-                              showToast('Tenggat bayar cetak fisik diperpanjang +24 jam', 'success');
-                            }}
-                            className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors shadow-xs"
-                          >
-                            + Perpanjang Batas Bayar (24 Jam)
-                          </button>
-                        </>
-                      )}
-
-                      {printPayment && printPayment.status === 'dibayar' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPrintRefundReason('');
-                            setShowPrintRefundModal(true);
-                          }}
-                          className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors"
-                        >
-                          Refund Biaya Cetak Fisik
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* TAB 5: RIWAYAT & SIKLUS HIDUP PESANAN */}
+            {/* TAB 4: RIWAYAT & SIKLUS HIDUP PESANAN */}
             {activeTab === 'riwayat' && (
               <div className="space-y-6 animate-fade-in text-xs">
                 <div className="p-5 sm:p-6 rounded-2xl bg-surface-hover/30 border border-border-subtle space-y-6">
@@ -1313,34 +1067,12 @@ export function OrderDetailDrawer({
                     </div>
 
                     {/* Event 4: Cetak Fisik jika ada */}
-                    {order.hasPhysicalPrint && (
-                      <div className="relative">
-                        <div
-                          className={`absolute -left-7 top-1 w-5 h-5 rounded-full border-4 border-surface-card shadow-xs ${
-                            order.shippingStatus === 'Diterima' || order.shippingStatus === 'Dikirim'
-                              ? 'bg-emerald-500'
-                              : 'bg-[#D9B06F]'
-                          }`}
-                        />
-                        <div className="p-4 rounded-xl bg-surface-card border border-border-subtle/70 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-content-primary text-sm">
-                              Cetak Fisik &amp; Ekspedisi Kurir ({order.shippingStatus || 'Antre Cetak'})
-                            </span>
-                            <span className="text-[11px] text-content-muted">{order.shippingCourier}</span>
-                          </div>
-                          <p className="text-content-muted">
-                            Nomor resi: {order.shippingTrackingNumber || 'Menunggu penyerahan paket ke kurir'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB 6: CATATAN INTERNAL ADMIN */}
+            {/* TAB 5: CATATAN INTERNAL ADMIN */}
             {activeTab === 'catatan' && (
               <div className="space-y-6 animate-fade-in text-xs flex flex-col">
                 {/* Form Input Catatan Baru */}
@@ -1690,40 +1422,6 @@ export function OrderDetailDrawer({
               value={refundReason}
               onChange={(e) => setRefundReason(e.target.value)}
               placeholder="Contoh: Pelanggan mengajukan voided purchase di Google Play Store, resolusi tiket komplain..."
-              rows={2}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
-            />
-          </div>
-        </div>
-      </ConfirmDialog>
-
-      {/* Modal Refund Biaya Cetak Fisik */}
-      <ConfirmDialog
-        open={showPrintRefundModal}
-        onClose={() => setShowPrintRefundModal(false)}
-        title="Refund Biaya Cetak Fisik via Payment Gateway"
-        description={`Tindakan ini akan mengajukan pengembalian dana biaya cetak & ongkir (${printPayment ? formatRupiah(printPayment.totalAmountRp) : '-'}) melalui gateway ${printPayment?.provider.toUpperCase() || 'GATEWAY'}.`}
-        confirmLabel="Refund Biaya Cetak"
-        variant="danger"
-        onConfirm={() => {
-          if (!printRefundReason.trim()) {
-            showToast('Alasan refund cetak fisik wajib diisi', 'danger');
-            return;
-          }
-          onRefundPrintPayment(order.orderNumber, printRefundReason.trim());
-          setShowPrintRefundModal(false);
-          showToast('Refund biaya cetak berhasil diajukan ke gateway', 'success');
-        }}
-      >
-        <div className="space-y-3.5 text-xs my-3">
-          <div>
-            <label className="text-content-muted block mb-1 font-semibold">
-              Alasan Refund Cetak Fisik:
-            </label>
-            <textarea
-              value={printRefundReason}
-              onChange={(e) => setPrintRefundReason(e.target.value)}
-              placeholder="Contoh: Pelanggan membatalkan permintaan cetak sebelum proses laminasi lab..."
               rows={2}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-main text-content-primary text-xs focus:outline-none focus:border-rose-500 resize-none"
             />

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Badge, type BadgeProps } from './Badge';
 
 export type StatusBadgeProps = BadgeProps;

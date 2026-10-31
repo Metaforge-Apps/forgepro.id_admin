@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+﻿import React, { ReactNode } from 'react';
 import { Inbox } from 'lucide-react';
 import { BRAND_CONFIG } from '../../config/branding';
 

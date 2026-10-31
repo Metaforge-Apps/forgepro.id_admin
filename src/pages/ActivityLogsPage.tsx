@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card } from '../components/common/Card';
 import { StatusBadge } from '../components/common/StatusBadge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
   ChevronDown,
   Settings,
-  Info,
   X,
   ExternalLink,
   Download,
@@ -32,6 +31,8 @@ type ActivityTabType = (typeof ACTIVITY_PAGE_TABS)[number];
 
 export function ActivityLogsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const incomingQuery = (location.state as any)?.searchQuery || '';
   const { state, updateState } = useCentralStore();
   const activityLogs = state.activityLogs;
   const webhooks = state.webhooks;
@@ -39,7 +40,7 @@ export function ActivityLogsPage() {
   const [activeTab, setActiveTab] = useState<ActivityTabType>('Log Aktivitas Sistem');
 
   // Filter Activity Log
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(incomingQuery);
   const [activityFilter, setActivityFilter] = useState<string>('Semua aktivitas');
   const [dateFilter, setDateFilter] = useState<string>('Hari ini');
 
@@ -60,8 +61,27 @@ export function ActivityLogsPage() {
     setTimeout(() => setToastMessage(''), 3500);
   };
 
+  const filteredLogs = useMemo(() => {
+    return activityLogs.filter((item) => {
+      if (
+        activityFilter !== 'Semua aktivitas' &&
+        item.category !== activityFilter
+      ) {
+        return false;
+      }
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase();
+        const matchSource = item.source.toLowerCase().includes(q);
+        const matchAct = item.activity.toLowerCase().includes(q);
+        const matchTarget = item.targetId?.toLowerCase().includes(q);
+        if (!matchSource && !matchAct && !matchTarget) return false;
+      }
+      return true;
+    });
+  }, [activityLogs, activityFilter, searchQuery]);
+
   // Export CSV handler
-  const handleExportCsv = () => {
+  const handleExportCsv = useCallback(() => {
     const headers = ['ID', 'Waktu (WIB)', 'Admin / Sumber', 'Kategori', 'Aktivitas', 'Hasil', 'IP Address', 'Entitas Terkait'];
     const rows = filteredLogs.map((log) => [
       log.id,
@@ -83,7 +103,7 @@ export function ActivityLogsPage() {
     a.click();
     URL.revokeObjectURL(url);
     showToast('Log aktivitas berhasil diekspor ke berkas CSV.', 'success');
-  };
+  }, [filteredLogs]);
 
   // Listen to Header "Ekspor log" button
   useEffect(() => {
@@ -95,26 +115,7 @@ export function ActivityLogsPage() {
     };
     window.addEventListener('forgepro-action', handleHeaderAction);
     return () => window.removeEventListener('forgepro-action', handleHeaderAction);
-  }, [activityLogs]);
-
-  const filteredLogs = useMemo(() => {
-    return activityLogs.filter((item) => {
-      if (
-        activityFilter !== 'Semua aktivitas' &&
-        item.category !== activityFilter
-      ) {
-        return false;
-      }
-      if (searchQuery.trim() !== '') {
-        const q = searchQuery.toLowerCase();
-        const matchSource = item.source.toLowerCase().includes(q);
-        const matchAct = item.activity.toLowerCase().includes(q);
-        const matchTarget = item.targetId?.toLowerCase().includes(q);
-        if (!matchSource && !matchAct && !matchTarget) return false;
-      }
-      return true;
-    });
-  }, [activityLogs, activityFilter, searchQuery]);
+  }, [handleExportCsv]);
 
   const webhookStats = useMemo(() => {
     const totalWebhooks = webhooks.length;

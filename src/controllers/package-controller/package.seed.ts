@@ -1,4 +1,4 @@
-import {
+﻿import {
   type PricingPackageItem,
   type PackageRuleItem,
   buildPackageDescription,

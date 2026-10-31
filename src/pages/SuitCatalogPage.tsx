@@ -17,7 +17,6 @@ import {
   LayoutGrid,
   Grid3x3,
   AlertTriangle,
-  Layers,
   Play,
   RotateCcw,
 } from 'lucide-react';

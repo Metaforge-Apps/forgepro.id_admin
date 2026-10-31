@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback } from 'react';
 import { styleController } from './style.controller';
 import {
   SuitStyleItem,
@@ -30,6 +30,7 @@ export function useStyleController() {
   }, []);
 
   const filteredSuits = useMemo(() => {
+    void suits;
     return styleController.getFilteredStyles({
       category: activeCategory,
       status: statusFilter,
@@ -39,10 +40,12 @@ export function useStyleController() {
   }, [suits, activeCategory, statusFilter, searchQuery, sortBy]);
 
   const categoryTabs = useMemo(() => {
+    void suits;
     return styleController.getCategoryTabs();
   }, [suits]);
 
   const summary = useMemo(() => {
+    void suits;
     return styleController.getSummary();
   }, [suits]);
 

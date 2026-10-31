@@ -6,11 +6,8 @@ import { formatTanggalWIB } from '../../config/business';
 import {
   Smartphone,
   AlertTriangle,
-  Radio,
   Sliders,
-  CheckCircle2,
   Bell,
-  Sparkles,
 } from 'lucide-react';
 
 interface FlutterAppTabProps {
@@ -37,7 +34,6 @@ export function FlutterAppTab({ onShowToast }: FlutterAppTabProps) {
 
   // Feature Flags
   const [flags, setFlags] = useState({
-    enablePhysicalPrint: true,
     enableCustomPromptInput: true,
     enableHighResZoomPreview: true,
     enableWhatsAppSupportButton: true,

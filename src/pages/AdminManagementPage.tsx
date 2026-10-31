@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/common/Card';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,13 +7,11 @@ import {
   Shield,
   X,
   KeyRound,
-  RotateCcw,
   LogOut,
   ExternalLink,
   AlertCircle,
   CheckCircle2,
   Mail,
-  UserX,
 } from 'lucide-react';
 import type { AdminMember } from '../types';
 import { useCentralStore } from '../mocks/selectors';
@@ -688,7 +686,7 @@ export function AdminManagementPage() {
                     onClick={() => {
                       const adminName = selectedAdmin.name;
                       setSelectedAdmin(null);
-                      navigate('/log-aktivitas');
+                      navigate('/log-aktivitas', { state: { searchQuery: adminName } });
                     }}
                     className="p-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-medium flex items-center gap-2 transition-colors"
                   >

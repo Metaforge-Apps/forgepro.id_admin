@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { BRAND_CONFIG } from '../../config/branding';
 
 export type LogoVariant = 'horizontal' | 'badge' | 'icon';

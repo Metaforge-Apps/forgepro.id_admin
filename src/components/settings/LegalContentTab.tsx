@@ -9,11 +9,7 @@ import {
   Shield,
   HelpCircle,
   Camera,
-  History,
-  CheckCircle2,
-  Calendar,
   User,
-  Sparkles,
 } from 'lucide-react';
 
 interface LegalContentTabProps {

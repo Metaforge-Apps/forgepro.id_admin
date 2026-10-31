@@ -1,4 +1,4 @@
-import { NavigationSection } from '../types';
+﻿import { NavigationSection } from '../types';
 
 /**
  * Sidebar Navigation Structure

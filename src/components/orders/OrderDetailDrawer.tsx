@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Eye,
@@ -7,14 +7,11 @@ import {
   Check,
   Download,
   RefreshCw,
-  Truck,
   ShieldCheck,
   AlertTriangle,
   Clock,
   Send,
   Star,
-  ExternalLink,
-  DollarSign,
   FileText,
   Sparkles,
   CreditCard,
@@ -25,27 +22,25 @@ import {
   Package,
 } from 'lucide-react';
 import type { OrderItem, GeneratedPhotoItem } from '../../controllers/order-controller/order.types';
-import type { PrintPayment } from '../../types';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { StatusBadge } from '../common/StatusBadge';
 import { useToast } from '../common/Toast';
 import { mockDb } from '../../mocks/db';
-import { getCourierTrackingUrl } from '../../config/business';
 
 export interface OrderDetailDrawerProps {
   order: OrderItem | null;
   orderId?: string;
   open: boolean;
   onClose: () => void;
-  printPayment?: PrintPayment;
+  printPayment?: unknown;
   onVerifyManualPayment: (orderId: string, gpaId: string, reason: string) => void;
   onRequestAiRegeneration: (orderId: string, reason: string) => void;
   onExtendDownload: (orderId: string, daysToAdd: number) => void;
   onAddInternalNote: (orderId: string, note: string) => void;
   onCancelOrder: (orderId: string, reason: string) => void;
   onSyncRefund: (orderId: string, reason: string) => void;
-  onExtendPrintPayment: (orderNumber: string, hours: number) => void;
-  onRefundPrintPayment: (orderNumber: string, reason: string) => void;
+  onExtendPrintPayment?: (orderNumber: string, hours: number) => void;
+  onRefundPrintPayment?: (orderNumber: string, reason: string) => void;
 }
 
 type TabType =
@@ -125,15 +120,12 @@ export function OrderDetailDrawer({
   orderId,
   open,
   onClose,
-  printPayment,
   onVerifyManualPayment,
   onRequestAiRegeneration,
   onExtendDownload,
   onAddInternalNote,
   onCancelOrder,
   onSyncRefund,
-  onExtendPrintPayment,
-  onRefundPrintPayment,
 }: OrderDetailDrawerProps) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('ringkasan');
@@ -155,9 +147,6 @@ export function OrderDetailDrawer({
   const [showRefundModal, setShowRefundModal] = useState<boolean>(false);
   const [refundReason, setRefundReason] = useState<string>('');
 
-  const [showPrintRefundModal, setShowPrintRefundModal] = useState<boolean>(false);
-  const [printRefundReason, setPrintRefundReason] = useState<string>('');
-
   // Lightbox Zoom Photo state
   const [previewPhoto, setPreviewPhoto] = useState<{
     url: string;
@@ -169,6 +158,27 @@ export function OrderDetailDrawer({
   const [newNoteText, setNewNoteText] = useState<string>('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Unconditional memoization hooks complying with React Rules of Hooks
+  const emailVal = order?.customerEmail;
+  const phoneVal = order?.customerPhone;
+
+  const maskedEmail = useMemo(() => {
+    if (!emailVal) return '';
+    if (isCustomerUnmasked) return emailVal;
+    const parts = emailVal.split('@');
+    if (parts.length < 2) return '***@mail.com';
+    const user = parts[0];
+    const visibleLen = Math.min(2, user.length);
+    return `${user.substring(0, visibleLen)}***@${parts[1]}`;
+  }, [emailVal, isCustomerUnmasked]);
+
+  const maskedPhone = useMemo(() => {
+    if (!phoneVal) return '-';
+    if (isCustomerUnmasked) return phoneVal;
+    if (phoneVal.length < 6) return '0812-****';
+    return `${phoneVal.slice(0, 4)}-****-${phoneVal.slice(-3)}`;
+  }, [phoneVal, isCustomerUnmasked]);
+
   // Handle ESC key to close modal
   useEffect(() => {
     if (!open) return;
@@ -176,14 +186,14 @@ export function OrderDetailDrawer({
       if (e.key === 'Escape') {
         if (previewPhoto) {
           setPreviewPhoto(null);
-        } else if (!showVerifyModal && !showRerenderModal && !showCancelModal && !showRefundModal && !showPrintRefundModal) {
+        } else if (!showVerifyModal && !showRerenderModal && !showCancelModal && !showRefundModal) {
           onClose();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose, previewPhoto, showVerifyModal, showRerenderModal, showCancelModal, showRefundModal, showPrintRefundModal]);
+  }, [open, onClose, previewPhoto, showVerifyModal, showRerenderModal, showCancelModal, showRefundModal]);
 
   if (!open) return null;
 
@@ -277,22 +287,6 @@ export function OrderDetailDrawer({
       showToast('Data kontak pelanggan ditampilkan dan dicatat di log audit privasi', 'info');
     }
   };
-
-  const maskedEmail = useMemo(() => {
-    if (isCustomerUnmasked) return order.customerEmail;
-    const parts = order.customerEmail.split('@');
-    if (parts.length < 2) return '***@mail.com';
-    const user = parts[0];
-    const visibleLen = Math.min(2, user.length);
-    return `${user.substring(0, visibleLen)}***@${parts[1]}`;
-  }, [order.customerEmail, isCustomerUnmasked]);
-
-  const maskedPhone = useMemo(() => {
-    if (!order.customerPhone) return '-';
-    if (isCustomerUnmasked) return order.customerPhone;
-    if (order.customerPhone.length < 6) return '0812-****';
-    return `${order.customerPhone.slice(0, 4)}-****-${order.customerPhone.slice(-3)}`;
-  }, [order.customerPhone, isCustomerUnmasked]);
 
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   getStatusBadgeClasses,
   TONE_BADGE_CLASSES,

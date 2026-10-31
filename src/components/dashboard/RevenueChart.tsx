@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { DashboardPeriodKey } from './Header';
 import { useCentralStore } from '../../mocks/selectors';

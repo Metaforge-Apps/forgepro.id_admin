@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { BRAND_CONFIG } from '../../config/branding';
 

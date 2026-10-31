@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Sistem Warna Umpan Balik & Status Terpusat (Fase 0: 0.4 & 0.5)
  * Aturan Wajib:
  * - Hijau (emerald): berhasil / disimpan / selesai / dibayar / aktif / tayang / diterima / terkirim

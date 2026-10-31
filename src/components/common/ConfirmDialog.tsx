@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+﻿import React, { useState, ReactNode } from 'react';
 import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { Modal } from './Modal';
 import { BRAND_CONFIG } from '../../config/branding';

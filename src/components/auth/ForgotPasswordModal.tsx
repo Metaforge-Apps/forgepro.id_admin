@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, KeyRound, CheckCircle2, AlertCircle, ArrowLeft, Send } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { mockDb } from '../../mocks/db';
@@ -39,15 +39,14 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
     return { label: 'Lemah (Minimal 12 Karakter)', color: 'text-rose-500 bg-rose-500' };
   }, [strength]);
 
-  useEffect(() => {
-    if (open) {
-      setStep('email');
-      setEmail('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setErrorMsg('');
-    }
-  }, [open]);
+  const handleClose = () => {
+    setStep('email');
+    setEmail('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setErrorMsg('');
+    onClose();
+  };
 
   if (!open) return null;
 
@@ -87,7 +86,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
     >
       <div
@@ -99,7 +98,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-5 right-5 p-1.5 rounded-xl text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
         >
           <X className="w-5 h-5" />
@@ -255,7 +254,7 @@ export function ForgotPasswordModal({ open, onClose }: ForgotPasswordModalProps)
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="w-full py-3 rounded-xl font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285] transition-all shadow-sm text-xs"
             >
               Kembali ke Halaman Masuk

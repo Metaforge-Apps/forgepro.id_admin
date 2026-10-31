@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, ReactNode } from 'react';
+﻿import React, { useEffect, useRef, ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 export interface ModalProps {

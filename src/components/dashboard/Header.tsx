@@ -272,13 +272,20 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   const isDashboard = location.pathname === '/dashboard';
   const isDirtyAwarePage = DIRTY_AWARE_PATHS.includes(location.pathname);
-  const [isPageDirty, setIsPageDirty] = useState<boolean>(false);
+  const [dirtyRecord, setDirtyRecord] = useState<{ path: string; dirty: boolean }>({
+    path: location.pathname,
+    dirty: false,
+  });
+
+  const isPageDirty = dirtyRecord.path === location.pathname && dirtyRecord.dirty;
 
   // Status "perubahan belum disimpan" disiarkan oleh halaman aktif (Fase 0: 0.9)
   useEffect(() => {
-    setIsPageDirty(false);
     const handleDirty = (e: Event) => {
-      setIsPageDirty(Boolean((e as CustomEvent<boolean>).detail));
+      setDirtyRecord({
+        path: location.pathname,
+        dirty: Boolean((e as CustomEvent<boolean>).detail),
+      });
     };
     window.addEventListener(DIRTY_STATE_EVENT, handleDirty);
     return () => window.removeEventListener(DIRTY_STATE_EVENT, handleDirty);

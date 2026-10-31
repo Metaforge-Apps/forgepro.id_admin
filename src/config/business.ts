@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized Business Rules, Constants & State Machines for ForgePro.id
  * Fase 0 (0.6 & 0.7): Satu sumber kebenaran aturan bisnis dan transisi status.
  */

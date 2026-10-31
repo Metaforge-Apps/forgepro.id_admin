@@ -6,14 +6,9 @@ import type { MessageTemplateItem, SentMessageLog, MessageChannel } from '../../
 import { formatTanggalWIB } from '../../config/business';
 import {
   Mail,
-  MessageSquare,
   Send,
   Eye,
-  CheckCircle2,
-  AlertCircle,
-  Copy,
   RefreshCw,
-  Sparkles,
   Smartphone,
   Inbox,
   X,

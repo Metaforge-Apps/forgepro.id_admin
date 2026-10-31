@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { StatCard } from '../components/dashboard/StatCard';
 import { RevenueChart } from '../components/dashboard/RevenueChart';
 import { TopPackages } from '../components/dashboard/TopPackages';

@@ -10,17 +10,16 @@ import {
   Clock,
   Trash2,
   FileCheck,
-  AlertTriangle,
   Download,
-  CheckCircle2,
-  Sparkles,
-  Info,
-  Calendar,
   UserX,
 } from 'lucide-react';
 
 interface PrivacyRetentionTabProps {
   onShowToast: (message: string, tone?: 'success' | 'danger' | 'warning' | 'info') => void;
+}
+
+function generateVerificationHash(): string {
+  return `SHA256-${Math.random().toString(36).substring(2, 15).toUpperCase()}`;
 }
 
 export function PrivacyRetentionTab({ onShowToast }: PrivacyRetentionTabProps) {
@@ -107,7 +106,7 @@ Waktu Eksekusi   : ${req.completedAtWib || 'Diproses sekarang'}
 Petugas Eksekutor: ${req.processedBy || 'Sistem ForgePro.id'}
 Status Tindakan  : DIHAPUS PERMANEN (Selfie mentah, log pemrosesan, dan embedding wajah)
 Dasar Hukum      : Pasal 39 UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi
-Hash Verifikasi  : SHA256-${Math.random().toString(36).substring(2, 15).toUpperCase()}
+Hash Verifikasi  : ${generateVerificationHash()}
 ---------------------------------------------------------------
 Dokumen ini sah sebagai tanda bukti penghapusan data resmi ForgePro.id.`;
 

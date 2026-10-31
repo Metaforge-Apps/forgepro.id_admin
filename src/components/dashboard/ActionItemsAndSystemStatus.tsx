@@ -1,19 +1,16 @@
-import React from 'react';
+﻿import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../common/Card';
 import { StatusBadge } from '../common/StatusBadge';
 import { useCentralStore } from '../../mocks/selectors';
 import {
-  AlertTriangle,
   RotateCcw,
   ShieldAlert,
   Radio,
-  CheckCircle2,
   Sparkles,
   Server,
   HardDrive,
   Mail,
-  ExternalLink,
   ChevronRight,
   Flame,
 } from 'lucide-react';

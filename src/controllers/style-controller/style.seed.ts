@@ -1,4 +1,4 @@
-import { SuitStyleItem } from './style.types';
+﻿import { SuitStyleItem } from './style.types';
 
 /**
  * Data awal katalog gaya jas.

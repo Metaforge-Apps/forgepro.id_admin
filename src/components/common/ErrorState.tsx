@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { AlertCircle, RotateCcw } from 'lucide-react';
 import { BRAND_CONFIG } from '../../config/branding';
 

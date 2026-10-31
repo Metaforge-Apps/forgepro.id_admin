@@ -139,9 +139,7 @@ export function PricingPackagesPage() {
                 <tr
                   key={i}
                   onClick={() => {
-                    if (false) {
-                      navigate('/pengaturan');
-                    } else if (!r.badge) {
+                    if (!r.badge) {
                       navigate('/paket-harga/edit');
                     }
                   }}
@@ -161,11 +159,7 @@ export function PricingPackagesPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (false) {
-                            navigate('/pengaturan');
-                          } else {
-                            navigate('/paket-harga/edit');
-                          }
+                          navigate('/paket-harga/edit');
                         }}
                         className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors"
                       >

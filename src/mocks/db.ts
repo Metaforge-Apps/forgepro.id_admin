@@ -1,4 +1,4 @@
-import { INITIAL_SUIT_STYLES } from '../controllers/style-controller/style.seed';
+﻿import { INITIAL_SUIT_STYLES } from '../controllers/style-controller/style.seed';
 import { INITIAL_ORDERS } from '../controllers/order-controller/order.seed';
 import { INITIAL_PACKAGES } from '../controllers/package-controller/package.seed';
 import type { OrderItem as ControllerOrderItem } from '../controllers/order-controller/order.types';

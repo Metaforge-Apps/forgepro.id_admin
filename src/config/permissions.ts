@@ -1,4 +1,4 @@
-export type AdminRole =
+﻿export type AdminRole =
   | 'Admin Utama'
   | 'Operasional'
   | 'Produk'

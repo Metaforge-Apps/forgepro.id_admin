@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Card } from '../components/common/Card';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
@@ -49,9 +49,6 @@ export function EditPackagePage() {
   const [packageName, setPackageName] = useState<string>(
     incomingPkg?.name || ''
   );
-  const [description, setDescription] = useState<string>(
-    incomingPkg?.description || ''
-  );
   const [photoCount, setPhotoCount] = useState<string>(
     String(incomingPkg?.photoCount ?? 12)
   );
@@ -66,9 +63,6 @@ export function EditPackagePage() {
   );
   const [canEditPrompt, setCanEditPrompt] = useState<boolean>(
     Boolean(incomingPkg?.canEditPrompt ?? (incomingPkg?.tier !== 'esensial'))
-  );
-  const [downloadDurationDays, setDownloadDurationDays] = useState<string>(
-    String(incomingPkg?.downloadDurationDays ?? 14)
   );
   const [extraBenefits, setExtraBenefits] = useState<string>(
     incomingPkg?.extraBenefits || ''
@@ -97,13 +91,11 @@ export function EditPackagePage() {
   // Pelacakan perubahan belum disimpan (Fase 0: 0.9)
   const savedSnapshot = {
     packageName: incomingPkg?.name || '',
-    description: incomingPkg?.description || '',
     photoCount: String(incomingPkg?.photoCount ?? 12),
     creditAmount: String(incomingPkg?.creditAmount ?? 60),
     maxTemplates: String(incomingPkg?.maxTemplates ?? 1),
     creditPerPhoto: String(incomingPkg?.creditPerPhoto ?? 5),
     canEditPrompt: Boolean(incomingPkg?.canEditPrompt ?? (incomingPkg?.tier !== 'esensial')),
-    downloadDurationDays: String(incomingPkg?.downloadDurationDays ?? 14),
     extraBenefits: incomingPkg?.extraBenefits || '',
     accessDuration: incomingPkg?.accessDuration || '14 hari',
     displayOrder: String(incomingPkg?.displayOrder ?? 1),
@@ -114,13 +106,11 @@ export function EditPackagePage() {
   };
   const currentSnapshot = {
     packageName,
-    description,
     photoCount,
     creditAmount,
     maxTemplates,
     creditPerPhoto,
     canEditPrompt,
-    downloadDurationDays,
     extraBenefits,
     accessDuration,
     displayOrder,
@@ -159,6 +149,8 @@ export function EditPackagePage() {
       canEditPrompt,
     });
 
+    const durationDays = toInt(accessDuration) || 14;
+
     updatePackage(pkgId, {
       name: packageName,
       description: autoDesc,
@@ -167,9 +159,9 @@ export function EditPackagePage() {
       maxTemplates: toInt(maxTemplates),
       creditPerPhoto: toInt(creditPerPhoto) || 5,
       canEditPrompt,
-      downloadDurationDays: toInt(downloadDurationDays) || 14,
+      downloadDurationDays: durationDays,
       extraBenefits,
-      accessDuration: `${toInt(downloadDurationDays) || 14} hari`,
+      accessDuration: accessDuration.includes('hari') ? accessDuration : `${durationDays} hari`,
       displayOrder: toInt(displayOrder) || 1,
       status,
       sku: productId,

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Membaca berkas gambar menjadi data URL JPEG yang diperkecil, sehingga
  * pratinjau tetap tersedia setelah halaman dimuat ulang (blob URL tidak tahan reload)
  * dan ukuran penyimpanan lokal tetap kecil.

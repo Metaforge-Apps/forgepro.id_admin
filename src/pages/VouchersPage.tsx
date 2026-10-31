@@ -267,8 +267,10 @@ export function VouchersPage() {
     }
     if (editingId) {
       updateVoucher(editingId, input);
+      showToast(`Voucher ${input.code} berhasil diperbarui`, 'success');
     } else {
       createVoucher(input);
+      showToast(`Voucher ${input.code} berhasil dibuat`, 'success');
     }
     closeForm();
   };
@@ -1020,6 +1022,7 @@ export function VouchersPage() {
                         type="button"
                         onClick={() => {
                           toggleActive(selectedVoucher.id);
+                          showToast(`Voucher ${selectedVoucher.code} dinonaktifkan`, 'info');
                           setConfirmDelete(false);
                           setSelectedVoucherId(null);
                         }}
@@ -1048,7 +1051,9 @@ export function VouchersPage() {
                     <button
                       type="button"
                       onClick={() => {
+                        const code = selectedVoucher.code;
                         deleteVoucher(selectedVoucher.id);
+                        showToast(`Voucher ${code} berhasil dihapus`, 'info');
                         setConfirmDelete(false);
                         setSelectedVoucherId(null);
                       }}
@@ -1073,7 +1078,14 @@ export function VouchersPage() {
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => toggleActive(selectedVoucher.id)}
+                    onClick={() => {
+                      const nextStatus = !selectedVoucher.isActive;
+                      toggleActive(selectedVoucher.id);
+                      showToast(
+                        `Voucher ${selectedVoucher.code} ${nextStatus ? 'diaktifkan kembali' : 'dinonaktifkan'}`,
+                        'info'
+                      );
+                    }}
                     className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
                   >
                     {selectedVoucher.isActive ? 'Nonaktifkan' : 'Aktifkan kembali'}

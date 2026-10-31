@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, ShieldAlert, LogOut, RefreshCw } from 'lucide-react';
+import { Clock, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from './Toast';
 
@@ -22,14 +22,18 @@ export function SessionTimeoutManager() {
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(60);
 
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
   const timerRef = useRef<any>(null);
 
-  const recordActivity = () => {
+  useEffect(() => {
+    lastActivityRef.current = Date.now();
+  }, []);
+
+  const recordActivity = useCallback(() => {
     if (!showWarning) {
       lastActivityRef.current = Date.now();
     }
-  };
+  }, [showWarning]);
 
   const handleExtendSession = () => {
     lastActivityRef.current = Date.now();
@@ -38,12 +42,12 @@ export function SessionTimeoutManager() {
     showToast('Sesi panel admin berhasil diperpanjang 30 menit', 'success');
   };
 
-  const handleForceLogout = () => {
+  const handleForceLogout = useCallback(() => {
     setShowWarning(false);
     logout();
     navigate('/login?reason=session_expired');
     showToast('Sesi Anda telah diakhiri demi keamanan', 'info');
-  };
+  }, [logout, navigate, showToast]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -53,7 +57,7 @@ export function SessionTimeoutManager() {
     events.forEach((ev) => window.addEventListener(ev, recordActivity));
 
     timerRef.current = setInterval(() => {
-      const elapsed = Date.now() - lastActivityRef.current;
+      const elapsed = Date.now() - (lastActivityRef.current || Date.now());
       const remainingMs = SESSION_DURATION_MS - elapsed;
 
       if (remainingMs <= 0) {
@@ -71,7 +75,7 @@ export function SessionTimeoutManager() {
       events.forEach((ev) => window.removeEventListener(ev, recordActivity));
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isAuthenticated, showWarning]);
+  }, [isAuthenticated, recordActivity, handleForceLogout]);
 
   if (!isAuthenticated || !showWarning) return null;
 

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+﻿import { ReactNode } from 'react';
 import { type AdminRole } from '../../config/permissions';
 
 export interface RequirePermissionProps {

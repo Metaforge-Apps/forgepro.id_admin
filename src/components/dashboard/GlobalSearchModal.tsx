@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCentralStore } from '../../mocks/selectors';
 import {
   Search,
   X,
-  FileText,
   ShoppingBag,
   Sparkles,
   Ticket,
   ArrowRight,
-  ExternalLink,
 } from 'lucide-react';
 
 interface GlobalSearchModalProps {

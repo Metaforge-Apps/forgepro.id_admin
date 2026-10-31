@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { StatusBadge } from '../common/StatusBadge';
 import { useCentralStore } from '../../mocks/selectors';
-import type { AiQueueJob, BlockedPromptLog } from '../../types';
+import type { AiQueueJob } from '../../types';
 import { formatTanggalWIB, formatRupiah, maskEmail } from '../../config/business';
 import {
   Sparkles,
-  Clock,
   CheckCircle2,
   AlertTriangle,
   RotateCcw,
@@ -15,12 +14,9 @@ import {
   Eye,
   EyeOff,
   ShieldAlert,
-  Search,
-  Filter,
   ExternalLink,
   Plus,
   Trash2,
-  DollarSign,
   Cpu,
 } from 'lucide-react';
 

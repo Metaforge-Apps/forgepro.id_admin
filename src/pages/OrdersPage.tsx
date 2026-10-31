@@ -1,15 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/common/Card';
 import {
-  Download,
   Search,
   ChevronDown,
   Info,
 } from 'lucide-react';
 import {
   useOrderController,
-  type OrderItem,
 } from '../controllers/order-controller';
 import { OrderDetailDrawer } from '../components/orders/OrderDetailDrawer';
 
@@ -29,15 +27,12 @@ export function OrdersPage() {
     orders,
     getPaymentBadgeStyle,
     getPhotoBadgeStyle,
-    getPrintPayment,
     verifyManualPayment,
     requestAiRegeneration,
     extendDownloadDuration,
     addInternalNote,
     cancelOrder,
     syncGooglePlayRefund,
-    extendPrintPaymentDeadline,
-    refundPrintPayment,
   } = useOrderController();
 
   const location = useLocation();
@@ -52,23 +47,8 @@ export function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
   
-  // Active target ID: priority from route param, query param, location state, or local state
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(
-    routeOrderId || queryOrderId || incomingStateOrderId
-  );
-
-  // Synchronize when route params or navigation state change
-  useEffect(() => {
-    if (routeOrderId) {
-      setSelectedOrderId(routeOrderId);
-    } else if (queryOrderId) {
-      setSelectedOrderId(queryOrderId);
-    } else if (incomingStateOrderId) {
-      setSelectedOrderId(incomingStateOrderId);
-    } else {
-      setSelectedOrderId(null);
-    }
-  }, [routeOrderId, queryOrderId, incomingStateOrderId]);
+  // Active target ID: derived directly from route params, query param, or location state
+  const selectedOrderId = routeOrderId || queryOrderId || incomingStateOrderId || null;
 
   // Find order in mock DB (case insensitive matching on id or orderNumber)
   const selectedOrder = useMemo(() => {
@@ -85,7 +65,6 @@ export function OrdersPage() {
 
   // Handler to open order detail with clean route-backed navigation
   const handleSelectOrder = (orderNumOrId: string) => {
-    setSelectedOrderId(orderNumOrId);
     navigate({
       pathname: `/pesanan/${orderNumOrId}`,
       search: location.search,
@@ -94,7 +73,6 @@ export function OrdersPage() {
 
   // Handler to close order detail while preserving current filter, search, and table state
   const handleCloseDetail = () => {
-    setSelectedOrderId(null);
     navigate({
       pathname: '/pesanan',
       search: location.search,
@@ -406,15 +384,12 @@ export function OrdersPage() {
         orderId={selectedOrderId || undefined}
         order={selectedOrder}
         onClose={handleCloseDetail}
-        printPayment={selectedOrder ? getPrintPayment(selectedOrder.orderNumber) : undefined}
         onVerifyManualPayment={verifyManualPayment}
         onRequestAiRegeneration={requestAiRegeneration}
         onExtendDownload={extendDownloadDuration}
         onAddInternalNote={addInternalNote}
         onCancelOrder={cancelOrder}
         onSyncRefund={syncGooglePlayRefund}
-        onExtendPrintPayment={extendPrintPaymentDeadline}
-        onRefundPrintPayment={refundPrintPayment}
       />
     </div>
   );

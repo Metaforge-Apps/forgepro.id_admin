@@ -1,4 +1,4 @@
-import { BrandConfig } from '../types';
+﻿import { BrandConfig } from '../types';
 
 /**
  * Centralized Branding & Application Configuration — ForgePro.id

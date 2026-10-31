@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, ExternalLink, Sparkles, AlertCircle, Info, Truck } from 'lucide-react';
+import { Bell, Check, AlertCircle, Info } from 'lucide-react';
 import { useCentralStore } from '../../mocks/selectors';
 import type { AdminNotificationItem } from '../../types';
 

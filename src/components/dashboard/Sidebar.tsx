@@ -15,7 +15,7 @@ export interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
-  const { canAccessRoute, currentRole } = usePermission();
+  const { currentRole } = usePermission();
   const navigate = useNavigate();
   const location = useLocation();
   const isProfileActive = location.pathname === '/profil';

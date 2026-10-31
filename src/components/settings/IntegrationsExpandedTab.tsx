@@ -1,21 +1,13 @@
 import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { StatusBadge } from '../common/StatusBadge';
-import { isMockMode } from '../../config/business';
 import {
   Sparkles,
   Server,
   Mail,
   HardDrive,
-  CreditCard,
-  CheckCircle2,
   RefreshCw,
-  ExternalLink,
   KeyRound,
-  ShieldCheck,
-  AlertCircle,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 
 interface IntegrationsExpandedTabProps {
@@ -34,16 +26,16 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
   // Storage State
   const [storageBucket, setStorageBucket] = useState<string>('forgepro-production-assets');
   const [signedUrlDuration, setSignedUrlDuration] = useState<number>(15);
-  const [storageLifecycleSynced, setStorageLifecycleSynced] = useState<boolean>(true);
+  const [storageLifecycleSynced] = useState<boolean>(true);
 
   // Email State
   const [emailProvider, setEmailProvider] = useState<string>('SendGrid Pro');
   const [senderEmail, setSenderEmail] = useState<string>('halo@forgepro.id');
-  const [spfDkimVerified, setSpfDkimVerified] = useState<boolean>(true);
+  const [spfDkimVerified] = useState<boolean>(true);
 
   // Google Play Developer API
   const [playPackageId, setPlayPackageId] = useState<string>('id.forgepro.android');
-  const [playConnected, setPlayConnected] = useState<boolean>(true);
+  const [playConnected] = useState<boolean>(true);
 
   const handleTestFalConnection = () => {
     setIsTestingFal(true);
@@ -190,7 +182,10 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
                   <span className="font-semibold text-content-primary block">Aturan Siklus Hidup (Lifecycle Policy)</span>
                   <span className="text-[11px] text-content-muted">Sinkron dengan Kebijakan Retensi UU PDP</span>
                 </div>
-                <StatusBadge status="Tersinkronisasi" variant="emerald" />
+                <StatusBadge
+                  status={storageLifecycleSynced ? 'Tersinkronisasi' : 'Belum Sinkron'}
+                  variant={storageLifecycleSynced ? 'emerald' : 'amber'}
+                />
               </div>
             </div>
           </Card>
@@ -207,7 +202,10 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
                   <span className="text-xs text-content-muted">Pengiriman link unduhan & kuitansi</span>
                 </div>
               </div>
-              <StatusBadge status="SPF & DKIM Valid" variant="emerald" />
+              <StatusBadge
+                status={spfDkimVerified ? 'SPF & DKIM Valid' : 'Belum Terverifikasi'}
+                variant={spfDkimVerified ? 'emerald' : 'amber'}
+              />
             </div>
 
             <div className="flex flex-col gap-3 text-xs">
@@ -249,7 +247,10 @@ export function IntegrationsExpandedTab({ onShowToast }: IntegrationsExpandedTab
                   <span className="text-xs text-content-muted">Verifikasi in-app purchase produk digital</span>
                 </div>
               </div>
-              <StatusBadge status="Tervalidasi" variant="emerald" />
+              <StatusBadge
+                status={playConnected ? 'Tervalidasi' : 'Belum Terhubung'}
+                variant={playConnected ? 'emerald' : 'amber'}
+              />
             </div>
 
             <div className="flex flex-col gap-3 text-xs">

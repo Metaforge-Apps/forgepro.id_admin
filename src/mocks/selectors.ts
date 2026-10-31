@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useMemo } from 'react';
+﻿import { useSyncExternalStore, useMemo } from 'react';
 import { mockDb, type MockDatabaseState } from './db';
 import { BUSINESS_CONFIG } from '../config/business';
 import { formatRupiah, formatRupiahCompact } from '../utils/formatters';

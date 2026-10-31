@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+﻿import { QueryClient } from '@tanstack/react-query';
 
 /**
  * Shared TanStack QueryClient Instance (Fase 0: 0.2)

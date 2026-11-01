@@ -357,7 +357,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           {/* Sisi Kanan Header: Quick Search (Ctrl+K), Notifikasi, ThemeToggle, Pill Periode / Action Buttons */}
-          <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0">
+          <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-center shrink-0">
             {/* Tombol Pencarian Cepat Global (Ctrl+K) */}
             <button
               type="button"

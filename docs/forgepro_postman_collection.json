@@ -1,0 +1,196 @@
+{
+  "info": {
+    "_postman_id": "78a9c80d-8302-4ab1-864f-e5df4859218d",
+    "name": "ForgePro.id Admin Panel API Collection",
+    "description": "Koleksi Postman resmi untuk seluruh endpoint backend panel admin web ForgePro.id.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "1. Login Admin (Step 1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"andi@forgepro.id\",\n  \"password\": \"Admin123!@#Secure\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "2. Verifikasi 2FA TOTP (Step 2)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempSessionToken\": \"{{tempToken}}\",\n  \"totpCode\": \"482910\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/2fa/verify", "host": ["{{baseUrl}}"], "path": ["auth", "2fa", "verify"] }
+          }
+        },
+        {
+          "name": "3. Get Profil Admin Aktif",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Search",
+      "item": [
+        {
+          "name": "Get Dashboard Metrics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/metrics?period=Minggu",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "metrics"],
+              "query": [{ "key": "period", "value": "Minggu" }]
+            }
+          }
+        },
+        {
+          "name": "Pencarian Global (Ctrl+K)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=PRO-20261019",
+              "host": ["{{baseUrl}}"],
+              "path": ["search"],
+              "query": [{ "key": "q", "value": "PRO-20261019" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Daftar Pesanan (List Orders)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/orders?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["orders"] }
+          }
+        },
+        {
+          "name": "Detail Pesanan by OrderNumber",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001"] }
+          }
+        },
+        {
+          "name": "Re-render AI Foto FLUX",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Wajah sedikit buram pada pose kedua.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001/rerender", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001", "rerender"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cetak Fisik & Pengiriman",
+      "item": [
+        {
+          "name": "Daftar Pesanan Cetak",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/prints", "host": ["{{baseUrl}}"], "path": ["prints"] }
+          }
+        },
+        {
+          "name": "Input Nomor Resi Kurir",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier\": \"SiCepat\",\n  \"trackingNumber\": \"004829103847\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/prints/prt-001/tracking", "host": ["{{baseUrl}}"], "path": ["prints", "prt-001", "tracking"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Worker & Moderasi",
+      "item": [
+        {
+          "name": "Daftar Antrean Job Worker",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/ai/jobs", "host": ["{{baseUrl}}"], "path": ["ai", "jobs"] }
+          }
+        },
+        {
+          "name": "Putusan Moderasi Foto",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"job-20261030-008\",\n  \"decision\": \"setujui\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ai/moderasi/review", "host": ["{{baseUrl}}"], "path": ["ai", "moderasi", "review"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Privasi & UU PDP",
+      "item": [
+        {
+          "name": "Trigger Pembersihan Biometrik Rutin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/privacy/jobs/run", "host": ["{{baseUrl}}"], "path": ["privacy", "jobs", "run"] }
+          }
+        },
+        {
+          "name": "Setujui Permohonan Hak Hapus Data (Pasal 39)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/privacy/requests/req-pdp-001/approve", "host": ["{{baseUrl}}"], "path": ["privacy", "requests", "req-pdp-001", "approve"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.forgepro.id/v1", "type": "string" },
+    { "key": "authToken", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "type": "string" },
+    { "key": "tempToken", "value": "tmp_sess_sample_token", "type": "string" }
+  ]
+}

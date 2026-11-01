@@ -1,4 +1,4 @@
-import {
+﻿import {
   SuitStyleItem,
   SuitCategory,
   SuitStatus,
@@ -10,18 +10,15 @@ import {
   SUIT_CATEGORIES,
 } from './style.types';
 import { INITIAL_SUIT_STYLES } from './style.seed';
+import { mockDb } from '../../mocks/db';
+import { getStatusBadgeClasses } from '../../config/statusColors';
 
 export { INITIAL_SUIT_STYLES };
 
-const STORAGE_KEY = 'forgepro_suit_styles_v4';
+const META_STORAGE_KEY = 'forgepro_suit_styles_meta_v1';
 const DEFAULT_IMAGE = '/images/templates/men/navy-eksekutif.jpg';
 
 type StyleListener = () => void;
-
-interface StoredStyles {
-  styles: SuitStyleItem[];
-  lastUpdated: string;
-}
 
 const formatNow = (): string =>
   `${new Date().toLocaleString('id-ID', {
@@ -47,70 +44,50 @@ const buildStats = (status: SuitStatus, count: number): string =>
 /**
  * StyleController — Mengelola seluruh data & operasi Katalog Gaya Jas di ForgePro.id.
  * Bentuk data mengikuti `SuitTemplate` pada aplikasi Flutter.
+ * Seluruh data dibaca/ditulis lewat basis data mock terpusat (src/mocks/db.ts);
+ * jumlah "foto dibuat" dihitung otomatis dari pesanan.
  */
 export class StyleController {
-  private styles: SuitStyleItem[];
   private lastUpdated: string;
-  private listeners: Set<StyleListener> = new Set();
 
   constructor() {
-    const stored = this.loadFromStorage();
-    this.styles = stored.styles;
-    this.lastUpdated = stored.lastUpdated;
+    this.lastUpdated = this.loadLastUpdated();
   }
 
-  private defaults(): StoredStyles {
-    return {
-      styles: INITIAL_SUIT_STYLES.map((s) => ({ ...s, tags: [...(s.tags ?? [])] })),
-      lastUpdated: 'Data bawaan aplikasi',
-    };
-  }
-
-  private loadFromStorage(): StoredStyles {
-    if (typeof window === 'undefined') return this.defaults();
+  private loadLastUpdated(): string {
+    if (typeof window === 'undefined') return 'Data bawaan aplikasi';
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as StoredStyles;
-        if (Array.isArray(parsed?.styles) && parsed.styles.length > 0) {
-          return {
-            styles: parsed.styles.filter((s) =>
-              SUIT_CATEGORIES.includes(s.category)
-            ),
-            lastUpdated: parsed.lastUpdated || 'Data bawaan aplikasi',
-          };
-        }
-      }
+      return localStorage.getItem(META_STORAGE_KEY) || 'Data bawaan aplikasi';
     } catch {
-      // Fallback ke data awal
+      return 'Data bawaan aplikasi';
     }
-    return this.defaults();
   }
 
-  private saveToStorage(): void {
+  private saveLastUpdated(): void {
     if (typeof window === 'undefined') return;
     try {
-      const data: StoredStyles = {
-        styles: this.styles,
-        lastUpdated: this.lastUpdated,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(META_STORAGE_KEY, this.lastUpdated);
     } catch {
       // Abaikan error kuota penyimpanan
     }
   }
 
-  private notify(touch = true): void {
-    if (touch) this.lastUpdated = formatNow();
-    this.saveToStorage();
-    this.listeners.forEach((listener) => listener());
+  /** Daftar gaya selalu dibaca dari basis data terpusat. */
+  private get styles(): SuitStyleItem[] {
+    return mockDb.getState().styles;
+  }
+
+  private set styles(next: SuitStyleItem[]) {
+    mockDb.updateState((prev) => ({ ...prev, styles: next }));
+  }
+
+  private touch(): void {
+    this.lastUpdated = formatNow();
+    this.saveLastUpdated();
   }
 
   public subscribe(listener: StyleListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return mockDb.subscribe(listener);
   }
 
   public getAllStyles(): SuitStyleItem[] {
@@ -208,16 +185,25 @@ export class StyleController {
       updatedAt: formatNow(),
     };
 
+    this.touch();
     this.styles = [newItem, ...this.styles];
-    this.notify();
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Katalog',
+      activity: `Menambahkan gaya baru · ${newItem.name}`,
+      result: 'Berhasil',
+      targetId: newItem.id,
+    });
     return newItem;
   }
 
   public updateStyle(id: string, payload: UpdateSuitStylePayload): SuitStyleItem | null {
     let updatedItem: SuitStyleItem | null = null;
+    let previousItem: SuitStyleItem | null = null;
 
-    this.styles = this.styles.map((item) => {
+    const nextList = this.styles.map((item) => {
       if (item.id !== id) return item;
+      previousItem = item;
 
       const nextStatus: SuitStatus = payload.status ?? item.status;
       updatedItem = {
@@ -241,7 +227,23 @@ export class StyleController {
       return updatedItem;
     });
 
-    if (updatedItem) this.notify();
+    if (updatedItem) {
+      this.touch();
+      this.styles = nextList;
+      const saved = updatedItem as SuitStyleItem;
+      const before = previousItem as SuitStyleItem | null;
+      mockDb.appendActivityLog({
+        source: 'Admin Utama',
+        category: 'Katalog',
+        activity: `Memperbarui gaya · ${saved.name}`,
+        result: 'Berhasil',
+        targetId: saved.id,
+        beforeData: before
+          ? { name: before.name, category: before.category, status: before.status }
+          : undefined,
+        afterData: { name: saved.name, category: saved.category, status: saved.status },
+      });
+    }
     return updatedItem;
   }
 
@@ -253,25 +255,38 @@ export class StyleController {
   }
 
   public deleteStyle(id: string): boolean {
+    const target = this.getStyleById(id);
+    if (!target) return false;
+    if ((target.count || 0) > 0) {
+      console.warn(`[StyleController] Deletion blocked: style ${target.name} has ${target.count} photos.`);
+      return false;
+    }
     const initialLen = this.styles.length;
-    this.styles = this.styles.filter((item) => item.id !== id);
-    const deleted = this.styles.length < initialLen;
-    if (deleted) this.notify();
+    const next = this.styles.filter((item) => item.id !== id);
+    const deleted = next.length < initialLen;
+    if (deleted) {
+      this.touch();
+      this.styles = next;
+      mockDb.appendActivityLog({
+        source: 'Admin Utama',
+        category: 'Katalog',
+        activity: `Menghapus gaya · ${target.name}`,
+        result: 'Berhasil',
+        targetId: target.id,
+      });
+    }
     return deleted;
   }
 
   public resetStyles(): SuitStyleItem[] {
-    this.styles = this.defaults().styles;
     this.lastUpdated = 'Data bawaan aplikasi';
-    this.notify(false);
+    this.saveLastUpdated();
+    this.styles = INITIAL_SUIT_STYLES.map((s) => ({ ...s, tags: [...(s.tags ?? [])] }));
     return this.getAllStyles();
   }
 
   public getStatusBadgeStyle(status: SuitStatus | string): string {
-    if (status === 'Tayang') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   }
 }
 

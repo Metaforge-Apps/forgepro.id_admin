@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TypeScript Definitions for Style Controller (Katalog Gaya Jas — ForgePro.id)
  *
  * Disesuaikan dengan model `SuitTemplate` di aplikasi Flutter

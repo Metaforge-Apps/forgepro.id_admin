@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TypeScript Definitions for Order Controller (Pesanan & Pengiriman — ForgePro.id)
  *
  * Disesuaikan dengan model `Order` pada aplikasi Flutter
@@ -68,12 +68,36 @@ export interface OrderItem {
   shippingTrackingNumber?: string;
   shippingStatus?: ShippingStatus;
   downloadUrl?: string | null;
+  // Detail Teknis Google Play Billing & Moderasi AI (Fase 2: Rule 9)
+  googlePlayOrderId?: string;
+  purchaseToken?: string;
+  promptModerationStatus?: 'Lolos' | 'Ditandai' | 'Diblokir';
+  downloadExpiresAtIso?: string;
+  originalSelfieDeleted?: boolean;
+  rating?: number;
+  ratingReview?: string;
+  internalNotes?: Array<{ id: string; author: string; note: string; timestamp: string }>;
+  printPaymentId?: string;
+  printPaymentStatus?: 'belum_dibayar' | 'menunggu' | 'dibayar' | 'kedaluwarsa' | 'refund';
+  refundAmount?: number;
+  refundReason?: string;
+  refundedAtIso?: string;
 }
 
 export interface UpdateOrderStatusPayload {
   paymentStatus?: PaymentStatus;
   photoStatus?: PhotoGenerationStatus;
   creditsRemaining?: number;
+  googlePlayOrderId?: string;
+  purchaseToken?: string;
+  promptModerationStatus?: 'Lolos' | 'Ditandai' | 'Diblokir';
+  downloadExpiresAtIso?: string;
+  rating?: number;
+  ratingReview?: string;
+  refundAmount?: number;
+  refundReason?: string;
+  refundedAtIso?: string;
+  printPaymentStatus?: 'belum_dibayar' | 'menunggu' | 'dibayar' | 'kedaluwarsa' | 'refund';
 }
 
 export interface UpdateShippingPayload {

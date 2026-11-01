@@ -1,0 +1,262 @@
+{
+  "info": {
+    "_postman_id": "78a9c80d-8302-4ab1-864f-e5df4859218d",
+    "name": "ForgePro-Admin API Collection",
+    "description": "Koleksi Postman v2.1 resmi untuk seluruh endpoint backend panel admin web ForgePro.id, terorganisir per tag fungsional.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Auth Flow",
+      "item": [
+        {
+          "name": "1. Login Admin (Step 1: Kredensial)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@forgepro.id\",\n  \"password\": \"Admin123!@#Secure\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "2. Verifikasi 2FA TOTP (Step 2: 6 Digit)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tempSessionToken\": \"{{tempToken}}\",\n  \"totpCode\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/2fa/verify", "host": ["{{baseUrl}}"], "path": ["auth", "2fa", "verify"] }
+          }
+        },
+        {
+          "name": "3. Get Profil Admin Aktif (/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me", "host": ["{{baseUrl}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "4. Logout Sesi (/auth/logout)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Dashboard & Search",
+      "item": [
+        {
+          "name": "Get Dashboard Summary Metrics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/metrics?period=Minggu",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "metrics"],
+              "query": [{ "key": "period", "value": "Minggu" }]
+            }
+          }
+        },
+        {
+          "name": "Pencarian Global (Ctrl+K)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=PRO-20261019",
+              "host": ["{{baseUrl}}"],
+              "path": ["search"],
+              "query": [{ "key": "q", "value": "PRO-20261019" }]
+            }
+          }
+        },
+        {
+          "name": "Pusat Notifikasi Admin",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/notifications", "host": ["{{baseUrl}}"], "path": ["notifications"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Orders & Payments",
+      "item": [
+        {
+          "name": "Daftar Pesanan (List Orders)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/orders?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["orders"] }
+          }
+        },
+        {
+          "name": "Detail Pesanan by OrderNumber",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001"] }
+          }
+        },
+        {
+          "name": "Verifikasi Manual Google Play Billing (GPA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"googlePlayOrderId\": \"GPA.3312-4982-1192-38192\",\n  \"reason\": \"Bukti pembayaran invoice terverifikasi di konsol Play Store.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001/verify-payment", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001", "verify-payment"] }
+          }
+        },
+        {
+          "name": "Re-render AI Foto FLUX (Fal.ai)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Penyesuaian pencahayaan studio Rembrandt\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001/rerender", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001", "rerender"] }
+          }
+        },
+        {
+          "name": "Sinkronisasi Refund Google Play",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Voided purchases via Play Console webhook RTDN\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/PRO-20261019-001/sync-refund", "host": ["{{baseUrl}}"], "path": ["orders", "PRO-20261019-001", "sync-refund"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Cetak Fisik & Pengiriman",
+      "item": [
+        {
+          "name": "Daftar Pesanan Cetak",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/prints", "host": ["{{baseUrl}}"], "path": ["prints"] }
+          }
+        },
+        {
+          "name": "Input Nomor Resi Kurir",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courier\": \"SiCepat\",\n  \"trackingNumber\": \"004829103847\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/prints/prt-001/tracking", "host": ["{{baseUrl}}"], "path": ["prints", "prt-001", "tracking"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - AI Worker & Moderasi",
+      "item": [
+        {
+          "name": "Daftar Antrean Job Worker Fal.ai",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/ai/jobs", "host": ["{{baseUrl}}"], "path": ["ai", "jobs"] }
+          }
+        },
+        {
+          "name": "Putusan Moderasi Foto",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobId\": \"job-20261030-008\",\n  \"decision\": \"setujui\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ai/moderasi/review", "host": ["{{baseUrl}}"], "path": ["ai", "moderasi", "review"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Privasi & UU PDP No. 27/2022",
+      "item": [
+        {
+          "name": "Trigger Pembersihan Selfie Mentah 24 Jam",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/privacy/jobs/run", "host": ["{{baseUrl}}"], "path": ["privacy", "jobs", "run"] }
+          }
+        },
+        {
+          "name": "Setujui Permohonan Hak Hapus Data (Pasal 39)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/privacy/requests/req-pdp-001/approve", "host": ["{{baseUrl}}"], "path": ["privacy", "requests", "req-pdp-001", "approve"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 - Webhooks Masuk (Simulasi)",
+      "item": [
+        {
+          "name": "Google Play RTDN Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-ForgePro-Signature", "value": "t=1760865129,v1=9f86d081884c7d659a2feaa0c55ad015" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"1.0\",\n  \"packageName\": \"id.forgepro.app\",\n  \"eventTimeMillis\": 1760865129000,\n  \"oneTimeProductNotification\": {\n    \"version\": \"1.0\",\n    \"notificationType\": 1,\n    \"purchaseToken\": \"tok_91fa8e2b814a09c3\",\n    \"sku\": \"forgepro_profesional\"\n  }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/webhooks/google-play", "host": ["{{baseUrl}}"], "path": ["webhooks", "google-play"] }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.forgepro.id/v1", "type": "string" },
+    { "key": "authToken", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "type": "string" },
+    { "key": "tempToken", "value": "tmp_sess_sample_token", "type": "string" }
+  ]
+}

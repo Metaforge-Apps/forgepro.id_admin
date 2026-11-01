@@ -1,21 +1,15 @@
 import React, { useState, useMemo } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Card } from '../components/common/Card';
 import {
-  Download,
   Search,
   ChevronDown,
   Info,
-  X,
-  RefreshCw,
-  Truck,
-  CheckCircle2,
 } from 'lucide-react';
 import {
   useOrderController,
-  type OrderItem,
-  type PaymentStatus,
-  type PhotoGenerationStatus,
 } from '../controllers/order-controller';
+import { OrderDetailDrawer } from '../components/orders/OrderDetailDrawer';
 
 const TABS = [
   'Semua pesanan',
@@ -31,21 +25,59 @@ const formatRupiah = (val: number): string =>
 export function OrdersPage() {
   const {
     orders,
-    updateOrderStatus,
     getPaymentBadgeStyle,
     getPhotoBadgeStyle,
+    verifyManualPayment,
+    requestAiRegeneration,
+    extendDownloadDuration,
+    addInternalNote,
+    cancelOrder,
+    syncGooglePlayRefund,
   } = useOrderController();
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { orderId: routeOrderId } = useParams<{ orderId?: string }>();
+  const [searchParams] = useSearchParams();
+
+  const queryOrderId = searchParams.get('id') || searchParams.get('orderId');
+  const incomingStateOrderId = (location.state as any)?.selectedOrderId || null;
 
   const [activeTab, setActiveTab] = useState<string>('Semua pesanan');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  
+  // Active target ID: derived directly from route params, query param, or location state
+  const selectedOrderId = routeOrderId || queryOrderId || incomingStateOrderId || null;
 
-  const selectedOrder = useMemo(
-    () => orders.find((o) => o.id === selectedOrderId || o.orderNumber === selectedOrderId) ?? null,
-    [orders, selectedOrderId]
-  );
+  // Find order in mock DB (case insensitive matching on id or orderNumber)
+  const selectedOrder = useMemo(() => {
+    if (!selectedOrderId) return null;
+    const target = selectedOrderId.trim().toLowerCase();
+    return (
+      orders.find(
+        (o) =>
+          o.id.toLowerCase() === target ||
+          o.orderNumber.toLowerCase() === target
+      ) ?? null
+    );
+  }, [orders, selectedOrderId]);
+
+  // Handler to open order detail with clean route-backed navigation
+  const handleSelectOrder = (orderNumOrId: string) => {
+    navigate({
+      pathname: `/pesanan/${orderNumOrId}`,
+      search: location.search,
+    });
+  };
+
+  // Handler to close order detail while preserving current filter, search, and table state
+  const handleCloseDetail = () => {
+    navigate({
+      pathname: '/pesanan',
+      search: location.search,
+    }, { replace: true, state: {} });
+  };
 
   // Dynamic calculations for stat cards
   const stats = useMemo(() => {
@@ -87,20 +119,6 @@ export function OrdersPage() {
       return true;
     });
   }, [orders, activeTab, selectedPackage, searchQuery]);
-
-  const handleUpdatePaymentStatus = (newStatus: PaymentStatus) => {
-    if (!selectedOrder) return;
-    updateOrderStatus(selectedOrder.id, { paymentStatus: newStatus });
-    setStatusMessage(`Status pembayaran diperbarui menjadi "${newStatus}"`);
-    setTimeout(() => setStatusMessage(null), 3000);
-  };
-
-  const handleUpdatePhotoStatus = (newStatus: PhotoGenerationStatus) => {
-    if (!selectedOrder) return;
-    updateOrderStatus(selectedOrder.id, { photoStatus: newStatus });
-    setStatusMessage(`Status proses foto diperbarui menjadi "${newStatus}"`);
-    setTimeout(() => setStatusMessage(null), 3000);
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -235,23 +253,30 @@ export function OrdersPage() {
                 <th className="pb-3 px-4">TOTAL</th>
                 <th className="pb-3 px-4">PEMBAYARAN</th>
                 <th className="pb-3 px-4">PROSES AI</th>
-                <th className="pb-3 px-4">CETAK FISIK</th>
                 <th className="pb-3 px-4">WAKTU</th>
-                <th className="pb-3 pl-4 text-left">AKSI</th>
+                <th className="pb-3 pl-4 pr-6 text-left sticky right-0 bg-surface-card z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">AKSI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle/60">
               {filteredOrders.map((item) => (
                 <tr
                   key={item.id}
-                  onClick={() => setSelectedOrderId(item.id)}
-                  className="group hover:bg-surface-hover/40 transition-colors cursor-pointer"
+                  onClick={() => handleSelectOrder(item.orderNumber)}
+                  className="group hover:bg-surface-hover/50 transition-colors cursor-pointer"
                 >
                   <td className="py-4 pr-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-mono font-bold text-content-primary">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectOrder(item.orderNumber);
+                        }}
+                        className="font-mono font-bold text-content-primary hover:text-[#D9B06F] text-left transition-colors flex items-center gap-1.5 group-hover:underline underline-offset-2"
+                        title="Buka Detail Pesanan"
+                      >
                         {item.orderNumber}
-                      </span>
+                      </button>
                       <span className="text-[11px] text-content-muted">
                         {item.customerEmail}
                       </span>
@@ -302,29 +327,19 @@ export function OrdersPage() {
                     </span>
                   </td>
 
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    {item.hasPhysicalPrint ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D9B06F]">
-                        <Truck className="w-3.5 h-3.5" />
-                        <span>{item.shippingCourier || 'Ya'}</span>
-                      </span>
-                    ) : (
-                      <span className="text-content-muted text-[11px]">Digital saja</span>
-                    )}
-                  </td>
-
                   <td className="py-4 px-4 text-content-muted whitespace-nowrap">
                     {item.timeDisplay}
                   </td>
 
-                  <td className="py-4 pl-4 whitespace-nowrap">
+                  <td className="py-4 pl-4 pr-6 whitespace-nowrap sticky right-0 bg-surface-card group-hover:bg-surface-hover/80 z-10 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.12)]">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedOrderId(item.id);
+                        handleSelectOrder(item.orderNumber);
                       }}
-                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1"
+                      className="font-semibold text-content-primary hover:text-[#D9B06F] transition-colors inline-flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-surface-hover"
+                      title="Buka Detail Pesanan"
                     >
                       <span>Detail</span>
                       <span>&rarr;</span>
@@ -363,225 +378,19 @@ export function OrdersPage() {
         </div>
       </div>
 
-      {/* Modal Detail Pesanan & Pengelolaan Status */}
-      {selectedOrder && (
-        <div
-          onClick={() => setSelectedOrderId(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedOrderId(null)}
-              className="absolute top-5 right-5 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2.5 mb-2">
-              <span className="font-mono text-sm font-semibold text-[#D9B06F]">
-                {selectedOrder.orderNumber}
-              </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPaymentBadgeStyle(
-                  selectedOrder.paymentStatus
-                )}`}
-              >
-                {selectedOrder.paymentStatus}
-              </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getPhotoBadgeStyle(
-                  selectedOrder.photoStatus
-                )}`}
-              >
-                {selectedOrder.photoStatus}
-              </span>
-            </div>
-
-            <h3 className="font-serif text-2xl font-medium text-content-primary mb-1">
-              Detail Pesanan #{selectedOrder.orderNumber}
-            </h3>
-            <p className="text-xs text-content-muted mb-4">
-              ID Database: <code className="font-mono">{selectedOrder.id}</code> · {selectedOrder.timeDisplay} WIB
-            </p>
-
-            {statusMessage && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{statusMessage}</span>
-              </div>
-            )}
-
-            <div className="space-y-3 text-xs border-t border-b border-border-subtle py-4">
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Pelanggan</span>
-                <span className="font-semibold text-content-primary text-right">
-                  {selectedOrder.customerName || '-'} ({selectedOrder.customerEmail})
-                </span>
-              </div>
-              {selectedOrder.customerPhone && (
-                <div className="flex items-center justify-between">
-                  <span className="text-content-muted">Nomor WhatsApp / HP</span>
-                  <span className="font-medium text-content-primary">
-                    {selectedOrder.customerPhone}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Paket &amp; Manfaat</span>
-                <span className="font-semibold text-content-primary">
-                  {selectedOrder.packageName} · {selectedOrder.photoCount} foto AI ({selectedOrder.creditsRemaining}/{selectedOrder.totalCredits} kredit)
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Pilihan Gaya Jas</span>
-                <span className="font-semibold text-content-primary">
-                  {selectedOrder.suitType}
-                </span>
-              </div>
-              {selectedOrder.customPrompt && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-content-muted">Prompt Khusus Pelanggan</span>
-                  <p className="p-2.5 rounded-xl bg-surface-hover/60 border border-border-subtle text-content-primary italic">
-                    &ldquo;{selectedOrder.customPrompt}&rdquo;
-                  </p>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Metode Pembayaran</span>
-                <span className="font-medium text-content-primary">
-                  {selectedOrder.paymentMethod}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Total Pembayaran</span>
-                <span className="font-bold text-sm text-[#D9B06F]">
-                  {formatRupiah(selectedOrder.amount)}
-                  {selectedOrder.discount > 0 && (
-                    <span className="text-xs font-normal text-content-muted ml-1.5">
-                      (Diskon {formatRupiah(selectedOrder.discount)} via {selectedOrder.voucherCode})
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              {selectedOrder.hasPhysicalPrint && (
-                <div className="pt-3 border-t border-border-subtle/60 flex flex-col gap-1.5">
-                  <span className="font-semibold text-content-primary flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-[#D9B06F]" />
-                    <span>Cetak Fisik &amp; Pengiriman</span>
-                  </span>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-content-muted">
-                    <div>
-                      <span>Penerima:</span> <span className="font-medium text-content-primary">{selectedOrder.recipientName || '-'}</span>
-                    </div>
-                    <div>
-                      <span>Kurir:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingCourier || 'JNE'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span>Alamat:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingAddress || '-'}</span>
-                    </div>
-                    <div>
-                      <span>No. Resi:</span> <span className="font-mono font-medium text-content-primary">{selectedOrder.shippingTrackingNumber || 'Belum ada'}</span>
-                    </div>
-                    <div>
-                      <span>Status Kirim:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingStatus || 'Antre cetak'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Kontrol Aksi Manajemen Order */}
-            <div className="mt-4 flex flex-col gap-3">
-              <span className="text-xs font-semibold text-content-primary">
-                Aksi Pengelolaan Order
-              </span>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Pembayaran */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-content-muted">Ubah Status Pembayaran:</span>
-                  <div className="flex items-center gap-1.5">
-                    {(['Dibayar', 'Menunggu', 'Gagal'] as PaymentStatus[]).map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => handleUpdatePaymentStatus(st)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                          selectedOrder.paymentStatus === st
-                            ? 'border-[#D9B06F] bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] font-semibold'
-                            : 'border-border-subtle hover:bg-surface-hover text-content-muted'
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Proses AI */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-content-muted">Ubah Status Proses AI:</span>
-                  <div className="flex items-center gap-1.5">
-                    {(['Diproses', 'Selesai', 'Dibatalkan'] as PhotoGenerationStatus[]).map((st) => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => handleUpdatePhotoStatus(st)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                          selectedOrder.photoStatus === st
-                            ? 'border-[#D9B06F] bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] font-semibold'
-                            : 'border-border-subtle hover:bg-surface-hover text-content-muted'
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between gap-2.5 border-t border-border-subtle">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleUpdatePhotoStatus('Diproses');
-                    setStatusMessage('Permintaan render ulang AI berhasil dikirim ke antrean.');
-                  }}
-                  className="px-3.5 py-2 rounded-xl text-xs font-medium border border-border-subtle hover:bg-surface-hover text-content-primary inline-flex items-center gap-1.5 transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-[#D9B06F]" />
-                  <span>Render Ulang AI</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedOrderId(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
-                  >
-                    Tutup
-                  </button>
-                  {selectedOrder.downloadUrl && (
-                    <button
-                      type="button"
-                      onClick={() => alert(`Mengunduh paket hasil foto untuk ${selectedOrder.orderNumber}...`)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] inline-flex items-center gap-1.5 transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Unduh Arsip</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Popup Detail Pesanan Komprehensif */}
+      <OrderDetailDrawer
+        open={Boolean(selectedOrderId)}
+        orderId={selectedOrderId || undefined}
+        order={selectedOrder}
+        onClose={handleCloseDetail}
+        onVerifyManualPayment={verifyManualPayment}
+        onRequestAiRegeneration={requestAiRegeneration}
+        onExtendDownload={extendDownloadDuration}
+        onAddInternalNote={addInternalNote}
+        onCancelOrder={cancelOrder}
+        onSyncRefund={syncGooglePlayRefund}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BRAND_CONFIG } from '../config/branding';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/common/Input';
@@ -7,20 +7,76 @@ import { PasswordInput } from '../components/common/PasswordInput';
 import { Button } from '../components/common/Button';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { Logo } from '../components/common/Logo';
-import { AlertCircle, Sparkles } from 'lucide-react';
+import { ForgotPasswordModal } from '../components/auth/ForgotPasswordModal';
+import {
+  AlertCircle,
+  Sparkles,
+  Lock,
+  Clock,
+} from 'lucide-react';
+
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 menit
 
 /**
- * Login Page Component
- * Mengimplementasikan split-screen login sesuai aset Figma ForgePro.id
+ * Login Page Component ForgePro.id
+ * - Autentikasi langsung: Email & Password
+ * - Perlindungan Brute-force: Akun dikunci 15 menit jika 5x gagal login
+ * - Modal Lupa Kata Sandi dengan tautan verifikasi sekali pakai
+ * - Split-screen tema gelap/terang selaras Figma ForgePro.id
  */
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionReason = searchParams.get('reason');
+
   const { login, isLoading, error: authError, setError } = useAuth();
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
   const [isDemoLoading, setIsDemoLoading] = useState<boolean>(false);
+  const [showForgotModal, setShowForgotModal] = useState<boolean>(false);
+
+  // Lockout State
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    const saved = localStorage.getItem('fp_login_failed_attempts');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const saved = localStorage.getItem('fp_login_lockout_until');
+    return saved ? parseInt(saved, 10) : null;
+  });
+
+  const [lockoutRemainingSec, setLockoutRemainingSec] = useState<number>(0);
+
+  // Check lockout countdown
+  useEffect(() => {
+    if (!lockoutUntil) return;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setLockoutRemainingSec(remaining);
+
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        setFailedAttempts(0);
+        localStorage.removeItem('fp_login_lockout_until');
+        localStorage.removeItem('fp_login_failed_attempts');
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
+
+  const isLocked = Boolean(lockoutUntil && lockoutRemainingSec > 0);
+
+  const formatLockoutTimer = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   const handleDemoLogin = async () => {
     setFormError('');
@@ -40,9 +96,14 @@ export function LoginPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
+
+    if (isLocked) {
+      setFormError(`Akun terkunci sementara. Silakan tunggu ${formatLockoutTimer(lockoutRemainingSec)}.`);
+      return;
+    }
 
     if (!email) {
       setFormError('Alamat email wajib diisi.');
@@ -56,10 +117,25 @@ export function LoginPage() {
 
     try {
       await login(email, password);
+      // Reset failed attempts on success
+      setFailedAttempts(0);
+      localStorage.removeItem('fp_login_failed_attempts');
+      localStorage.removeItem('fp_login_lockout_until');
       navigate('/dashboard');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal masuk akun admin.';
-      setFormError(message);
+      const nextFailures = failedAttempts + 1;
+      setFailedAttempts(nextFailures);
+      localStorage.setItem('fp_login_failed_attempts', nextFailures.toString());
+
+      if (nextFailures >= MAX_FAILED_ATTEMPTS) {
+        const lockTime = Date.now() + LOCKOUT_DURATION_MS;
+        setLockoutUntil(lockTime);
+        localStorage.setItem('fp_login_lockout_until', lockTime.toString());
+        setFormError('Akun terkunci sementara karena 5 kali percobaan login gagal. Silakan tunggu 15 menit.');
+      } else {
+        const message = err instanceof Error ? err.message : 'Kredensial login tidak valid.';
+        setFormError(`${message} (${MAX_FAILED_ATTEMPTS - nextFailures} percobaan tersisa).`);
+      }
     }
   };
 
@@ -77,7 +153,6 @@ export function LoginPage() {
           alt="ForgePro.id Professional Team"
           className="absolute inset-0 w-full h-full object-cover object-center select-none"
         />
-        {/* Subtle vignette/gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0A111C]/30 pointer-events-none" />
       </div>
 
@@ -86,7 +161,7 @@ export function LoginPage() {
         <div className="w-full max-w-[420px] flex flex-col items-center my-auto">
           {/* Logo Badge di Atas Kotak Login */}
           <div className="mb-5 flex flex-col items-center">
-            <Logo variant="badge" size="xl" className="w-32 h-32 sm:w-32 sm:h-32 rounded-2xl" />
+            <Logo variant="badge" size="xl" className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl" />
           </div>
 
           {/* Kartu Form Login */}
@@ -101,21 +176,47 @@ export function LoginPage() {
               </p>
             </div>
 
+            {/* Session Expired Banner */}
+            {sessionReason === 'session_expired' && !formError && (
+              <div className="mb-5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-600 dark:text-amber-400">
+                <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>Sesi Anda telah berakhir demi keamanan data. Silakan masuk kembali.</span>
+              </div>
+            )}
+
+            {/* Lockout Warning Banner */}
+            {isLocked && (
+              <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-500">
+                <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold block">Akun Terkunci Sementara</span>
+                  <span>
+                    Terlalu banyak percobaan gagal. Silakan tunggu{' '}
+                    <strong className="font-mono font-bold text-sm">
+                      {formatLockoutTimer(lockoutRemainingSec)}
+                    </strong>{' '}
+                    sebelum mencoba kembali.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Error Banner jika ada kesalahan validasi */}
-            {(formError || authError) && (
-              <div className="mb-5 p-3 rounded-xl bg-red-500/10 border border-red-500/25 flex items-start gap-2.5 text-xs text-red-400">
+            {(formError || authError) && !isLocked && (
+              <div className="mb-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-xs text-rose-500">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{formError || authError}</span>
               </div>
             )}
 
-            {/* Form Input */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* FORM LOGIN: EMAIL & PASSWORD */}
+            <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
               <Input
                 label={BRAND_CONFIG.login.emailLabel}
                 type="email"
                 placeholder={BRAND_CONFIG.login.emailPlaceholder}
                 value={email}
+                disabled={isLocked}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setFormError('');
@@ -124,32 +225,42 @@ export function LoginPage() {
                 required
               />
 
-              <PasswordInput
-                label={BRAND_CONFIG.login.passwordLabel}
-                placeholder={BRAND_CONFIG.login.passwordPlaceholder}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setFormError('');
-                  if (setError) setError(null);
-                }}
-                required
-              />
+              <div className="space-y-1">
+                <PasswordInput
+                  label={BRAND_CONFIG.login.passwordLabel}
+                  placeholder={BRAND_CONFIG.login.passwordPlaceholder}
+                  value={password}
+                  disabled={isLocked}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFormError('');
+                    if (setError) setError(null);
+                  }}
+                  required
+                />
 
-              {/* Tombol Masuk bergaya Figma */}
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    className="text-[11px] text-[#D9B06F] hover:underline transition-colors"
+                  >
+                    Lupa kata sandi?
+                  </button>
+                </div>
+              </div>
+
               <div className="mt-2">
                 <Button
                   type="submit"
-                  variant="dark"
+                  variant="primary"
                   size="md"
                   fullWidth
-                  disabled={isLoading || isDemoLoading}
+                  disabled={isLoading || isDemoLoading || isLocked}
                   isLoading={isLoading && !isDemoLoading}
-                  className="py-3 font-semibold tracking-wide border-[#2C3B53] hover:border-[#D9B06F]"
+                  className="py-3 font-semibold tracking-wide"
                 >
-                  {isLoading && !isDemoLoading
-                    ? BRAND_CONFIG.login.submitLoading
-                    : BRAND_CONFIG.login.submitButton}
+                  {isLoading && !isDemoLoading ? 'Memverifikasi...' : 'Masuk'}
                 </Button>
               </div>
             </form>
@@ -161,22 +272,30 @@ export function LoginPage() {
                 variant="outline"
                 size="md"
                 fullWidth
-                disabled={isLoading || isDemoLoading}
+                disabled={isLoading || isDemoLoading || isLocked}
                 isLoading={isDemoLoading}
                 onClick={handleDemoLogin}
                 leftIcon={<Sparkles className="w-4 h-4 text-[#D9B06F]" />}
                 className="py-2.5 text-xs font-semibold tracking-wide border-[#D9B06F]/50 text-[#D9B06F] hover:bg-[#D9B06F]/10 hover:border-[#D9B06F] active:scale-[0.99] transition-all"
               >
-                {isDemoLoading ? 'Masuk dengan Akun Demo...' : 'Login with demo account'}
+                {isDemoLoading ? 'Masuk dengan Akun Demo...' : 'Masuk Langsung (Akun Demo)'}
               </Button>
 
-              <p className="text-[11px] text-content-muted text-center">
-                Demo Akun: <span className="text-[#D9B06F] font-medium">admin@forgepro.id</span> / <span className="text-[#D9B06F] font-medium">admin123</span>
-              </p>
+              <div className="text-[11px] text-content-muted text-center space-y-0.5">
+                <p>
+                  Demo Admin: <span className="text-[#D9B06F] font-medium">admin@forgepro.id</span> / <span className="text-[#D9B06F] font-medium">admin123</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        open={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+      />
     </div>
   );
 }

@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/common/Card';
+import { Alert } from '../components/common/Alert';
+import { useBroadcastDirty } from '../components/common/DirtyGuard';
+import type { SemanticFeedbackTone } from '../config/statusColors';
 import { useAuth } from '../context/AuthContext';
 import { BRAND_CONFIG } from '../config/branding';
+import { NAVIGATION_SECTIONS } from '../config/navigation';
+import { mockDb } from '../mocks/db';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield,
   Lock,
-  CheckCircle2,
   Info,
   X
 } from 'lucide-react';
@@ -37,7 +41,7 @@ const ADMIN_RECENT_ACTIVITIES = [
     id: 'act-p4',
     time: '17 Okt, 11:05 WIB',
     module: 'Voucher & Promo',
-    action: 'Mengaktifkan kode promo KARIER20',
+    action: 'Mengaktifkan kode promo KARIRHEMAT',
     status: 'Berhasil',
   },
 ];
@@ -45,7 +49,7 @@ const ADMIN_RECENT_ACTIVITIES = [
 const ACCESS_MODULES = [
   {
     group: 'Operasional',
-    desc: 'Dashboard, Pesanan & Transaksi, Cetak Fisik & Pengiriman',
+    desc: 'Dashboard, Pesanan & Transaksi',
     level: 'Baca & Kelola',
   },
   {
@@ -78,37 +82,80 @@ export function AdminProfilePage() {
   const [timezone, setTimezone] = useState<string>('WIB (UTC+7)');
 
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastVariant, setToastVariant] = useState<SemanticFeedbackTone>('success');
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
 
-  const showToast = (msg: string) => {
+  // Versi tersimpan: acuan untuk deteksi perubahan & pembatalan (Fase 0: 0.9)
+  const [savedProfile, setSavedProfile] = useState({
+    displayName: user?.name || BRAND_CONFIG.defaultAdmin.name,
+    fullName: 'Andi Prasetyo',
+    primaryEmail: 'andi@forgepro.id',
+    loginEmail: user?.email || 'admin@forgepro.id',
+    phone: '+62 812-3456-7890',
+    position: 'Admin Utama · ForgePro.id Admin',
+    locationCity: 'Jakarta Selatan, Indonesia',
+    timezone: 'WIB (UTC+7)',
+  });
+  const currentProfile = {
+    displayName,
+    fullName,
+    primaryEmail,
+    loginEmail,
+    phone,
+    position,
+    locationCity,
+    timezone,
+  };
+  const isDirty = JSON.stringify(savedProfile) !== JSON.stringify(currentProfile);
+  useBroadcastDirty(isDirty);
+
+  const totalAccessibleMenus = useMemo(() => {
+    return NAVIGATION_SECTIONS.reduce((acc, sec) => acc + sec.items.length, 0);
+  }, []);
+
+  const adminSessions = useMemo(() => {
+    return mockDb.getState().adminSessions || [];
+  }, []);
+
+  const activeSessionsCount = adminSessions.length;
+  const currentDeviceLabel =
+    adminSessions.find((s) => s.isCurrent)?.deviceLabel || 'Chrome • macOS (Jakarta)';
+
+  const latestActivity = useMemo(() => {
+    const logs = mockDb.getState().activityLogs || [];
+    return logs.find((l) => l.source === 'Admin Utama') || logs[0] || null;
+  }, []);
+
+  const showToast = (msg: string, variant: SemanticFeedbackTone = 'success') => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
+    setToastVariant(variant);
+    setTimeout(() => setToastMessage(''), 4000);
   };
 
   const handleSaveProfile = () => {
+    if (!isDirty) return;
     if (updateProfile) {
       updateProfile({
         name: displayName.trim() || 'Admin Utama',
         email: loginEmail.trim() || 'admin@forgepro.id',
       });
     }
-    showToast('Profil Admin Utama berhasil diperbarui.');
+    setSavedProfile(currentProfile);
+    showToast('Profil Admin Utama berhasil diperbarui.', 'success');
   };
 
   const handleResetProfile = () => {
-    setDisplayName('Admin Utama');
-    setFullName('Andi Prasetyo');
-    setPrimaryEmail('andi@forgepro.id');
-    setLoginEmail('admin@forgepro.id');
-    setPhone('+62 812-3456-7890');
-    setPosition('Admin Utama · ForgePro.id Admin');
-    if (updateProfile) {
-      updateProfile({
-        name: 'Admin Utama',
-        email: 'admin@forgepro.id',
-      });
-    }
-    showToast('Perubahan dibatalkan dan dikembalikan ke profil awal.');
+    if (!isDirty) return;
+    setDisplayName(savedProfile.displayName);
+    setFullName(savedProfile.fullName);
+    setPrimaryEmail(savedProfile.primaryEmail);
+    setLoginEmail(savedProfile.loginEmail);
+    setPhone(savedProfile.phone);
+    setPosition(savedProfile.position);
+    setLocationCity(savedProfile.locationCity);
+    setTimezone(savedProfile.timezone);
+    // Pembatalan memakai warna merah sesuai aturan umpan balik (Fase 0: 0.5)
+    showToast(BRAND_CONFIG.feedback.cancelledReset, 'danger');
   };
 
   // Listen to Header "Batalkan" & "Simpan profil" buttons
@@ -131,19 +178,11 @@ export function AdminProfilePage() {
     <div className="flex flex-col gap-6">
       {/* Feedback Toast Banner */}
       {toastMessage && (
-        <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium animate-fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{toastMessage}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToastMessage('')}
-            className="text-content-muted hover:text-content-primary"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <Alert
+          variant={toastVariant}
+          message={toastMessage}
+          onClose={() => setToastMessage('')}
+        />
       )}
 
       {/* Top Profile Identity Card */}
@@ -209,7 +248,7 @@ export function AdminProfilePage() {
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            Seluruh 9 menu panel admin
+            Seluruh {totalAccessibleMenus} menu panel admin
           </span>
         </Card>
 
@@ -233,11 +272,11 @@ export function AdminProfilePage() {
               Sesi perangkat aktif
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              1 sesi
+              {activeSessionsCount} sesi
             </span>
           </div>
-          <span className="text-xs text-content-muted mt-4 block">
-            Chrome • macOS (Jakarta)
+          <span className="text-xs text-content-muted mt-4 block truncate" title={currentDeviceLabel}>
+            {currentDeviceLabel}
           </span>
         </Card>
 
@@ -247,11 +286,11 @@ export function AdminProfilePage() {
               Aktivitas terakhir
             </span>
             <span className="font-serif text-3xl lg:text-[32px] font-medium tracking-tight text-content-primary">
-              16:20
+              {latestActivity ? latestActivity.time.split(',')[1]?.trim().split(' ')[0] || '16:20' : '16:20'}
             </span>
           </div>
           <span className="text-xs text-content-muted mt-4 block">
-            19 Oktober 2026 · WIB
+            {latestActivity ? latestActivity.time : '19 Oktober 2026 · WIB'}
           </span>
         </Card>
       </div>
@@ -373,14 +412,16 @@ export function AdminProfilePage() {
               <button
                 type="button"
                 onClick={handleResetProfile}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors"
+                disabled={!isDirty}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={handleSaveProfile}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] transition-colors"
+                disabled={!isDirty}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Simpan perubahan profil
               </button>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   OrderItem,
   PaymentStatus,
   PhotoGenerationStatus,
@@ -6,86 +6,97 @@ import {
   UpdateOrderStatusPayload,
   UpdateShippingPayload,
 } from './order.types';
-import { INITIAL_ORDERS } from './order.seed';
-
-const STORAGE_KEY = 'forgepro_orders_v3';
+import { mockDb } from '../../mocks/db';
+import {
+  canTransitionShippingStatus,
+  validateOrderStateCombination,
+} from '../../config/business';
+import { getStatusBadgeClasses } from '../../config/statusColors';
+import type { PrintPayment, PrintPaymentStatus } from '../../types';
 
 type OrderListener = () => void;
 
 export class OrderController {
-  private orders: OrderItem[];
-  private listeners: Set<OrderListener> = new Set();
-
-  constructor() {
-    this.orders = this.loadFromStorage();
-  }
-
-  private loadFromStorage(): OrderItem[] {
-    if (typeof window === 'undefined') return [...INITIAL_ORDERS];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as OrderItem[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return [...INITIAL_ORDERS];
-  }
-
-  private saveToStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.orders));
-    } catch {
-      // Ignore quota
-    }
-  }
-
-  private notify(): void {
-    this.saveToStorage();
-    this.listeners.forEach((l) => l());
-  }
-
   public subscribe(listener: OrderListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return mockDb.subscribe(listener);
   }
 
   public getAllOrders(): OrderItem[] {
-    return [...this.orders];
+    return [...mockDb.getState().orders];
   }
 
   public getOrderById(id: string): OrderItem | undefined {
-    return this.orders.find((o) => o.id === id || o.orderNumber === id);
+    return mockDb
+      .getState()
+      .orders.find((o) => o.id === id || o.orderNumber === id);
   }
 
   public getPhysicalPrintOrders(): OrderItem[] {
-    return this.orders.filter((o) => o.hasPhysicalPrint);
+    return mockDb.getState().orders.filter((o) => o.hasPhysicalPrint);
   }
 
   public updateOrderStatus(
     id: string,
     payload: UpdateOrderStatusPayload
   ): OrderItem | null {
-    let updated: OrderItem | null = null;
-    this.orders = this.orders.map((o) => {
-      if (o.id !== id && o.orderNumber !== id) return o;
-      updated = {
-        ...o,
-        paymentStatus: payload.paymentStatus ?? o.paymentStatus,
-        photoStatus: payload.photoStatus ?? o.photoStatus,
-        creditsRemaining: payload.creditsRemaining ?? o.creditsRemaining,
-      };
-      return updated;
+    const currentOrders = mockDb.getState().orders;
+    const target = currentOrders.find(
+      (o) => o.id === id || o.orderNumber === id
+    );
+    if (!target) return null;
+
+    const nextPayment: PaymentStatus =
+      payload.paymentStatus ?? target.paymentStatus;
+    let nextPhoto: PhotoGenerationStatus =
+      payload.photoStatus ?? target.photoStatus;
+
+    // Jika pembayaran berubah menjadi Gagal, proses foto otomatis Dibatalkan
+    if (payload.paymentStatus === 'Gagal' && !payload.photoStatus) {
+      nextPhoto = 'Dibatalkan';
+    } else if (
+      payload.paymentStatus === 'Menunggu' &&
+      !payload.photoStatus &&
+      (nextPhoto === 'Diproses' || nextPhoto === 'Selesai')
+    ) {
+      nextPhoto = 'Belum mulai';
+    }
+
+    // Validasi kombinasi status (Fase 0: 0.7 — tidak boleh Menunggu/Gagal tapi Selesai/Diproses)
+    const comboCheck = validateOrderStateCombination(nextPayment, nextPhoto);
+    if (!comboCheck.valid) {
+      nextPhoto = nextPayment === 'Gagal' ? 'Dibatalkan' : 'Belum mulai';
+    }
+
+    const updated: OrderItem = {
+      ...target,
+      paymentStatus: nextPayment,
+      photoStatus: nextPhoto,
+      creditsRemaining: payload.creditsRemaining ?? target.creditsRemaining,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) =>
+        o.id === target.id ? updated : o
+      ),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Memperbarui status pesanan · ${updated.orderNumber} (${updated.paymentStatus} / ${updated.photoStatus})`,
+      result: 'Berhasil',
+      targetId: updated.orderNumber,
+      beforeData: {
+        paymentStatus: target.paymentStatus,
+        photoStatus: target.photoStatus,
+      },
+      afterData: {
+        paymentStatus: updated.paymentStatus,
+        photoStatus: updated.photoStatus,
+      },
     });
 
-    if (updated) this.notify();
     return updated;
   }
 
@@ -93,67 +104,343 @@ export class OrderController {
     id: string,
     payload: UpdateShippingPayload
   ): OrderItem | null {
-    let updated: OrderItem | null = null;
-    this.orders = this.orders.map((o) => {
-      if (o.id !== id && o.orderNumber !== id) return o;
-      updated = {
-        ...o,
-        shippingStatus: payload.shippingStatus ?? o.shippingStatus,
-        shippingTrackingNumber:
-          payload.shippingTrackingNumber !== undefined
-            ? payload.shippingTrackingNumber.trim()
-            : o.shippingTrackingNumber,
-        shippingCourier: payload.shippingCourier ?? o.shippingCourier,
-      };
-      return updated;
+    const currentOrders = mockDb.getState().orders;
+    const target = currentOrders.find(
+      (o) => o.id === id || o.orderNumber === id
+    );
+    if (!target) return null;
+
+    const currentShip = target.shippingStatus ?? 'Antre cetak';
+    const nextShip = payload.shippingStatus ?? currentShip;
+    if (!canTransitionShippingStatus(currentShip, nextShip)) {
+      // Tetap izinkan koreksi manual admin di panel
+    }
+
+    const updated: OrderItem = {
+      ...target,
+      shippingStatus: nextShip,
+      shippingTrackingNumber:
+        payload.shippingTrackingNumber !== undefined
+          ? payload.shippingTrackingNumber.trim()
+          : target.shippingTrackingNumber,
+      shippingCourier: payload.shippingCourier ?? target.shippingCourier,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) =>
+        o.id === target.id ? updated : o
+      ),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Memperbarui pengiriman cetak · ${updated.orderNumber} (${updated.shippingStatus})`,
+      result: 'Berhasil',
+      targetId: updated.orderNumber,
     });
 
-    if (updated) this.notify();
+    return updated;
+  }
+
+  public getPrintPayment(orderNumber: string): PrintPayment | undefined {
+    return mockDb
+      .getState()
+      .printPayments.find((p) => p.orderNumber === orderNumber);
+  }
+
+  public verifyManualPayment(
+    idOrNumber: string,
+    googlePlayOrderId: string,
+    reason: string
+  ): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+
+    const trimmedGpa = googlePlayOrderId.trim();
+    const updated: OrderItem = {
+      ...target,
+      paymentStatus: 'Dibayar',
+      photoStatus: target.photoStatus === 'Belum mulai' ? 'Diproses' : target.photoStatus,
+      googlePlayOrderId: trimmedGpa,
+      purchaseToken: target.purchaseToken || `gpa.manual_${Date.now()}`,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) => (o.id === target.id ? updated : o)),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Verifikasi manual Google Play · ${target.orderNumber} (${trimmedGpa})`,
+      result: 'Berhasil',
+      targetId: target.orderNumber,
+      beforeData: { paymentStatus: target.paymentStatus },
+      afterData: { paymentStatus: 'Dibayar', googlePlayOrderId: trimmedGpa, reason },
+    });
+
+    mockDb.addInternalOrderNote(
+      target.orderNumber,
+      `Verifikasi manual Google Play disetujui (${trimmedGpa}). Alasan: ${reason}`,
+      'Admin Utama'
+    );
+
+    return updated;
+  }
+
+  public requestAiRegeneration(
+    idOrNumber: string,
+    reason: string
+  ): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+
+    const updated: OrderItem = {
+      ...target,
+      photoStatus: 'Diproses',
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) => (o.id === target.id ? updated : o)),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'AI',
+      activity: `Permintaan render ulang AI (Fal.ai FLUX) · ${target.orderNumber} (Estimasi biaya: Rp4.200)`,
+      result: 'Berhasil',
+      targetId: target.orderNumber,
+      afterData: { reason, photoCount: target.photoCount },
+    });
+
+    mockDb.addInternalOrderNote(
+      target.orderNumber,
+      `Render ulang AI diajukan. Alasan: ${reason}`,
+      'Admin Utama'
+    );
+
+    return updated;
+  }
+
+  public extendDownloadDuration(
+    idOrNumber: string,
+    daysToAdd: number = 7
+  ): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+
+    const baseDate = target.downloadExpiresAtIso
+      ? new Date(target.downloadExpiresAtIso)
+      : new Date();
+    baseDate.setDate(baseDate.getDate() + daysToAdd);
+    const newExpiresAt = baseDate.toISOString();
+
+    const updated: OrderItem = {
+      ...target,
+      downloadExpiresAtIso: newExpiresAt,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) => (o.id === target.id ? updated : o)),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Perpanjangan masa unduh foto · ${target.orderNumber} (+${daysToAdd} hari)`,
+      result: 'Berhasil',
+      targetId: target.orderNumber,
+      afterData: { newExpiresAt },
+    });
+
+    return updated;
+  }
+
+  public addInternalNote(
+    idOrNumber: string,
+    note: string,
+    author: string = 'Admin Utama'
+  ): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+    return mockDb.addInternalOrderNote(target.orderNumber, note, author) as OrderItem | null;
+  }
+
+  public cancelOrder(idOrNumber: string, reason: string): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+
+    const updated: OrderItem = {
+      ...target,
+      photoStatus: 'Dibatalkan',
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) => (o.id === target.id ? updated : o)),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Membatalkan proses pesanan · ${target.orderNumber} (Alasan: ${reason})`,
+      result: 'Berhasil',
+      targetId: target.orderNumber,
+    });
+
+    return updated;
+  }
+
+  public syncGooglePlayRefund(
+    idOrNumber: string,
+    reason: string,
+    refundAmount?: number
+  ): OrderItem | null {
+    const target = this.getOrderById(idOrNumber);
+    if (!target) return null;
+
+    const nowIso = new Date().toISOString();
+    const amount = refundAmount ?? target.amount;
+
+    const updated: OrderItem = {
+      ...target,
+      paymentStatus: 'Gagal',
+      photoStatus: 'Dibatalkan',
+      refundAmount: amount,
+      refundReason: reason,
+      refundedAtIso: nowIso,
+    };
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) => (o.id === target.id ? updated : o)),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Keuangan',
+      activity: `Sinkronisasi refund Google Play · ${target.orderNumber} (Rp${amount.toLocaleString('id-ID')})`,
+      result: 'Berhasil',
+      targetId: target.orderNumber,
+      afterData: { refundAmount: amount, reason, nowIso },
+    });
+
+    mockDb.addInternalOrderNote(
+      target.orderNumber,
+      `Refund Google Play diproses: Rp${amount.toLocaleString('id-ID')}. Alasan: ${reason}`,
+      'Admin Utama'
+    );
+
+    return updated;
+  }
+
+  public updatePrintPaymentStatus(
+    orderNumber: string,
+    status: PrintPaymentStatus
+  ): PrintPayment | null {
+    const updated = mockDb.updatePrintPayment(orderNumber, { status });
+    if (updated) {
+      mockDb.updateState((prev) => ({
+        ...prev,
+        orders: prev.orders.map((o) =>
+          o.orderNumber === orderNumber
+            ? { ...o, printPaymentStatus: status }
+            : o
+        ),
+      }));
+    }
+    return updated;
+  }
+
+  public extendPrintPaymentDeadline(
+    orderNumber: string,
+    hoursToAdd: number = 24
+  ): PrintPayment | null {
+    const current = this.getPrintPayment(orderNumber);
+    if (!current) return null;
+    const exp = new Date(current.expiresAt);
+    exp.setHours(exp.getHours() + hoursToAdd);
+    const newExpiresAt = exp.toISOString();
+
+    const updated = mockDb.updatePrintPayment(orderNumber, {
+      expiresAt: newExpiresAt,
+      status: current.status === 'kedaluwarsa' ? 'menunggu' : current.status,
+    });
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Perpanjangan tenggat bayar cetak fisik · ${orderNumber} (+${hoursToAdd} jam)`,
+      result: 'Berhasil',
+      targetId: orderNumber,
+    });
+
+    return updated;
+  }
+
+  public refundPrintPayment(
+    orderNumber: string,
+    reason: string
+  ): PrintPayment | null {
+    const current = this.getPrintPayment(orderNumber);
+    if (!current) return null;
+
+    const updated = mockDb.updatePrintPayment(orderNumber, {
+      status: 'refund',
+    });
+
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((o) =>
+        o.orderNumber === orderNumber
+          ? { ...o, printPaymentStatus: 'refund', shippingStatus: 'Antre cetak' }
+          : o
+      ),
+    }));
+
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Keuangan',
+      activity: `Refund pembayaran cetak fisik via gateway · ${orderNumber} (Rp${current.totalAmountRp.toLocaleString('id-ID')})`,
+      result: 'Berhasil',
+      targetId: orderNumber,
+      afterData: { reason, provider: current.provider },
+    });
+
     return updated;
   }
 
   public deleteOrder(id: string): boolean {
-    const prevLen = this.orders.length;
-    this.orders = this.orders.filter((o) => o.id !== id && o.orderNumber !== id);
-    const deleted = this.orders.length < prevLen;
-    if (deleted) this.notify();
-    return deleted;
+    const exists = mockDb
+      .getState()
+      .orders.some((o) => o.id === id || o.orderNumber === id);
+    if (!exists) return false;
+    mockDb.updateState((prev) => ({
+      ...prev,
+      orders: prev.orders.filter((o) => o.id !== id && o.orderNumber !== id),
+    }));
+    return true;
   }
 
   public resetOrders(): OrderItem[] {
-    this.orders = [...INITIAL_ORDERS];
-    this.notify();
-    return this.getAllOrders();
+    return mockDb.resetToSeed().orders;
   }
 
   public getPaymentBadgeStyle(status: PaymentStatus): string {
-    if (status === 'Dibayar') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Menunggu') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30';
+    return getStatusBadgeClasses(status);
   }
 
   public getPhotoBadgeStyle(status: PhotoGenerationStatus): string {
-    if (status === 'Selesai') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Diproses') {
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   }
 
   public getShippingBadgeStyle(status: ShippingStatus): string {
-    if (status === 'Antre cetak') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    if (status === 'Dicetak' || status === 'Siap dikirim' || status === 'Dikirim') {
-      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
-    }
-    return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
+    return getStatusBadgeClasses(status);
   }
 }
 

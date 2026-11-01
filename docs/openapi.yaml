@@ -1,0 +1,449 @@
+openapi: 3.1.0
+info:
+  title: ForgePro.id Admin Panel API
+  description: |
+    Spesifikasi REST API resmi untuk Web Admin Panel ForgePro.id.
+    Aplikasi foto studio jas profesional berbasis AI (model FLUX via Fal.ai) dengan integrasi Google Play Billing & Cetak Fisik.
+  version: 1.0.0
+  contact:
+    name: Tim Engineering ForgePro.id
+    email: dev@forgepro.id
+
+servers:
+  - url: https://api.forgepro.id/v1
+    description: Server Produksi
+  - url: https://api-staging.forgepro.id/v1
+    description: Server Staging / UAT
+  - url: http://localhost:5000/v1
+    description: Server Lokal Pengembangan
+
+security:
+  - BearerAuth: []
+
+paths:
+  # =========================================================================
+  # AUTHENTICATION & SESSIONS
+  # =========================================================================
+  /auth/login:
+    post:
+      summary: Login email dan kata sandi admin
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: andi@forgepro.id
+                password:
+                  type: string
+                  format: password
+                  example: Admin123!@#Secure
+      responses:
+        '200':
+          description: Kredensial valid, membutuhkan verifikasi 2FA (TOTP)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requiresTwoFactor:
+                    type: boolean
+                    example: true
+                  tempSessionToken:
+                    type: string
+                    example: tmp_sess_908f23ba
+        '401':
+          description: Email atau kata sandi tidak sesuai
+
+  /auth/2fa/verify:
+    post:
+      summary: Verifikasi kode TOTP 2FA
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tempSessionToken, totpCode]
+              properties:
+                tempSessionToken:
+                  type: string
+                totpCode:
+                  type: string
+                  example: '482910'
+      responses:
+        '200':
+          description: Login sukses, mengembalikan token sesi (atau Set-Cookie HttpOnly)
+        '401':
+          description: Kode 2FA salah atau kedaluwarsa
+
+  /auth/me:
+    get:
+      summary: Profil admin yang sedang login
+      tags: [Auth]
+      responses:
+        '200':
+          description: Detail admin saat ini
+
+  /auth/logout:
+    post:
+      summary: Keluar dari sesi saat ini
+      tags: [Auth]
+      responses:
+        '200':
+          description: Berhasil keluar
+
+  /auth/sessions:
+    get:
+      summary: Daftar sesi login aktif admin
+      tags: [Auth]
+      responses:
+        '200':
+          description: Daftar perangkat sesi aktif
+    delete:
+      summary: Cabut seluruh sesi aktif lainnya
+      tags: [Auth]
+      responses:
+        '200':
+          description: Semua sesi lain berhasil dicabut
+
+  # =========================================================================
+  # DASHBOARD & OVERVIEW
+  # =========================================================================
+  /dashboard/metrics:
+    get:
+      summary: Metrik ringkasan dashboard (transaksi, pendapatan, pesanan sukses)
+      tags: [Dashboard]
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [Hari, Minggu, Bulan]
+            default: Minggu
+      responses:
+        '200':
+          description: Ringkasan statistik dashboard
+
+  /dashboard/action-items:
+    get:
+      summary: Item operasional yang memerlukan tindakan admin
+      tags: [Dashboard]
+      responses:
+        '200':
+          description: Daftar antrean aksi (moderasi, render gagal, resi cetak)
+
+  /dashboard/system-status:
+    get:
+      summary: Status kesehatan koneksi layanan pihak ketiga
+      tags: [Dashboard]
+      responses:
+        '200':
+          description: Status Fal.ai, Webhook, Google Play, Storage S3, Courier API
+
+  # =========================================================================
+  # SEARCH & NOTIFICATIONS
+  # =========================================================================
+  /search:
+    get:
+      summary: Pencarian global terpadu (pesanan, email, resi, gaya, voucher)
+      tags: [Search & Notifikasi]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hasil pencarian terkategori
+
+  /notifications:
+    get:
+      summary: Daftar notifikasi admin
+      tags: [Search & Notifikasi]
+      responses:
+        '200':
+          description: Daftar notifikasi sistem
+  
+  /notifications/mark-all-read:
+    post:
+      summary: Tandai seluruh notifikasi telah dibaca
+      tags: [Search & Notifikasi]
+      responses:
+        '200':
+          description: Sukses
+
+  # =========================================================================
+  # ORDERS & TRANSACTIONS
+  # =========================================================================
+  /orders:
+    get:
+      summary: Daftar pesanan pelanggan dengan filter dan paginasi
+      tags: [Pesanan]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: paymentStatus
+          in: query
+          schema:
+            type: string
+        - name: aiStatus
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Daftar pesanan
+
+  /orders/{orderNumber}:
+    get:
+      summary: Detail lengkap pesanan pelanggan
+      tags: [Pesanan]
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: PRO-20261019-001
+      responses:
+        '200':
+          description: Detail pesanan dan hasil foto
+
+  /orders/{orderNumber}/rerender:
+    post:
+      summary: Trigger re-render foto AI via model FLUX Fal.ai
+      tags: [Pesanan]
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                customPromptOverride:
+                  type: string
+      responses:
+        '200':
+          description: Job re-render berhasil dimasukkan ke antrean worker
+
+  /orders/{orderNumber}/extend-download:
+    post:
+      summary: Perpanjang masa tautan unduhan galeri foto
+      tags: [Pesanan]
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [additionalDays]
+              properties:
+                additionalDays:
+                  type: integer
+                  example: 7
+      responses:
+        '200':
+          description: Masa berlaku unduh berhasil diperpanjang
+
+  # =========================================================================
+  # CETAK FISIK & PENGIRIMAN
+  # =========================================================================
+  /prints:
+    get:
+      summary: Daftar pesanan cetak fisik foto
+      tags: [Cetak Fisik]
+      responses:
+        '200':
+          description: Daftar pesanan cetak
+
+  /prints/{id}/status:
+    patch:
+      summary: Perbarui status tahapan cetak fisik (Menunggu -> Cetak -> Dikirim)
+      tags: [Cetak Fisik]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+      responses:
+        '200':
+          description: Status tahapan cetak diperbarui
+
+  /prints/{id}/tracking:
+    post:
+      summary: Input nomor resi pengiriman kurir
+      tags: [Cetak Fisik]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courier, trackingNumber]
+              properties:
+                courier:
+                  type: string
+                  example: SiCepat
+                trackingNumber:
+                  type: string
+                  example: 004829103847
+      responses:
+        '200':
+          description: Nomor resi disimpan dan notifikasi otomatis dikirim ke pelanggan
+
+  # =========================================================================
+  # AI WORKER & MODERASI
+  # =========================================================================
+  /ai/jobs:
+    get:
+      summary: Daftar antrean job rendering worker FLUX Fal.ai
+      tags: [AI Worker & Moderasi]
+      responses:
+        '200':
+          description: Daftar job worker
+
+  /ai/jobs/{id}/retry:
+    post:
+      summary: Uji coba ulang job rendering yang gagal
+      tags: [AI Worker & Moderasi]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job dijadwalkan ulang
+
+  /ai/moderasi/review:
+    post:
+      summary: Putusan moderasi foto (setujui, render ulang, atau blokir)
+      tags: [AI Worker & Moderasi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobId, decision]
+              properties:
+                jobId:
+                  type: string
+                decision:
+                  type: string
+                  enum: [setujui, render_ulang, blokir]
+      responses:
+        '200':
+          description: Putusan moderasi dieksekusi
+
+  /ai/blacklist:
+    get:
+      summary: Daftar kata kunci terlarang (blacklist prompt)
+      tags: [AI Worker & Moderasi]
+      responses:
+        '200':
+          description: Daftar kata terlarang
+    post:
+      summary: Tambah kata terlarang baru
+      tags: [AI Worker & Moderasi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyword]
+              properties:
+                keyword:
+                  type: string
+      responses:
+        '201':
+          description: Kata terlarang ditambahkan
+
+  # =========================================================================
+  # PRIVACY & UU PDP
+  # =========================================================================
+  /privacy/jobs/run:
+    post:
+      summary: Jalankan pembersihan otomatis data biometrik selfie (> 24 jam)
+      tags: [Privasi & UU PDP]
+      responses:
+        '200':
+          description: Pembersihan biometrik selesai
+
+  /privacy/requests/{id}/approve:
+    post:
+      summary: Setujui permohonan hak hapus data pelanggan (Pasal 39 UU PDP)
+      tags: [Privasi & UU PDP]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Data pelanggan dimusnahkan permanen
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

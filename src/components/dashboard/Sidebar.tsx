@@ -5,6 +5,7 @@ import { SidebarItem } from './SidebarItem';
 import { Logo } from '../common/Logo';
 import { BRAND_CONFIG } from '../../config/branding';
 import { useAuth } from '../../context/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export interface SidebarProps {
@@ -14,6 +15,7 @@ export interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { currentRole } = usePermission();
   const navigate = useNavigate();
   const location = useLocation();
   const isProfileActive = location.pathname === '/profil';
@@ -47,7 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={`
           fixed inset-y-3 left-3 z-50
-          w-[260px] max-w-[85vw]
+          w-[280px] max-w-[88vw]
           flex flex-col
           bg-surface-sidebar
           border border-border-subtle
@@ -95,8 +97,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <span className="text-xs font-semibold text-content-primary leading-tight truncate">
                 {adminName}
               </span>
-              <span className="text-[11px] text-content-muted leading-tight mt-0.5 truncate">
-                ForgePro.id Admin
+              <span className="text-[11px] text-[#D9B06F] font-medium leading-tight mt-0.5 truncate">
+                {currentRole}
               </span>
             </div>
           </button>

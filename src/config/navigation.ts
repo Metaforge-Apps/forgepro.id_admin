@@ -1,4 +1,4 @@
-import { NavigationSection } from '../types';
+﻿import { NavigationSection } from '../types';
 
 /**
  * Sidebar Navigation Structure
@@ -21,12 +21,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         label: 'Pesanan & Transaksi',
         path: '/pesanan',
         icon: 'History',
-      },
-      {
-        id: 'cetak-pengiriman',
-        label: 'Cetak Fisik & Pengiriman',
-        path: '/cetak-pengiriman',
-        icon: 'Activity',
       },
     ],
   },

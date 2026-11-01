@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TypeScript Definitions for Package Controller (Paket & Harga — ForgePro.id)
  *
  * Disesuaikan dengan model `SuitPackage` di aplikasi Flutter
@@ -37,6 +37,12 @@ export interface PricingPackageItem {
   creditAmount: number;
   /** Jumlah template jas yang boleh dipilih (`max_templates`). */
   maxTemplates: number;
+  /** Biaya kredit per render foto (default 5 kredit) */
+  creditPerPhoto: number;
+  /** Apakah pelanggan diizinkan menyesuaikan custom prompt */
+  canEditPrompt: boolean;
+  /** Durasi masa unduh file arsip foto (hari) */
+  downloadDurationDays: number;
   priceSub: string;
   description: string;
   features: string[];
@@ -51,12 +57,15 @@ export interface PricingPackageItem {
 export interface CreatePackagePayload {
   tier: PackageTier;
   name: string;
-  description: string;
+  description?: string;
   photoCount: number;
   creditAmount: number;
   maxTemplates: number;
-  extraBenefits: string;
-  accessDuration: string;
+  creditPerPhoto?: number;
+  canEditPrompt?: boolean;
+  downloadDurationDays?: number;
+  extraBenefits?: string;
+  accessDuration?: string;
   displayOrder: number;
   status: PackageStatus;
   sku: string;
@@ -70,6 +79,9 @@ export interface UpdatePackagePayload {
   photoCount?: number;
   creditAmount?: number;
   maxTemplates?: number;
+  creditPerPhoto?: number;
+  canEditPrompt?: boolean;
+  downloadDurationDays?: number;
   extraBenefits?: string;
   accessDuration?: string;
   displayOrder?: number;
@@ -77,6 +89,38 @@ export interface UpdatePackagePayload {
   sku?: string;
   priceValue?: number;
   isFeatured?: boolean;
+}
+
+export function buildPackageDescription(pkg: {
+  photoCount: number;
+  creditAmount: number;
+  creditPerPhoto?: number;
+  maxTemplates: number;
+  canEditPrompt?: boolean;
+}): string {
+  const perPhoto = pkg.creditPerPhoto || 5;
+  const renderCap = Math.floor(pkg.creditAmount / perPhoto);
+  const promptPart = pkg.canEditPrompt ? ' · Bebas kustom prompt' : '';
+  const templatePart = pkg.maxTemplates > 1 ? `${pkg.maxTemplates} gaya jas` : '1 gaya jas';
+  return `${pkg.photoCount} foto hasil final (${pkg.creditAmount} kredit AI · hingga ${renderCap}x render · ${templatePart}${promptPart}).`;
+}
+
+export function buildPackageFeatures(pkg: {
+  photoCount: number;
+  creditAmount: number;
+  creditPerPhoto?: number;
+  maxTemplates: number;
+  canEditPrompt?: boolean;
+  downloadDurationDays?: number;
+}): string[] {
+  const perPhoto = pkg.creditPerPhoto || 5;
+  return [
+    `${pkg.photoCount} hasil foto AI resolusi tinggi siap cetak`,
+    `${pkg.creditAmount} kuota kredit AI (${perPhoto} kredit/render, termasuk render ulang)`,
+    `Pilihan ${pkg.maxTemplates} gaya jas pilihan dari katalog`,
+    pkg.canEditPrompt ? 'Dukungan prompt kustom profesional' : 'Prompt standar studio foto',
+    `Masa unduh ${pkg.downloadDurationDays || 14} hari (arsip aman)`,
+  ];
 }
 
 export interface PackageRuleItem {

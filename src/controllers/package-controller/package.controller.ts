@@ -1,4 +1,4 @@
-import {
+﻿import {
   PricingPackageItem,
   PackageStatus,
   PackageTier,
@@ -7,171 +7,43 @@ import {
   UpdatePackagePayload,
   PACKAGE_TIERS,
 } from './package.types';
+import { INITIAL_PACKAGES, INITIAL_PACKAGE_RULES } from './package.seed';
+import { mockDb } from '../../mocks/db';
+import { getStatusBadgeClasses } from '../../config/statusColors';
+import { formatRupiah as formatRupiahCentral } from '../../utils/formatters';
 
-const STORAGE_KEY = 'forgepro_packages_v3';
+export { INITIAL_PACKAGES, INITIAL_PACKAGE_RULES };
 
 /** Format rupiah untuk tampilan, mis. 59000 -> "Rp59.000". */
-export const formatRupiah = (value: number): string =>
-  `Rp${Math.round(value).toLocaleString('id-ID')}`;
-
-/**
- * Data awal paket. Disalin dari `suitPackages` di aplikasi Flutter
- * (forgepro_apps/lib/features/generation/domain/models.dart).
- * Default user baru / paket dasar adalah 100 kredit AI.
- */
-export const INITIAL_PACKAGES: PricingPackageItem[] = [
-  {
-    id: 'pkg-esensial',
-    tier: 'esensial',
-    name: 'Esensial',
-    tag: 'Paket aktif',
-    status: 'Tayang',
-    priceValue: 59000,
-    price: 'Rp59.000',
-    sku: 'forgepro_esensial',
-    photoCount: 12,
-    creditAmount: 100,
-    maxTemplates: 1,
-    priceSub: 'referensi · sekali beli',
-    description: '100 Kredit AI (hingga 50 foto · 1 template jas).',
-    features: [
-      '12 hasil foto AI resolusi tinggi',
-      '100 kredit AI bawaan',
-      'Pilihan 1 template jas',
-    ],
-    extraBenefits: '',
-    accessDuration: '14 hari',
-    displayOrder: 1,
-    salesShare: '28%',
-    isFeatured: false,
-  },
-  {
-    id: 'pkg-profesional',
-    tier: 'profesional',
-    name: 'Profesional',
-    tag: 'Paling diminati',
-    status: 'Tayang',
-    priceValue: 99000,
-    price: 'Rp99.000',
-    sku: 'forgepro_profesional',
-    photoCount: 24,
-    creditAmount: 100,
-    maxTemplates: 1,
-    priceSub: 'referensi · sekali beli',
-    description: '100 Kredit AI (hingga 50 foto · bebas ganti template & prompt).',
-    features: [
-      '24 hasil foto AI resolusi tinggi',
-      '100 kredit AI',
-      'Pilihan 1 template jas',
-    ],
-    extraBenefits: '',
-    accessDuration: '14 hari',
-    displayOrder: 2,
-    salesShare: '54%',
-    isFeatured: true,
-  },
-  {
-    id: 'pkg-eksklusif',
-    tier: 'eksklusif',
-    name: 'Eksklusif',
-    tag: 'Paket aktif',
-    status: 'Tayang',
-    priceValue: 169000,
-    price: 'Rp169.000',
-    sku: 'forgepro_eksklusif',
-    photoCount: 48,
-    creditAmount: 200,
-    maxTemplates: 3,
-    priceSub: 'referensi · sekali beli',
-    description: '200 Kredit AI (hingga 100 foto · eksplorasi 3 gaya jas).',
-    features: [
-      '48 hasil foto AI resolusi tinggi',
-      '200 kredit AI',
-      'Pilihan 3 template jas',
-    ],
-    extraBenefits: '',
-    accessDuration: '14 hari',
-    displayOrder: 3,
-    salesShare: '18%',
-    isFeatured: false,
-  },
-];
-
-export const INITIAL_PACKAGE_RULES: PackageRuleItem[] = [
-  {
-    title: 'Masa akses unduhan',
-    setting: '14 hari sejak foto selesai diproses',
-    actionText: 'Ubah →',
-  },
-  {
-    title: 'Cetak fisik & pengiriman',
-    setting: 'Tambahan opsional; biaya cetak dan kirim terpisah',
-    actionText: 'Kelola →',
-  },
-  {
-    title: 'Penerapan perubahan',
-    setting: 'Hanya untuk pesanan baru setelah disimpan',
-    badge: 'Aktif',
-  },
-];
+export const formatRupiah = (value: number): string => formatRupiahCentral(value);
 
 type PackageListener = () => void;
 
 /**
  * PackageController — Mengelola seluruh data & operasi Paket & Harga di ForgePro.id.
  * Bentuk data mengikuti `SuitPackage` pada aplikasi Flutter.
+ * Seluruh data dibaca/ditulis lewat basis data mock terpusat (src/mocks/db.ts).
  */
 export class PackageController {
-  private packages: PricingPackageItem[];
   private rules: PackageRuleItem[];
-  private listeners: Set<PackageListener> = new Set();
 
   constructor() {
-    this.packages = this.loadFromStorage();
     this.rules = [...INITIAL_PACKAGE_RULES];
   }
 
-  private loadFromStorage(): PricingPackageItem[] {
-    if (typeof window === 'undefined') {
-      return [...INITIAL_PACKAGES];
-    }
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as PricingPackageItem[];
-        if (
-          Array.isArray(parsed) &&
-          parsed.length > 0 &&
-          parsed.every((p) => PACKAGE_TIERS.includes(p.tier))
-        ) {
-          return parsed;
-        }
-      }
-    } catch {
-      // Fallback ke data awal
-    }
-    return [...INITIAL_PACKAGES];
+  /** Daftar paket selalu dibaca dari basis data terpusat. */
+  private get packages(): PricingPackageItem[] {
+    return mockDb.getState().packages;
   }
 
-  private saveToStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.packages));
-    } catch {
-      // Abaikan error kuota penyimpanan
-    }
-  }
-
-  private notify(): void {
-    this.saveToStorage();
-    this.listeners.forEach((listener) => listener());
+  private set packages(next: PricingPackageItem[]) {
+    mockDb.updateState((prev) => ({ ...prev, packages: next }), {
+      recalculateDerived: false,
+    });
   }
 
   public subscribe(listener: PackageListener): () => void {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return mockDb.subscribe(listener);
   }
 
   private buildFeaturesList(
@@ -219,6 +91,10 @@ export class PackageController {
     return this.packages.find((pkg) => pkg.id === id);
   }
 
+  public getPackageByTier(tier: PackageTier): PricingPackageItem | undefined {
+    return this.packages.find((pkg) => pkg.tier === tier);
+  }
+
   /** Tier yang belum punya paket. Aplikasi hanya mengenali tier ini. */
   public getAvailableTiers(): PackageTier[] {
     const used = new Set(this.packages.map((p) => p.tier));
@@ -234,6 +110,13 @@ export class PackageController {
 
     const status: PackageStatus = payload.status || 'Draf';
     const isFeatured = Boolean(payload.isFeatured);
+    const photoCount = payload.photoCount;
+    const creditAmount = payload.creditAmount;
+    const maxTemplates = payload.maxTemplates;
+    const creditPerPhoto = payload.creditPerPhoto || 5;
+    const canEditPrompt = Boolean(payload.canEditPrompt ?? (payload.tier !== 'esensial'));
+    const downloadDurationDays = payload.downloadDurationDays || 14;
+
     const newPkg: PricingPackageItem = {
       id: `pkg-${payload.tier}`,
       tier: payload.tier,
@@ -243,19 +126,22 @@ export class PackageController {
       priceValue: payload.priceValue,
       price: formatRupiah(payload.priceValue),
       sku: payload.sku.trim(),
-      photoCount: payload.photoCount,
-      creditAmount: payload.creditAmount,
-      maxTemplates: payload.maxTemplates,
+      photoCount,
+      creditAmount,
+      maxTemplates,
+      creditPerPhoto,
+      canEditPrompt,
+      downloadDurationDays,
       priceSub: 'referensi · sekali beli',
-      description: payload.description.trim(),
+      description: (payload.description || '').trim() || `${photoCount} foto (${creditAmount} kredit)`,
       features: this.buildFeaturesList(
-        payload.photoCount,
-        payload.creditAmount,
-        payload.maxTemplates,
+        photoCount,
+        creditAmount,
+        maxTemplates,
         payload.extraBenefits
       ),
       extraBenefits: payload.extraBenefits,
-      accessDuration: payload.accessDuration.trim() || '14 hari',
+      accessDuration: (payload.accessDuration || `${downloadDurationDays} hari`).trim(),
       displayOrder: payload.displayOrder,
       salesShare: '0%',
       isFeatured,
@@ -263,15 +149,23 @@ export class PackageController {
 
     this.packages = [...this.packages, newPkg];
     if (isFeatured) this.clearFeaturedExcept(newPkg.id);
-    this.notify();
+    mockDb.appendActivityLog({
+      source: 'Admin Utama',
+      category: 'Katalog',
+      activity: `Menambahkan paket · ${newPkg.name} (${newPkg.sku})`,
+      result: 'Berhasil',
+      targetId: newPkg.id,
+    });
     return newPkg;
   }
 
   public updatePackage(id: string, payload: UpdatePackagePayload): PricingPackageItem | null {
     let updatedItem: PricingPackageItem | null = null;
+    let previousItem: PricingPackageItem | null = null;
 
     this.packages = this.packages.map((pkg) => {
       if (pkg.id !== id) return pkg;
+      previousItem = pkg;
 
       const nextPhotoCount = payload.photoCount ?? pkg.photoCount;
       const nextCredit = payload.creditAmount ?? pkg.creditAmount;
@@ -309,8 +203,29 @@ export class PackageController {
 
     if (updatedItem) {
       const saved = updatedItem as PricingPackageItem;
+      const before = previousItem as PricingPackageItem | null;
       if (saved.isFeatured) this.clearFeaturedExcept(saved.id);
-      this.notify();
+      mockDb.appendActivityLog({
+        source: 'Admin Utama',
+        category: 'Katalog',
+        activity: `Memperbarui paket · ${saved.name} (${saved.sku})`,
+        result: 'Berhasil',
+        targetId: saved.id,
+        beforeData: before
+          ? {
+              name: before.name,
+              priceValue: before.priceValue,
+              status: before.status,
+              accessDuration: before.accessDuration,
+            }
+          : undefined,
+        afterData: {
+          name: saved.name,
+          priceValue: saved.priceValue,
+          status: saved.status,
+          accessDuration: saved.accessDuration,
+        },
+      });
     }
     return updatedItem;
   }
@@ -327,16 +242,12 @@ export class PackageController {
   }
 
   public resetPackages(): PricingPackageItem[] {
-    this.packages = [...INITIAL_PACKAGES];
-    this.notify();
+    this.packages = INITIAL_PACKAGES.map((p) => ({ ...p, features: [...p.features] }));
     return this.getAllPackages();
   }
 
   public getStatusBadgeStyle(status: PackageStatus | string): string {
-    if (status === 'Tayang') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   }
 }
 

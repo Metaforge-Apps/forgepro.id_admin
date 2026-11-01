@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TypeScript Definitions for Voucher Controller (Voucher & Promo — ForgePro.id)
  *
  * Disesuaikan dengan `VoucherOffer` / `VoucherApplication` di aplikasi Flutter

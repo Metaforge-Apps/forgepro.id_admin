@@ -1,76 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/common/Card';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
   ChevronDown,
   Shield,
-  X
+  X,
+  KeyRound,
+  LogOut,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle2,
+  Mail,
 } from 'lucide-react';
 import type { AdminMember } from '../types';
-
-const INITIAL_ADMINS: AdminMember[] = [
-  {
-    id: 'adm-1',
-    name: 'Andi Prasetyo',
-    email: 'andi@forgepro.id',
-    role: 'Admin Utama',
-    access: 'Seluruh menu',
-    status: 'Aktif',
-    lastActive: '19 Okt, 16:20 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-2',
-    name: 'Maya Lestari',
-    email: 'maya@forgepro.id',
-    role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
-    status: 'Aktif',
-    lastActive: '19 Okt, 16:05 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-3',
-    name: 'Dimas Putra',
-    email: 'dimas@forgepro.id',
-    role: 'Produk',
-    access: 'Katalog, paket & promo',
-    status: 'Aktif',
-    lastActive: '19 Okt, 15:42 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-4',
-    name: 'Sinta Dewi',
-    email: 'sinta@forgepro.id',
-    role: 'Keuangan',
-    access: 'Transaksi & ekspor',
-    status: 'Aktif',
-    lastActive: '19 Okt, 14:58 WIB',
-    actionLabel: 'Kelola',
-  },
-  {
-    id: 'adm-5',
-    name: 'Raka Wijaya',
-    email: 'raka@forgepro.id',
-    role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
-    status: 'Diundang',
-    lastActive: 'Belum pernah masuk',
-    actionLabel: 'Kirim ulang',
-  },
-  {
-    id: 'adm-6',
-    name: 'Laras Putri',
-    email: 'laras@forgepro.id',
-    role: 'Produk',
-    access: 'Tidak ada akses',
-    status: 'Nonaktif',
-    lastActive: '12 Okt, 10:15 WIB',
-    actionLabel: 'Kelola',
-  },
-];
+import { useCentralStore } from '../mocks/selectors';
+import { getStatusBadgeClasses } from '../config/statusColors';
+import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { StatusBadge } from '../components/common/StatusBadge';
 
 const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
   'Admin Utama': 'Seluruh menu',
@@ -81,15 +28,33 @@ const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
 
 export function AdminManagementPage() {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState<AdminMember[]>(INITIAL_ADMINS);
+  const { state, updateState, appendActivityLog } = useCentralStore();
+  const admins = state.admins;
+  const setAdmins = (updater: (prev: AdminMember[]) => AdminMember[]) => {
+    updateState((prev) => ({
+      ...prev,
+      admins: updater(prev.admins),
+    }));
+  };
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('Semua peran');
   const [statusFilter, setStatusFilter] = useState<string>('Semua status');
 
-  // Modals
+  // Modals & Confirmation
   const [showInviteModal, setShowInviteModal] = useState<boolean>(false);
   const [showRolesModal, setShowRolesModal] = useState<boolean>(false);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminMember | null>(null);
+  const [adminToDisable, setAdminToDisable] = useState<AdminMember | null>(null);
+
+  // Toast Feedback (Rule 0.5)
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastTone, setToastTone] = useState<'success' | 'danger' | 'warning' | 'info'>('success');
+
+  const showToast = (msg: string, tone: 'success' | 'danger' | 'warning' | 'info' = 'success') => {
+    setToastMessage(msg);
+    setToastTone(tone);
+    setTimeout(() => setToastMessage(''), 3500);
+  };
 
   // Invite form state
   const [inviteName, setInviteName] = useState<string>('');
@@ -143,6 +108,13 @@ export function AdminManagementPage() {
       actionLabel: 'Kirim ulang',
     };
     setAdmins((prev) => [...prev, newMember]);
+    appendActivityLog({
+      source: 'Andi Prasetyo',
+      category: 'Admin',
+      activity: `Mengundang admin · ${newMember.email}`,
+      result: 'Berhasil',
+      targetId: newMember.email,
+    });
     setShowInviteModal(false);
     setInviteName('');
     setInviteEmail('');
@@ -150,17 +122,39 @@ export function AdminManagementPage() {
   };
 
   const getStatusBadgeStyle = (status: AdminMember['status']): string => {
-    if (status === 'Aktif') {
-      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    }
-    if (status === 'Diundang') {
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30';
-    }
-    return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+    return getStatusBadgeClasses(status);
   };
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Feedback Toast Banner (Rule 0.5) */}
+      {toastMessage && (
+        <div
+          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-xs font-medium animate-fade-in ${
+            toastTone === 'danger'
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+              : toastTone === 'warning'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {toastTone === 'danger' || toastTone === 'warning' ? (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            )}
+            <span>{toastMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToastMessage('')}
+            className="text-content-muted hover:text-content-primary"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
       {/* 4 Summary Stat Cards Sesuai Referensi Figma */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <Card padding="p-6" className="flex flex-col justify-between">
@@ -577,7 +571,7 @@ export function AdminManagementPage() {
         </div>
       )}
 
-      {/* Modal Kelola Anggota Tim */}
+      {/* Modal Kelola Anggota Tim Diperluas (Poin 22) */}
       {selectedAdmin && (
         <div
           onClick={() => setSelectedAdmin(null)}
@@ -585,7 +579,7 @@ export function AdminManagementPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
+            className="w-full max-w-lg rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
           >
             <button
               type="button"
@@ -598,32 +592,108 @@ export function AdminManagementPage() {
             <h3 className="font-serif text-2xl font-medium text-content-primary mb-1">
               {selectedAdmin.name}
             </h3>
-            <p className="text-xs text-content-muted mb-5">
-              {selectedAdmin.email} · {selectedAdmin.role}
+            <p className="text-xs text-content-muted mb-4">
+              {selectedAdmin.email} · Terakhir aktif: {selectedAdmin.lastActive}
             </p>
 
-            <div className="space-y-3 text-xs border-t border-b border-border-subtle py-4">
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Cakupan akses</span>
-                <span className="font-semibold text-content-primary">
-                  {selectedAdmin.access}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Status akun</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${getStatusBadgeStyle(
-                    selectedAdmin.status
-                  )}`}
+            <div className="space-y-3.5 text-xs border-t border-b border-border-subtle py-4">
+              {/* Ubah Peran */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-content-primary">Peran Akses Admin</label>
+                <select
+                  value={selectedAdmin.role}
+                  onChange={(e) => {
+                    const newRole = e.target.value as AdminMember['role'];
+                    const newAccess = ROLE_ACCESS_MAP[newRole] || 'Seluruh menu';
+                    setAdmins((prev) =>
+                      prev.map((a) =>
+                        a.id === selectedAdmin.id
+                          ? { ...a, role: newRole, access: newAccess }
+                          : a
+                      )
+                    );
+                    setSelectedAdmin((prev) => prev ? { ...prev, role: newRole, access: newAccess } : null);
+                    showToast(`Peran ${selectedAdmin.name} diperbarui menjadi "${newRole}".`, 'success');
+                  }}
+                  className="px-3 py-2 rounded-xl border border-border-subtle bg-surface-card text-content-primary font-semibold focus:outline-none focus:border-[#D9B06F]"
                 >
-                  {selectedAdmin.status}
+                  <option value="Admin Utama">Admin Utama (Seluruh menu &amp; hak penuh)</option>
+                  <option value="Operasional">Operasional (Pesanan, cetak &amp; kirim)</option>
+                  <option value="Produk">Produk (Katalog, paket &amp; promo)</option>
+                  <option value="Keuangan">Keuangan (Transaksi &amp; ekspor)</option>
+                </select>
+                <span className="text-[11px] text-content-muted">
+                  Cakupan modul: {selectedAdmin.access}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-content-muted">Aktivitas terakhir</span>
-                <span className="text-content-primary">
-                  {selectedAdmin.lastActive}
-                </span>
+
+              {/* Status Akun & 2FA */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="p-3 rounded-xl bg-surface-hover/50 border border-border-subtle flex flex-col gap-1">
+                  <span className="text-content-muted text-[11px]">Status Akun:</span>
+                  <StatusBadge
+                    status={selectedAdmin.status}
+                    variant={selectedAdmin.status === 'Aktif' ? 'emerald' : selectedAdmin.status === 'Diundang' ? 'amber' : 'rose'}
+                  />
+                </div>
+                <div className="p-3 rounded-xl bg-surface-hover/50 border border-border-subtle flex flex-col gap-1">
+                  <span className="text-content-muted text-[11px]">Autentikasi 2FA:</span>
+                  <StatusBadge status="Aktif (TOTP)" variant="emerald" />
+                </div>
+              </div>
+
+              {/* Aksi Tambahan */}
+              <div className="pt-2 flex flex-col gap-2">
+                <span className="font-semibold text-content-primary">Tindakan Keamanan &amp; Sesi:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast(`Kunci rahasia 2FA untuk ${selectedAdmin.name} berhasil direset. Diwajibkan scan ulang QR pada login berikutnya.`, 'info');
+                    }}
+                    className="p-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-[#D9B06F]" />
+                    <span>Reset 2FA (TOTP)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast(`Seluruh sesi login ${selectedAdmin.name} berhasil dicabut dari semua perangkat.`, 'warning');
+                    }}
+                    className="p-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Cabut Seluruh Sesi</span>
+                  </button>
+
+                  {selectedAdmin.status === 'Diundang' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showToast(`Email undangan berhasil dikirim ulang ke ${selectedAdmin.email}.`, 'success');
+                      }}
+                      className="p-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-medium flex items-center gap-2 transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Kirim Ulang Undangan</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const adminName = selectedAdmin.name;
+                      setSelectedAdmin(null);
+                      navigate('/log-aktivitas', { state: { searchQuery: adminName } });
+                    }}
+                    className="p-2.5 rounded-xl border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary font-medium flex items-center gap-2 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-content-muted" />
+                    <span>Lihat Log Aktivitas</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -631,26 +701,38 @@ export function AdminManagementPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const nextStatus: AdminMember['status'] =
-                    selectedAdmin.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
-                  const nextAccess =
-                    nextStatus === 'Nonaktif'
-                      ? 'Tidak ada akses'
-                      : ROLE_ACCESS_MAP[selectedAdmin.role] || 'Seluruh menu';
-                  setAdmins((prev) =>
-                    prev.map((a) =>
-                      a.id === selectedAdmin.id
-                        ? { ...a, status: nextStatus, access: nextAccess }
-                        : a
-                    )
-                  );
-                  setSelectedAdmin(null);
+                  if (selectedAdmin.status === 'Aktif') {
+                    // Check if self or last Admin Utama
+                    const principalCount = admins.filter(
+                      (a) => a.role === 'Admin Utama' && a.status === 'Aktif'
+                    ).length;
+                    if (selectedAdmin.email === 'andi@forgepro.id' || (selectedAdmin.role === 'Admin Utama' && principalCount <= 1)) {
+                      showToast('Tidak dapat menonaktifkan akun Admin Utama terakhir.', 'danger');
+                      return;
+                    }
+                    const target = selectedAdmin;
+                    setSelectedAdmin(null);
+                    setAdminToDisable(target);
+                  } else {
+                    // Reactivate
+                    setAdmins((prev) =>
+                      prev.map((a) =>
+                        a.id === selectedAdmin.id
+                          ? { ...a, status: 'Aktif', access: ROLE_ACCESS_MAP[a.role] || 'Seluruh menu' }
+                          : a
+                      )
+                    );
+                    showToast(`Akses untuk ${selectedAdmin.name} berhasil diaktifkan kembali.`, 'success');
+                    setSelectedAdmin(null);
+                  }
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary"
+                className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                  selectedAdmin.status === 'Aktif'
+                    ? 'border-rose-500/40 text-rose-600 dark:text-rose-400 bg-surface-card hover:bg-rose-500/10'
+                    : 'border-border-subtle bg-surface-card hover:bg-surface-hover text-content-primary'
+                }`}
               >
-                {selectedAdmin.status === 'Aktif'
-                  ? 'Nonaktifkan akses'
-                  : 'Aktifkan kembali'}
+                {selectedAdmin.status === 'Aktif' ? 'Nonaktifkan akses' : 'Aktifkan kembali'}
               </button>
 
               <button
@@ -664,6 +746,29 @@ export function AdminManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Dialog Konfirmasi Merah Nonaktifkan Akses Admin (Rule 0.5) */}
+      <ConfirmDialog
+        open={!!adminToDisable}
+        title="Nonaktifkan Akses Admin"
+        description={`Anda akan mencabut akses ${adminToDisable?.name} (${adminToDisable?.email}). Admin ini tidak akan dapat login lagi ke panel ForgePro.id hingga diaktifkan kembali.`}
+        confirmLabel="Ya, Nonaktifkan Akses"
+        cancelLabel="Batal"
+        variant="danger"
+        onConfirm={() => {
+          if (!adminToDisable) return;
+          setAdmins((prev) =>
+            prev.map((a) =>
+              a.id === adminToDisable.id
+                ? { ...a, status: 'Nonaktif', access: 'Tidak ada akses' }
+                : a
+            )
+          );
+          showToast(`Akses admin untuk ${adminToDisable.name} telah dinonaktifkan.`, 'danger');
+          setAdminToDisable(null);
+        }}
+        onClose={() => setAdminToDisable(null)}
+      />
     </div>
   );
 }

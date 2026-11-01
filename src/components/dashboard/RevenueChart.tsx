@@ -1,56 +1,37 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Card } from '../common/Card';
 import { DashboardPeriodKey } from './Header';
-
-interface ChartPointData {
-  label: string;
-  value: number;
-  display: string;
-}
-
-const CHART_DATA: Record<DashboardPeriodKey, ChartPointData[]> = {
-  Hari: [
-    { label: '08:00', value: 1.2, display: 'Rp1,2 jt' },
-    { label: '11:00', value: 3.4, display: 'Rp3,4 jt' },
-    { label: '14:00', value: 2.8, display: 'Rp2,8 jt' },
-    { label: '17:00', value: 5.6, display: 'Rp5,6 jt' },
-    { label: '20:00', value: 4.1, display: 'Rp4,1 jt' },
-    { label: '23:00', value: 2.5, display: 'Rp2,5 jt' },
-  ],
-  Minggu: [
-    { label: 'SEN', value: 8.4, display: 'Rp8,4 jt' },
-    { label: 'SEL', value: 12.1, display: 'Rp12,1 jt' },
-    { label: 'RAB', value: 10.5, display: 'Rp10,5 jt' },
-    { label: 'KAM', value: 16.8, display: 'Rp16,8 jt' },
-    { label: 'JUM', value: 14.2, display: 'Rp14,2 jt' },
-    { label: 'SAB', value: 22.5, display: 'Rp22,5 jt' },
-    { label: 'MIN', value: 19.3, display: 'Rp19,3 jt' },
-  ],
-  Bulan: [
-    { label: 'MGG 1', value: 64.0, display: 'Rp64 jt' },
-    { label: 'MGG 2', value: 78.5, display: 'Rp78,5 jt' },
-    { label: 'MGG 3', value: 89.2, display: 'Rp89,2 jt' },
-    { label: 'MGG 4', value: 96.8, display: 'Rp96,8 jt' },
-  ],
-};
+import { useCentralStore } from '../../mocks/selectors';
 
 /**
  * Revenue Chart Component
  * Menampilkan kurva Tren Pendapatan berwarna emas dengan area gradient
- * serta menyinkronkan periode terpilih ke Header Dashboard
+ * serta menyinkronkan periode terpilih ke Header Dashboard.
+ * Data dihitung secara dinamis dari basis data terpusat (src/mocks/db.ts).
  */
 export function RevenueChart() {
+  const { dashboardMetrics } = useCentralStore();
   const [period, setPeriod] = useState<DashboardPeriodKey>('Minggu');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const activeIndex = hoverIndex !== null ? hoverIndex : selectedIndex;
 
   const handleSelectPeriod = (p: DashboardPeriodKey) => {
     setPeriod(p);
     setHoverIndex(null);
+    setSelectedIndex(null);
     window.dispatchEvent(new CustomEvent('forgepro-period-change', { detail: p }));
   };
 
-  const data = CHART_DATA[period];
-  const maxVal = Math.max(...data.map((d) => d.value));
+  const chartDataByPeriod = {
+    Hari: dashboardMetrics.dailySeries,
+    Minggu: dashboardMetrics.weeklySeries,
+    Bulan: dashboardMetrics.monthlySeries,
+  };
+
+  const data = chartDataByPeriod[period];
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
   const minVal = Math.min(...data.map((d) => d.value)) * 0.7;
 
   // ViewBox SVG dimensions
@@ -60,7 +41,7 @@ export function RevenueChart() {
   const paddingY = 25;
 
   const points = data.map((d, i) => {
-    const x = paddingX + (i / (data.length - 1)) * (width - paddingX * 2);
+    const x = paddingX + (i / Math.max(1, data.length - 1)) * (width - paddingX * 2);
     const y =
       height -
       paddingY -
@@ -143,65 +124,81 @@ export function RevenueChart() {
                 r="16"
                 fill="transparent"
                 className="cursor-pointer"
+                onClick={() => setSelectedIndex(selectedIndex === i ? null : i)}
                 onMouseEnter={() => setHoverIndex(i)}
                 onMouseLeave={() => setHoverIndex(null)}
               />
 
-              {hoverIndex === i && (
+              {(activeIndex === i) && (
                 <circle
                   cx={pt.x}
                   cy={pt.y}
-                  r={5}
+                  r={6}
                   className="transition-all duration-150 pointer-events-none"
                   fill="#D9B06F"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                  stroke="#0A111C"
+                  strokeWidth="2.5"
                 />
               )}
             </g>
           ))}
         </svg>
 
-        {/* Hover Tooltip Popup */}
-        {hoverIndex !== null && points[hoverIndex] && (
+        {/* Hover / Selected Tooltip Popup */}
+        {activeIndex !== null && points[activeIndex] && (
           <div
-            className="absolute -top-3 transform -translate-x-1/2 bg-surface-card border border-[#D9B06F]/60 px-3 py-1.5 rounded-lg shadow-xl pointer-events-none z-10 text-center animate-fade-in"
+            className="absolute -top-3 transform -translate-x-1/2 bg-surface-card border border-[#D9B06F] px-3.5 py-2 rounded-xl shadow-2xl pointer-events-none z-20 text-center animate-fade-in backdrop-blur-md"
             style={{
-              left: `${(points[hoverIndex].x / width) * 100}%`,
+              left: `${(points[activeIndex].x / width) * 100}%`,
             }}
           >
-            <p className="text-[10px] text-content-muted uppercase tracking-wider">
-              {points[hoverIndex].label}
+            <p className="text-[10px] font-semibold text-content-muted uppercase tracking-wider">
+              {points[activeIndex].label} · {period === 'Minggu' ? 'Hari ini' : period}
             </p>
-            <p className="text-xs font-semibold text-[#D9B06F]">
-              {points[hoverIndex].display}
+            <p className="text-sm font-bold text-[#D9B06F] mt-0.5">
+              {points[activeIndex].display}
             </p>
+            {'ordersCount' in points[activeIndex] && (
+              <p className="text-[10px] text-content-secondary mt-0.5">
+                {(points[activeIndex] as any).ordersCount} transaksi selesai
+              </p>
+            )}
           </div>
         )}
       </div>
 
-      {/* Axis Pill Boxes Sesuai Referensi Figma */}
+      {/* Axis Pill Boxes Sesuai Referensi Figma (Sen-Min selalu tampil angka pendapatan) */}
       <div
         className="grid gap-2 mt-3"
         style={{
           gridTemplateColumns: `repeat(${data.length}, minmax(0, 1fr))`,
         }}
       >
-        {data.map((d, idx) => (
-          <div
-            key={d.label}
-            onMouseEnter={() => setHoverIndex(idx)}
-            onMouseLeave={() => setHoverIndex(null)}
-            className="rounded-xl bg-[#F4F1EA] dark:bg-[#1C273E]/70 border border-border-subtle/50 px-2.5 py-2 flex flex-col items-start gap-0.5 cursor-pointer transition-colors hover:border-[#D9B06F]/50"
-          >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">
-              {d.label}
-            </span>
-            <span className="text-xs font-semibold text-content-primary truncate w-full">
-              {hoverIndex === idx ? d.display : '—'}
-            </span>
-          </div>
-        ))}
+        {data.map((d, idx) => {
+          const isPointActive = activeIndex === idx;
+          return (
+            <button
+              key={d.label}
+              type="button"
+              onClick={() => setSelectedIndex(selectedIndex === idx ? null : idx)}
+              onMouseEnter={() => setHoverIndex(idx)}
+              onMouseLeave={() => setHoverIndex(null)}
+              title={`Klik untuk menyorot pendapatan ${d.label}: ${d.display}`}
+              className={`rounded-xl px-2.5 py-2 flex flex-col items-start gap-0.5 cursor-pointer transition-all text-left select-none border ${
+                isPointActive
+                  ? 'bg-[#D9B06F]/15 border-[#D9B06F] shadow-sm ring-1 ring-[#D9B06F]/30'
+                  : 'bg-[#F4F1EA] dark:bg-[#1C273E]/70 border-border-subtle/50 hover:border-[#D9B06F]/50'
+              }`}
+            >
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-content-muted">
+                {d.label}
+              </span>
+              <span className={`text-xs font-semibold truncate w-full ${isPointActive ? 'text-[#D9B06F]' : 'text-content-primary'}`}>
+                {d.display}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </Card>
   );

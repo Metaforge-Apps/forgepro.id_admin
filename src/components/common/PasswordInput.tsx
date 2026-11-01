@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, InputHTMLAttributes } from 'react';
+﻿import React, { useState, forwardRef, InputHTMLAttributes } from 'react';
 
 export interface PasswordInputProps
   extends InputHTMLAttributes<HTMLInputElement> {

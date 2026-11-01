@@ -1,35 +1,14 @@
-import React from 'react';
+﻿import React from 'react';
 import { Card } from '../common/Card';
-
-interface TopPackageItem {
-  name: string;
-  price: string;
-  percentage: number;
-}
-
-const PACKAGES: TopPackageItem[] = [
-  {
-    name: 'Esensial',
-    price: 'Rp59.000',
-    percentage: 28,
-  },
-  {
-    name: 'Profesional',
-    price: 'Rp99.000',
-    percentage: 54,
-  },
-  {
-    name: 'Eksklusif',
-    price: 'Rp169.000',
-    percentage: 18,
-  },
-];
+import { useCentralStore } from '../../mocks/selectors';
 
 /**
  * Top Performing Packages Component
- * Menampilkan 3 paket terlaris dengan progress bar emas
+ * Menampilkan 3 paket terlaris dengan progress bar emas yang dihitung dari pesanan nyata di db.ts
  */
 export function TopPackages() {
+  const { dashboardMetrics } = useCentralStore();
+
   return (
     <Card className="flex flex-col justify-start">
       <h3 className="text-base sm:text-lg font-semibold tracking-tight text-content-primary mb-5">
@@ -37,8 +16,8 @@ export function TopPackages() {
       </h3>
 
       <div className="flex flex-col gap-5">
-        {PACKAGES.map((pkg) => (
-          <div key={pkg.name} className="flex flex-col gap-2">
+        {dashboardMetrics.packageShares.map((pkg) => (
+          <div key={pkg.tier} className="flex flex-col gap-2">
             {/* Header: Nama Paket dan Harga · Persentase */}
             <div className="flex items-center justify-between text-sm">
               <span className="font-serif text-base font-medium text-content-primary">

@@ -5,6 +5,7 @@ import {
   UpdateOrderStatusPayload,
 } from './order.types';
 import { INITIAL_ORDERS } from './order.seed';
+import { activityController } from '../activity-controller/activity.controller';
 
 const STORAGE_KEY = 'forgepro_orders_v3';
 
@@ -79,15 +80,35 @@ export class OrderController {
       return updated;
     });
 
-    if (updated) this.notify();
+    if (updated) {
+      const orderRef: OrderItem = updated;
+      this.notify();
+      activityController.logActivity({
+        source: 'Admin Operasional',
+        category: 'Pesanan',
+        activity: `Status pesanan ${orderRef.orderNumber} diperbarui (Bayar: ${orderRef.paymentStatus}, Foto: ${orderRef.photoStatus})`,
+        result: 'Berhasil',
+      });
+    }
     return updated;
   }
 
   public deleteOrder(id: string): boolean {
     const prevLen = this.orders.length;
+    const target = this.orders.find((o) => o.id === id || o.orderNumber === id);
     this.orders = this.orders.filter((o) => o.id !== id && o.orderNumber !== id);
     const deleted = this.orders.length < prevLen;
-    if (deleted) this.notify();
+    if (deleted) {
+      this.notify();
+      if (target) {
+        activityController.logActivity({
+          source: 'Admin Utama',
+          category: 'Pesanan',
+          activity: `Menghapus data pesanan ${target.orderNumber}`,
+          result: 'Berhasil',
+        });
+      }
+    }
     return deleted;
   }
 
@@ -115,6 +136,51 @@ export class OrderController {
       return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30';
     }
     return 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30';
+  }
+
+  public exportOrdersCSV(): void {
+    const headers = [
+      'ID',
+      'No. Pesanan',
+      'Waktu',
+      'Email Pelanggan',
+      'Nama Pelanggan',
+      'Paket',
+      'Jumlah Foto',
+      'Total (IDR)',
+      'Status Pembayaran',
+      'Status Foto AI',
+      'Metode Bayar',
+    ];
+    const rows = this.orders.map((o) => [
+      o.id,
+      `"${o.orderNumber}"`,
+      `"${o.timeDisplay}"`,
+      `"${o.customerEmail}"`,
+      `"${o.customerName || '-'}"`,
+      `"${o.packageName}"`,
+      o.photoCount,
+      o.amount,
+      `"${o.paymentStatus}"`,
+      `"${o.photoStatus}"`,
+      `"${o.paymentMethod}"`,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `forgepro-orders-${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    activityController.logActivity({
+      source: 'Admin Utama',
+      category: 'Pesanan',
+      activity: `Mengekspor ${this.orders.length} data pesanan ke CSV`,
+      result: 'Berhasil',
+    });
   }
 }
 

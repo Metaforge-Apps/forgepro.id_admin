@@ -10,6 +10,7 @@ import {
   SUIT_CATEGORIES,
 } from './style.types';
 import { INITIAL_SUIT_STYLES } from './style.seed';
+import { activityController } from '../activity-controller/activity.controller';
 
 export { INITIAL_SUIT_STYLES };
 
@@ -210,6 +211,12 @@ export class StyleController {
 
     this.styles = [newItem, ...this.styles];
     this.notify();
+    activityController.logActivity({
+      source: 'Admin Produk',
+      category: 'Katalog',
+      activity: `Menambahkan template jas baru · ${newItem.name} (${newItem.category})`,
+      result: 'Berhasil',
+    });
     return newItem;
   }
 
@@ -241,7 +248,16 @@ export class StyleController {
       return updatedItem;
     });
 
-    if (updatedItem) this.notify();
+    if (updatedItem) {
+      const saved: SuitStyleItem = updatedItem;
+      this.notify();
+      activityController.logActivity({
+        source: 'Admin Produk',
+        category: 'Katalog',
+        activity: `Memperbarui template jas · ${saved.name} (Status: ${saved.status})`,
+        result: 'Berhasil',
+      });
+    }
     return updatedItem;
   }
 
@@ -254,9 +270,18 @@ export class StyleController {
 
   public deleteStyle(id: string): boolean {
     const initialLen = this.styles.length;
+    const target = this.getStyleById(id);
     this.styles = this.styles.filter((item) => item.id !== id);
     const deleted = this.styles.length < initialLen;
-    if (deleted) this.notify();
+    if (deleted) {
+      this.notify();
+      activityController.logActivity({
+        source: 'Admin Utama',
+        category: 'Katalog',
+        activity: `Menghapus template jas · ${target?.name || id}`,
+        result: 'Berhasil',
+      });
+    }
     return deleted;
   }
 

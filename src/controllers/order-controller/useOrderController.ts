@@ -45,6 +45,10 @@ export function useOrderController() {
     []
   );
 
+  const exportOrdersCSV = useCallback(() => {
+    orderController.exportOrdersCSV();
+  }, []);
+
   return {
     orders,
     updateOrderStatus,
@@ -52,6 +56,7 @@ export function useOrderController() {
     getOrderById,
     getPaymentBadgeStyle,
     getPhotoBadgeStyle,
+    exportOrdersCSV,
   };
 }
 

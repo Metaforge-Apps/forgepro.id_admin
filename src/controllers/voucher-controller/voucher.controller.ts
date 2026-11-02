@@ -5,6 +5,7 @@ import {
   VoucherSummary,
   VoucherPackageTarget,
 } from './voucher.types';
+import { activityController } from '../activity-controller/activity.controller';
 
 const STORAGE_KEY = 'forgepro_vouchers_v1';
 
@@ -262,6 +263,12 @@ export class VoucherController {
     };
     this.vouchers = [created, ...this.vouchers];
     this.notify();
+    activityController.logActivity({
+      source: 'Admin Produk',
+      category: 'Voucher',
+      activity: `Membuat voucher promo baru · ${created.code} (${created.title})`,
+      result: 'Berhasil',
+    });
     return created;
   }
 
@@ -272,7 +279,16 @@ export class VoucherController {
       updated = { ...this.normalize(input), id: v.id, used: v.used };
       return updated;
     });
-    if (updated) this.notify();
+    if (updated) {
+      const saved = updated as VoucherItem;
+      this.notify();
+      activityController.logActivity({
+        source: 'Admin Produk',
+        category: 'Voucher',
+        activity: `Memperbarui voucher promo · ${saved.code} (${saved.title})`,
+        result: 'Berhasil',
+      });
+    }
     return updated;
   }
 
@@ -284,9 +300,18 @@ export class VoucherController {
 
   public deleteVoucher(id: string): boolean {
     const before = this.vouchers.length;
+    const target = this.getVoucherById(id);
     this.vouchers = this.vouchers.filter((v) => v.id !== id);
     const deleted = this.vouchers.length < before;
-    if (deleted) this.notify();
+    if (deleted) {
+      this.notify();
+      activityController.logActivity({
+        source: 'Admin Utama',
+        category: 'Voucher',
+        activity: `Menghapus voucher promo · ${target?.code || id}`,
+        result: 'Berhasil',
+      });
+    }
     return deleted;
   }
 

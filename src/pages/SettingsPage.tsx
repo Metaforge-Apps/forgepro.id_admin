@@ -9,6 +9,8 @@ import {
   X
 } from 'lucide-react';
 
+import { activityController } from '../controllers/activity-controller';
+
 const SETTINGS_TABS = [
   'Umum',
   'Pembayaran',
@@ -160,6 +162,12 @@ export function SettingsPage() {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail === 'settings-save') {
         showToast('Perubahan pengaturan berhasil disimpan dan dicatat ke log.');
+        activityController.logActivity({
+          source: 'Admin Utama',
+          category: 'Pengaturan',
+          activity: 'Menyimpan konfigurasi umum studio dan parameter webhook',
+          result: 'Berhasil',
+        });
       } else if (customEvent.detail === 'settings-cancel') {
         showToast('Perubahan dibatalkan dan dikembalikan ke nilai semula.');
       }

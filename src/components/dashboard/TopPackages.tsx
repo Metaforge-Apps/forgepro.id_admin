@@ -1,44 +1,38 @@
 import React from 'react';
 import { Card } from '../common/Card';
-
-interface TopPackageItem {
-  name: string;
-  price: string;
-  percentage: number;
-}
-
-const PACKAGES: TopPackageItem[] = [
-  {
-    name: 'Esensial',
-    price: 'Rp59.000',
-    percentage: 28,
-  },
-  {
-    name: 'Profesional',
-    price: 'Rp99.000',
-    percentage: 54,
-  },
-  {
-    name: 'Eksklusif',
-    price: 'Rp169.000',
-    percentage: 18,
-  },
-];
+import { usePackageController } from '../../controllers/package-controller';
 
 /**
  * Top Performing Packages Component
- * Menampilkan 3 paket terlaris dengan progress bar emas
+ * Terhubung dengan packageController sehingga langsung reaktif terhadap perubahan paket & harga
  */
 export function TopPackages() {
+  const { packages } = usePackageController();
+
+  const topPackages = packages
+    .filter((p) => p.status === 'Tayang')
+    .map((pkg) => ({
+      id: pkg.id,
+      name: pkg.name,
+      price: pkg.price,
+      percentage: parseInt(pkg.salesShare.replace('%', ''), 10) || 0,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
+
   return (
     <Card className="flex flex-col justify-start">
-      <h3 className="text-base sm:text-lg font-semibold tracking-tight text-content-primary mb-5">
-        Paket terlaris
-      </h3>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-base sm:text-lg font-semibold tracking-tight text-content-primary">
+          Paket terlaris
+        </h3>
+        <span className="text-xs text-content-muted">
+          Berdasarkan pangsa pesanan
+        </span>
+      </div>
 
       <div className="flex flex-col gap-5">
-        {PACKAGES.map((pkg) => (
-          <div key={pkg.name} className="flex flex-col gap-2">
+        {topPackages.map((pkg) => (
+          <div key={pkg.id} className="flex flex-col gap-2">
             {/* Header: Nama Paket dan Harga · Persentase */}
             <div className="flex items-center justify-between text-sm">
               <span className="font-serif text-base font-medium text-content-primary">
@@ -53,11 +47,14 @@ export function TopPackages() {
             <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#1F2C44] overflow-hidden">
               <div
                 className="h-full rounded-full bg-[#D9B06F] transition-all duration-700 ease-out"
-                style={{ width: `${pkg.percentage}%` }}
+                style={{ width: `${Math.min(pkg.percentage, 100)}%` }}
               />
             </div>
           </div>
         ))}
+        {topPackages.length === 0 && (
+          <p className="text-xs text-content-muted py-4">Belum ada paket yang aktif.</p>
+        )}
       </div>
     </Card>
   );

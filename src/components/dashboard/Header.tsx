@@ -52,7 +52,10 @@ const PAGE_CONFIGS: Record<string, PageHeaderConfig> = {
       {
         label: 'Ekspor data',
         icon: 'Download',
-        onClick: () => alert('Mengekspor data pesanan ke Excel/CSV...'),
+        onClick: () =>
+          window.dispatchEvent(
+            new CustomEvent('forgepro-action', { detail: 'export-orders' })
+          ),
       },
     ],
   },
@@ -94,7 +97,9 @@ const PAGE_CONFIGS: Record<string, PageHeaderConfig> = {
         label: 'Riwayat perubahan',
         icon: 'RotateCcw',
         onClick: () =>
-          alert('Riwayat perubahan paket: Terakhir disesuaikan oleh Admin Utama.'),
+          window.dispatchEvent(
+            new CustomEvent('forgepro-action', { detail: 'package-history' })
+          ),
       },
       {
         label: 'Tambah paket',

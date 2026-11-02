@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { X } from 'lucide-react';
@@ -12,6 +13,7 @@ const formatRupiah = (val: number): string =>
  * Terhubung dengan orderController sehingga menampilkan data transaksi terkini
  */
 export function RecentTransactionsTable() {
+  const navigate = useNavigate();
   const { orders } = useOrderController();
   const [selectedTx, setSelectedTx] = useState<OrderItem | null>(null);
 
@@ -160,7 +162,17 @@ export function RecentTransactionsTable() {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex items-center justify-between gap-3 pt-3 border-t border-border-subtle/50">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedTx(null);
+                  navigate('/pesanan');
+                }}
+                className="text-xs font-semibold text-[#D9B06F] hover:underline"
+              >
+                Lihat di Pesanan & Transaksi →
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedTx(null)}

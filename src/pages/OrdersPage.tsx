@@ -33,6 +33,7 @@ export function OrdersPage() {
     updateOrderStatus,
     getPaymentBadgeStyle,
     getPhotoBadgeStyle,
+    exportOrdersCSV,
   } = useOrderController();
 
   const [activeTab, setActiveTab] = useState<string>('Semua pesanan');
@@ -40,6 +41,17 @@ export function OrdersPage() {
   const [selectedPackage, setSelectedPackage] = useState<string>('Semua paket');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleAction = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail === 'export-orders') {
+        exportOrdersCSV();
+      }
+    };
+    window.addEventListener('forgepro-action', handleAction);
+    return () => window.removeEventListener('forgepro-action', handleAction);
+  }, [exportOrdersCSV]);
 
   const selectedOrder = useMemo(
     () => orders.find((o) => o.id === selectedOrderId || o.orderNumber === selectedOrderId) ?? null,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../components/common/Card';
 import { useAuth } from '../context/AuthContext';
+import { activityController } from '../controllers/activity-controller';
 import { BRAND_CONFIG } from '../config/branding';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -93,6 +94,12 @@ export function AdminProfilePage() {
       });
     }
     showToast('Profil Admin Utama berhasil diperbarui.');
+    activityController.logActivity({
+      source: displayName || 'Admin Utama',
+      category: 'Admin',
+      activity: `Memperbarui profil administrator · ${primaryEmail}`,
+      result: 'Berhasil',
+    });
   };
 
   const handleResetProfile = () => {

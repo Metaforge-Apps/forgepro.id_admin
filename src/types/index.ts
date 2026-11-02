@@ -52,17 +52,6 @@ export interface BrandConfig {
   };
 }
 
-export interface PrintingItem {
-  id: string;
-  spec: string;
-  recipient: string;
-  address: string;
-  status: 'Antre cetak' | 'Dicetak' | 'Siap dikirim' | 'Dikirim' | 'Diterima';
-  courier: string;
-  trackingNumber: string;
-  actionText: string;
-}
-
 export interface AdminMember {
   id: string;
   name: string;
@@ -74,11 +63,20 @@ export interface AdminMember {
   actionLabel: string;
 }
 
+export type ActivityCategory =
+  | 'Pesanan'
+  | 'Katalog'
+  | 'Paket'
+  | 'Voucher'
+  | 'Admin'
+  | 'Pengaturan'
+  | 'Sistem';
+
 export interface ActivityLogItem {
   id: string;
   time: string;
   source: string;
-  category: 'Pesanan' | 'Katalog' | 'Admin';
+  category: ActivityCategory;
   activity: string;
   result: string;
 }

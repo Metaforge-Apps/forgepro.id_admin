@@ -21,6 +21,19 @@ export function PricingPackagesPage() {
     getStatusBadgeStyle,
   } = usePackageController();
 
+  const [showHistoryModal, setShowHistoryModal] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleAction = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail === 'package-history') {
+        setShowHistoryModal(true);
+      }
+    };
+    window.addEventListener('forgepro-action', handleAction);
+    return () => window.removeEventListener('forgepro-action', handleAction);
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       {/* 3 Package Cards Row Sesuai Referensi Figma */}
@@ -292,6 +305,65 @@ export function PricingPackagesPage() {
                 className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#111A2C] text-[#F7F5F0] dark:bg-[#D9B06F] dark:text-[#0A111C] hover:bg-[#1A2844] dark:hover:bg-[#E5C285] border border-[#D9B06F]/60 select-none transition-colors shadow-sm"
               >
                 Nonaktifkan paket
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Riwayat Perubahan Paket */}
+      {showHistoryModal && (
+        <div
+          onClick={() => setShowHistoryModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-2xl bg-surface-card border border-border-card p-6 shadow-2xl relative"
+          >
+            <button
+              onClick={() => setShowHistoryModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-hover"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="font-serif text-xl font-bold text-content-primary mb-1">
+              Riwayat Perubahan Paket
+            </h3>
+            <p className="text-xs text-content-muted mb-4">
+              Catatan pembaruan harga & kuota paket studio foto digital.
+            </p>
+
+            <div className="space-y-3 divide-y divide-border-subtle/60 text-xs">
+              <div className="pt-2">
+                <div className="flex items-center justify-between font-semibold text-content-primary">
+                  <span>Pembaruan SKU Google Play</span>
+                  <span className="text-[11px] text-content-muted">19 Okt, 10:15 WIB</span>
+                </div>
+                <p className="text-content-secondary mt-0.5">
+                  Paket Profesional & Eksklusif diselaraskan dengan Google Play Console.
+                </p>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Oleh: Admin Utama</span>
+              </div>
+              <div className="pt-2">
+                <div className="flex items-center justify-between font-semibold text-content-primary">
+                  <span>Penetapan Output Digital 300 DPI</span>
+                  <span className="text-[11px] text-content-muted">18 Okt, 14:00 WIB</span>
+                </div>
+                <p className="text-content-secondary mt-0.5">
+                  Format output digital resolusi tinggi aktif untuk semua paket.
+                </p>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Oleh: Dimas Putra (Produk)</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#D9B06F] text-[#0A111C] hover:bg-[#E5C285]"
+              >
+                Tutup
               </button>
             </div>
           </div>

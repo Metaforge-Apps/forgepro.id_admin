@@ -79,9 +79,33 @@ const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
   Keuangan: 'Transaksi & ekspor',
 };
 
+import { activityController } from '../controllers/activity-controller';
+
+const STORAGE_KEY_ADMINS = 'forgepro_admins_v1';
+
 export function AdminManagementPage() {
   const navigate = useNavigate();
-  const [admins, setAdmins] = useState<AdminMember[]>(INITIAL_ADMINS);
+  const [admins, setAdmins] = useState<AdminMember[]>(() => {
+    if (typeof window === 'undefined') return INITIAL_ADMINS;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_ADMINS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // Fallback
+    }
+    return INITIAL_ADMINS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_ADMINS, JSON.stringify(admins));
+    } catch {
+      // Ignore
+    }
+  }, [admins]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [roleFilter, setRoleFilter] = useState<string>('Semua peran');
   const [statusFilter, setStatusFilter] = useState<string>('Semua status');
@@ -144,6 +168,12 @@ export function AdminManagementPage() {
     };
     setAdmins((prev) => [...prev, newMember]);
     setShowInviteModal(false);
+    activityController.logActivity({
+      source: 'Admin Utama',
+      category: 'Admin',
+      activity: `Mengundang staf admin · ${newMember.email} (${newMember.role})`,
+      result: 'Berhasil',
+    });
     setInviteName('');
     setInviteEmail('');
     setInviteRole('Operasional');

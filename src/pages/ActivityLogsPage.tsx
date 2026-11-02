@@ -9,80 +9,10 @@ import {
 } from 'lucide-react';
 import type { ActivityLogItem, WebhookItem } from '../types';
 
-const INITIAL_ACTIVITY_LOGS: ActivityLogItem[] = [
-  {
-    id: 'act-1',
-    time: '19 Okt, 16:12:08',
-    source: 'Sistem',
-    category: 'Pesanan',
-    activity: 'Pembayaran dikonfirmasi · PS-261019-001',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-2',
-    time: '19 Okt, 15:28:41',
-    source: 'Maya Lestari',
-    category: 'Pesanan',
-    activity: 'Memulai proses foto · PS-261019-003',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-3',
-    time: '19 Okt, 14:20:15',
-    source: 'Dimas Putra',
-    category: 'Katalog',
-    activity: 'Memperbarui gaya · Jas Navy Klasik',
-    result: 'Berhasil',
-  },
-  {
-    id: 'act-4',
-    time: '19 Okt, 13:40:02',
-    source: 'Andi Prasetyo',
-    category: 'Admin',
-    activity: 'Mengundang admin · raka@forgepro.id',
-    result: 'Berhasil',
-  },
-];
-
-const INITIAL_WEBHOOKS: WebhookItem[] = [
-  {
-    id: 'wh-1',
-    time: '19 Okt, 16:12:09',
-    eventTitle: 'Pembayaran berhasil',
-    eventSub: 'payment.paid · PS-261019-001',
-    statusBadge: '200 · Berhasil',
-    statusType: 'success',
-    latency: '248 ms',
-    attempts: '1 dari 3',
-    actionLabel: 'Detail',
-  },
-  {
-    id: 'wh-2',
-    time: '19 Okt, 15:20:04',
-    eventTitle: 'Proses foto dimulai',
-    eventSub: 'order.processing · PS-261019-003',
-    statusBadge: '504 · Gagal',
-    statusType: 'error',
-    latency: 'Batas waktu habis',
-    attempts: '2 dari 3',
-    actionLabel: 'Coba ulang',
-  },
-  {
-    id: 'wh-3',
-    time: '19 Okt, 14:55:18',
-    eventTitle: 'Foto selesai',
-    eventSub: 'order.completed · PS-261019-004',
-    statusBadge: '200 · Berhasil',
-    statusType: 'success',
-    latency: '182 ms',
-    attempts: '1 dari 3',
-    actionLabel: 'Detail',
-  },
-];
+import { useActivityController } from '../controllers/activity-controller';
 
 export function ActivityLogsPage() {
-  const [activityLogs] = useState<ActivityLogItem[]>(INITIAL_ACTIVITY_LOGS);
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>(INITIAL_WEBHOOKS);
+  const { logs: activityLogs, webhooks, retryWebhook, exportLogsCSV } = useActivityController();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activityFilter, setActivityFilter] = useState<string>('Semua aktivitas');
@@ -101,12 +31,12 @@ export function ActivityLogsPage() {
     const handleHeaderAction = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail === 'export-logs') {
-        alert('Mengekspor log aktivitas & pengiriman webhook ke CSV...');
+        exportLogsCSV();
       }
     };
     window.addEventListener('forgepro-action', handleHeaderAction);
     return () => window.removeEventListener('forgepro-action', handleHeaderAction);
-  }, []);
+  }, [exportLogsCSV]);
 
   const filteredLogs = useMemo(() => {
     return activityLogs.filter((item) => {
@@ -127,20 +57,7 @@ export function ActivityLogsPage() {
   }, [activityLogs, activityFilter, searchQuery]);
 
   const handleRetryWebhook = (wh: WebhookItem) => {
-    setWebhooks((prev) =>
-      prev.map((item) =>
-        item.id === wh.id
-          ? {
-              ...item,
-              statusBadge: '200 · Berhasil',
-              statusType: 'success',
-              latency: '210 ms',
-              attempts: '3 dari 3',
-              actionLabel: 'Detail',
-            }
-          : item
-      )
-    );
+    retryWebhook(wh.id);
   };
 
   return (

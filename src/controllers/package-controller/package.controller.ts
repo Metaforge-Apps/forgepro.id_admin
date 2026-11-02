@@ -7,6 +7,7 @@ import {
   UpdatePackagePayload,
   PACKAGE_TIERS,
 } from './package.types';
+import { activityController } from '../activity-controller/activity.controller';
 
 const STORAGE_KEY = 'forgepro_packages_v3';
 
@@ -264,6 +265,12 @@ export class PackageController {
     this.packages = [...this.packages, newPkg];
     if (isFeatured) this.clearFeaturedExcept(newPkg.id);
     this.notify();
+    activityController.logActivity({
+      source: 'Admin Produk',
+      category: 'Paket',
+      activity: `Membuat paket harga baru · ${newPkg.name} (${newPkg.price})`,
+      result: 'Berhasil',
+    });
     return newPkg;
   }
 
@@ -311,6 +318,12 @@ export class PackageController {
       const saved = updatedItem as PricingPackageItem;
       if (saved.isFeatured) this.clearFeaturedExcept(saved.id);
       this.notify();
+      activityController.logActivity({
+        source: 'Admin Produk',
+        category: 'Paket',
+        activity: `Memperbarui paket harga · ${saved.name} (Status: ${saved.status}, Harga: ${saved.price})`,
+        result: 'Berhasil',
+      });
     }
     return updatedItem;
   }

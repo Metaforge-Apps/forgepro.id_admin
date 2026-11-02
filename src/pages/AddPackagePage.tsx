@@ -452,7 +452,7 @@ export function AddPackagePage() {
           </Card>
 
           <span className="text-xs text-content-muted px-1 leading-relaxed">
-            Cetak fisik opsional. Biaya cetak dan pengiriman terpisah dari pembelian produk digital.
+            Produk 100% digital. Seluruh foto diproses AI dengan resolusi tinggi siap unduh & cetak mandiri.
           </span>
         </div>
       </div>

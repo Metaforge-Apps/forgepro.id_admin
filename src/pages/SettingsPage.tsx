@@ -12,7 +12,6 @@ import {
 const SETTINGS_TABS = [
   'Umum',
   'Pembayaran',
-  'Cetak & pengiriman',
   'Keamanan',
   'Integrasi',
 ];
@@ -91,7 +90,6 @@ export function SettingsPage() {
   const [adminEmail, setAdminEmail] = useState<string>('andi@forgepro.id');
 
   const [notifyOrderPayment, setNotifyOrderPayment] = useState<boolean>(true);
-  const [notifyPrintShip, setNotifyPrintShip] = useState<boolean>(true);
   const [notifyWebhookFail, setNotifyWebhookFail] = useState<boolean>(true);
   const [notifyDailySummary, setNotifyDailySummary] = useState<boolean>(false);
 
@@ -107,39 +105,6 @@ export function SettingsPage() {
   const [licenseTesterEmail, setLicenseTesterEmail] = useState<string>(
     'tester@forgepro.example'
   );
-
-  // =====================================================================
-  // TAB 3: CETAK & PENGIRIMAN STATES
-  // =====================================================================
-  const [printSize, setPrintSize] = useState<string>('4R (10 × 15 cm)');
-  const [fileQuality, setFileQuality] = useState<string>('300 dpi');
-  const [paperFinish, setPaperFinish] = useState<string>('Kertas foto premium • doff');
-  const [productionSla, setProductionSla] = useState<string>('1–2 hari kerja');
-  const [cutoffTime, setCutoffTime] = useState<string>('14.00 WIB');
-  const [qcBeforePrint, setQcBeforePrint] = useState<boolean>(true);
-
-  const [senderName, setSenderName] = useState<string>('ForgePro.id');
-  const [pickupAddress, setPickupAddress] = useState<string>(
-    'Jl. Kemang Raya No. 12, Jakarta Selatan 12730'
-  );
-  const [senderCountry, setSenderCountry] = useState<string>('Indonesia');
-  const [senderPostalCode, setSenderPostalCode] = useState<string>('12730');
-  const [opsWhatsapp, setOpsWhatsapp] = useState<string>('+62 812-3456-7890');
-
-  const [courierJne, setCourierJne] = useState<boolean>(true);
-  const [courierSicepat, setCourierSicepat] = useState<boolean>(true);
-  const [courierJnt, setCourierJnt] = useState<boolean>(true);
-  const [courierInstant, setCourierInstant] = useState<boolean>(false);
-
-  const [shippingCalcMethod, setShippingCalcMethod] = useState<string>(
-    'Tarif kurir berdasarkan tujuan & berat'
-  );
-  const [initialWeight, setInitialWeight] = useState<string>('100 gram');
-  const [packageDimensions, setPackageDimensions] = useState<string>('18 × 13 × 2 cm');
-  const [showEta, setShowEta] = useState<boolean>(true);
-
-  const [notifyTrackingStatus, setNotifyTrackingStatus] = useState<boolean>(true);
-  const [notifyShippingIssue, setNotifyShippingIssue] = useState<boolean>(true);
 
   // =====================================================================
   // TAB 4: KEAMANAN STATES
@@ -179,7 +144,6 @@ export function SettingsPage() {
   const [webhookSigningSecret, setWebhookSigningSecret] =
     useState<string>('••••••••••••••••');
   const [eventOrderDigital, setEventOrderDigital] = useState<boolean>(true);
-  const [eventPrintShipping, setEventPrintShipping] = useState<boolean>(true);
 
   const [maxRetries, setMaxRetries] = useState<string>('5 kali');
   const [responseTimeout, setResponseTimeout] = useState<string>('10 detik');
@@ -470,21 +434,6 @@ export function SettingsPage() {
                 <div className="py-3 flex items-center justify-between gap-4">
                   <div className="flex flex-col gap-0.5">
                     <span className="font-semibold text-content-primary">
-                      Produksi & pengiriman
-                    </span>
-                    <span className="text-content-muted">
-                      Ingatkan pesanan cetak dan kendala pengiriman.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={notifyPrintShip}
-                    onChange={setNotifyPrintShip}
-                  />
-                </div>
-
-                <div className="py-3 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
                       Kegagalan webhook
                     </span>
                     <span className="text-content-muted">
@@ -666,11 +615,10 @@ export function SettingsPage() {
               <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-content-primary">
-                  Hanya untuk produk digital
+                  Produk 100% Digital Foto AI
                 </span>
                 <p className="text-xs text-content-muted leading-relaxed">
-                  Biaya cetak dan pengiriman fisik tidak ditagih melalui Google
-                  Play Billing. Akses unduhan produk digital berlaku 30 hari.
+                  Semua transaksi diproses aman melalui Google Play Billing. Akses unduhan foto digital berlaku 30 hari.
                 </p>
               </div>
             </div>
@@ -819,396 +767,6 @@ export function SettingsPage() {
                 </button>
               </div>
             </Card>
-          </div>
-        </div>
-      )}
-
-      {/* ================================================================= */}
-      {/* TAB 3: CETAK & PENGIRIMAN                                         */}
-      {/* ================================================================= */}
-      {activeTab === 'Cetak & pengiriman' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* KOLOM KIRI (7 Kolom) */}
-          <div className="lg:col-span-7 flex flex-col gap-5">
-            {/* Card 1: Standar produksi */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <h2 className="text-base font-semibold text-content-primary">
-                  Standar produksi
-                </h2>
-                <p className="text-xs text-content-muted leading-relaxed">
-                  Tentukan spesifikasi standar untuk pesanan cetak fisik.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Ukuran cetak
-                  </label>
-                  <input
-                    type="text"
-                    value={printSize}
-                    onChange={(e) => setPrintSize(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Kualitas berkas
-                  </label>
-                  <input
-                    type="text"
-                    value={fileQuality}
-                    onChange={(e) => setFileQuality(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 text-xs">
-                <label className="font-semibold text-content-primary">
-                  Kertas dan hasil akhir
-                </label>
-                <input
-                  type="text"
-                  value={paperFinish}
-                  onChange={(e) => setPaperFinish(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    SLA produksi
-                  </label>
-                  <input
-                    type="text"
-                    value={productionSla}
-                    onChange={(e) => setProductionSla(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Batas pemrosesan
-                  </label>
-                  <input
-                    type="text"
-                    value={cutoffTime}
-                    onChange={(e) => setCutoffTime(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="py-3.5 border-t border-b border-border-subtle/60 flex items-center justify-between gap-4 text-xs">
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-semibold text-content-primary">
-                    Pemeriksaan kualitas sebelum cetak
-                  </span>
-                  <span className="text-content-muted leading-relaxed">
-                    Periksa ketajaman, warna, dan pemotongan foto sebelum masuk
-                    produksi.
-                  </span>
-                </div>
-                <ToggleSwitch
-                  checked={qcBeforePrint}
-                  onChange={setQcBeforePrint}
-                />
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Pesanan setelah batas waktu diproses pada hari kerja berikutnya.
-                Operasional Senin–Jumat, kecuali hari libur.
-              </p>
-            </Card>
-
-            {/* Card 2: Alamat asal operasional */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <h2 className="text-base font-semibold text-content-primary">
-                Alamat asal operasional
-              </h2>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Nama pengirim
-                  </label>
-                  <input
-                    type="text"
-                    value={senderName}
-                    onChange={(e) => setSenderName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Alamat penjemputan
-                  </label>
-                  <input
-                    type="text"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Negara
-                    </label>
-                    <input
-                      type="text"
-                      value={senderCountry}
-                      onChange={(e) => setSenderCountry(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Kode pos
-                    </label>
-                    <input
-                      type="text"
-                      value={senderPostalCode}
-                      onChange={(e) => setSenderPostalCode(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    WhatsApp operasional
-                  </label>
-                  <input
-                    type="text"
-                    value={opsWhatsapp}
-                    onChange={(e) => setOpsWhatsapp(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-              </div>
-
-              <span className="text-xs text-content-muted">
-                Alamat ini digunakan untuk penjemputan kurir dan perhitungan
-                ongkir.
-              </span>
-            </Card>
-          </div>
-
-          {/* KOLOM KANAN (5 Kolom) */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
-            {/* Card 1: Kurir & layanan */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold text-content-primary">
-                  Kurir & layanan
-                </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border bg-[#D9B06F]/10 text-[#9A7432] dark:text-[#D9B06F] border-[#D9B06F]/50">
-                  Contoh
-                </span>
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Pilihan aktif berikut adalah konfigurasi ilustratif, bukan
-                koneksi kurir langsung.
-              </p>
-
-              <div className="divide-y divide-border-subtle/60 text-xs">
-                <div className="py-3 first:pt-0 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      JNE
-                    </span>
-                    <span className="text-content-muted">
-                      REG • estimasi 2–4 hari kerja
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={courierJne}
-                    onChange={setCourierJne}
-                  />
-                </div>
-
-                <div className="py-3 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      SiCepat
-                    </span>
-                    <span className="text-content-muted">
-                      REG • estimasi 2–3 hari kerja
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={courierSicepat}
-                    onChange={setCourierSicepat}
-                  />
-                </div>
-
-                <div className="py-3 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      J&amp;T Express
-                    </span>
-                    <span className="text-content-muted">
-                      EZ • estimasi 2–4 hari kerja
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={courierJnt}
-                    onChange={setCourierJnt}
-                  />
-                </div>
-
-                <div className="pt-3 pb-0 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      Layanan instan
-                    </span>
-                    <span className="text-content-muted">
-                      Tidak tersedia untuk pesanan cetak.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={courierInstant}
-                    onChange={setCourierInstant}
-                  />
-                </div>
-              </div>
-            </Card>
-
-            {/* Card 2: Ongkir & estimasi */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <h2 className="text-base font-semibold text-content-primary">
-                Ongkir &amp; estimasi
-              </h2>
-
-              <div className="flex flex-col gap-4 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-content-primary">
-                    Metode perhitungan
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingCalcMethod}
-                    onChange={(e) => setShippingCalcMethod(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Berat awal paket
-                    </label>
-                    <input
-                      type="text"
-                      value={initialWeight}
-                      onChange={(e) => setInitialWeight(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-content-primary">
-                      Dimensi kemasan
-                    </label>
-                    <input
-                      type="text"
-                      value={packageDimensions}
-                      onChange={(e) => setPackageDimensions(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="py-3.5 border-t border-b border-border-subtle/60 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      Tampilkan estimasi tiba
-                    </span>
-                    <span className="text-content-muted leading-relaxed">
-                      SLA produksi + estimasi layanan kurir. Perbarui jika ada
-                      keterlambatan.
-                    </span>
-                  </div>
-                  <ToggleSwitch checked={showEta} onChange={setShowEta} />
-                </div>
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Ongkir final mengikuti wilayah, pembulatan berat, dan tarif
-                layanan yang dipilih.
-              </p>
-            </Card>
-
-            {/* Card 3: Notifikasi pengiriman */}
-            <Card padding="p-6 sm:p-7" className="flex flex-col gap-4">
-              <h2 className="text-base font-semibold text-content-primary">
-                Notifikasi pengiriman
-              </h2>
-
-              <div className="divide-y divide-border-subtle/60 text-xs">
-                <div className="pb-3.5 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      Nomor resi &amp; perubahan status
-                    </span>
-                    <span className="text-content-muted leading-relaxed">
-                      Kirim email saat paket diserahkan, dalam perjalanan, dan
-                      diterima.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={notifyTrackingStatus}
-                    onChange={setNotifyTrackingStatus}
-                  />
-                </div>
-
-                <div className="py-3.5 flex items-center justify-between gap-4">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-content-primary">
-                      Peringatan kendala pengiriman
-                    </span>
-                    <span className="text-content-muted leading-relaxed">
-                      Kirim ke halo@forgepro.id jika paket tertunda atau gagal
-                      dikirim.
-                    </span>
-                  </div>
-                  <ToggleSwitch
-                    checked={notifyShippingIssue}
-                    onChange={setNotifyShippingIssue}
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-content-muted leading-relaxed">
-                Waktu notifikasi mengikuti WIB (UTC+7). Semua perubahan tercatat
-                di log aktivitas.
-              </p>
-            </Card>
-
-            {/* Info Notice */}
-            <div className="flex items-start gap-2.5 px-1">
-              <Info className="w-4 h-4 text-content-primary shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-content-primary">
-                  Terpisah dari pembelian digital
-                </span>
-                <p className="text-xs text-content-muted leading-relaxed">
-                  Pengaturan ini hanya untuk produksi dan pengiriman fisik.
-                  Biayanya tidak ditagih melalui Google Play Billing.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1825,21 +1383,6 @@ export function SettingsPage() {
                       <ToggleSwitch
                         checked={eventOrderDigital}
                         onChange={setEventOrderDigital}
-                      />
-                    </div>
-
-                    <div className="py-3 border-b border-border-subtle/60 flex items-center justify-between gap-4">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-content-primary">
-                          Produksi &amp; pengiriman
-                        </span>
-                        <span className="text-content-muted">
-                          print.completed • shipment.updated • shipment.failed
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        checked={eventPrintShipping}
-                        onChange={setEventPrintShipping}
                       />
                     </div>
                   </div>

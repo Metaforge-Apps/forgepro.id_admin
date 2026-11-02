@@ -25,7 +25,7 @@ const INITIAL_ADMINS: AdminMember[] = [
     name: 'Maya Lestari',
     email: 'maya@forgepro.id',
     role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
+    access: 'Pesanan & Transaksi Digital',
     status: 'Aktif',
     lastActive: '19 Okt, 16:05 WIB',
     actionLabel: 'Kelola',
@@ -55,7 +55,7 @@ const INITIAL_ADMINS: AdminMember[] = [
     name: 'Raka Wijaya',
     email: 'raka@forgepro.id',
     role: 'Operasional',
-    access: 'Pesanan, cetak & kirim',
+    access: 'Pesanan & Transaksi Digital',
     status: 'Diundang',
     lastActive: 'Belum pernah masuk',
     actionLabel: 'Kirim ulang',
@@ -74,7 +74,7 @@ const INITIAL_ADMINS: AdminMember[] = [
 
 const ROLE_ACCESS_MAP: Record<AdminMember['role'], string> = {
   'Admin Utama': 'Seluruh menu',
-  Operasional: 'Pesanan, cetak & kirim',
+  Operasional: 'Pesanan & Transaksi Digital',
   Produk: 'Katalog, paket & promo',
   Keuangan: 'Transaksi & ekspor',
 };
@@ -137,7 +137,7 @@ export function AdminManagementPage() {
       name: inviteName.trim(),
       email: inviteEmail.trim().toLowerCase(),
       role: inviteRole,
-      access: ROLE_ACCESS_MAP[inviteRole] || 'Pesanan, cetak & kirim',
+      access: ROLE_ACCESS_MAP[inviteRole] || 'Pesanan & Transaksi Digital',
       status: 'Diundang',
       lastActive: 'Belum pernah masuk',
       actionLabel: 'Kirim ulang',
@@ -494,7 +494,7 @@ export function AdminManagementPage() {
                   className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-card text-content-primary focus:outline-none focus:border-[#D9B06F] cursor-pointer"
                 >
                   <option value="Operasional">
-                    Operasional (Pesanan, cetak & kirim)
+                    Operasional (Pesanan & Transaksi Digital)
                   </option>
                   <option value="Produk">
                     Produk (Katalog, paket & promo)

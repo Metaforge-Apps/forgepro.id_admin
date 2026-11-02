@@ -1,8 +1,9 @@
 /**
- * TypeScript Definitions for Order Controller (Pesanan & Pengiriman — ForgePro.id)
+ * TypeScript Definitions for Order Controller (Pesanan & Transaksi — ForgePro.id)
  *
  * Disesuaikan dengan model `Order` pada aplikasi Flutter
  * (forgepro_apps/lib/features/generation/domain/models.dart).
+ * Produk 100% digital: Pembuatan foto profesional AI siap unduh.
  */
 import type { PackageTier } from '../package-controller/package.types';
 
@@ -13,13 +14,6 @@ export type PhotoGenerationStatus =
   | 'Diproses'
   | 'Belum mulai'
   | 'Dibatalkan';
-
-export type ShippingStatus =
-  | 'Antre cetak'
-  | 'Dicetak'
-  | 'Siap dikirim'
-  | 'Dikirim'
-  | 'Diterima';
 
 export interface GeneratedPhotoItem {
   templateId: string;
@@ -58,15 +52,7 @@ export interface OrderItem {
   totalCredits: number;
   paymentStatus: PaymentStatus;
   photoStatus: PhotoGenerationStatus;
-  // Cetak Fisik & Pengiriman
-  hasPhysicalPrint: boolean;
-  printSpec?: string;
-  recipientName?: string;
-  shippingAddress?: string;
-  shippingCity?: string;
-  shippingCourier?: string;
-  shippingTrackingNumber?: string;
-  shippingStatus?: ShippingStatus;
+  /** Tautan unduh paket foto digital resolusi tinggi (High-Resolution / Ultra-HD). */
   downloadUrl?: string | null;
 }
 
@@ -74,10 +60,4 @@ export interface UpdateOrderStatusPayload {
   paymentStatus?: PaymentStatus;
   photoStatus?: PhotoGenerationStatus;
   creditsRemaining?: number;
-}
-
-export interface UpdateShippingPayload {
-  shippingStatus?: ShippingStatus;
-  shippingTrackingNumber?: string;
-  shippingCourier?: string;
 }

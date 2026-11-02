@@ -7,7 +7,6 @@ import {
   Info,
   X,
   RefreshCw,
-  Truck,
   CheckCircle2,
 } from 'lucide-react';
 import {
@@ -235,7 +234,6 @@ export function OrdersPage() {
                 <th className="pb-3 px-4">TOTAL</th>
                 <th className="pb-3 px-4">PEMBAYARAN</th>
                 <th className="pb-3 px-4">PROSES AI</th>
-                <th className="pb-3 px-4">CETAK FISIK</th>
                 <th className="pb-3 px-4">WAKTU</th>
                 <th className="pb-3 pl-4 text-left">AKSI</th>
               </tr>
@@ -302,17 +300,6 @@ export function OrdersPage() {
                     </span>
                   </td>
 
-                  <td className="py-4 px-4 whitespace-nowrap">
-                    {item.hasPhysicalPrint ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D9B06F]">
-                        <Truck className="w-3.5 h-3.5" />
-                        <span>{item.shippingCourier || 'Ya'}</span>
-                      </span>
-                    ) : (
-                      <span className="text-content-muted text-[11px]">Digital saja</span>
-                    )}
-                  </td>
-
                   <td className="py-4 px-4 text-content-muted whitespace-nowrap">
                     {item.timeDisplay}
                   </td>
@@ -334,7 +321,7 @@ export function OrdersPage() {
               ))}
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-content-muted">
+                  <td colSpan={7} className="py-10 text-center text-content-muted">
                     Tidak ada pesanan yang sesuai dengan filter.
                   </td>
                 </tr>
@@ -467,32 +454,6 @@ export function OrdersPage() {
                   )}
                 </span>
               </div>
-
-              {selectedOrder.hasPhysicalPrint && (
-                <div className="pt-3 border-t border-border-subtle/60 flex flex-col gap-1.5">
-                  <span className="font-semibold text-content-primary flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-[#D9B06F]" />
-                    <span>Cetak Fisik &amp; Pengiriman</span>
-                  </span>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-content-muted">
-                    <div>
-                      <span>Penerima:</span> <span className="font-medium text-content-primary">{selectedOrder.recipientName || '-'}</span>
-                    </div>
-                    <div>
-                      <span>Kurir:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingCourier || 'JNE'}</span>
-                    </div>
-                    <div className="col-span-2">
-                      <span>Alamat:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingAddress || '-'}</span>
-                    </div>
-                    <div>
-                      <span>No. Resi:</span> <span className="font-mono font-medium text-content-primary">{selectedOrder.shippingTrackingNumber || 'Belum ada'}</span>
-                    </div>
-                    <div>
-                      <span>Status Kirim:</span> <span className="font-medium text-content-primary">{selectedOrder.shippingStatus || 'Antre cetak'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Kontrol Aksi Manajemen Order */}

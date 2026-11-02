@@ -6,7 +6,6 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { OrdersPage } from './pages/OrdersPage';
-import { PrintingShippingPage } from './pages/PrintingShippingPage';
 import { SuitCatalogPage } from './pages/SuitCatalogPage';
 import { AddSuitPage } from './pages/AddSuitPage';
 import { EditSuitPage } from './pages/EditSuitPage';
@@ -57,7 +56,7 @@ export function App() {
 
               {/* Halaman Operasional */}
               <Route path="/pesanan" element={<OrdersPage />} />
-              <Route path="/cetak-pengiriman" element={<PrintingShippingPage />} />
+              <Route path="/cetak-pengiriman" element={<Navigate to="/pesanan" replace />} />
 
               {/* Halaman Katalog & Produk (Dikelola oleh style-controller & package-controller) */}
               <Route path="/katalog-jas" element={<SuitCatalogPage />} />

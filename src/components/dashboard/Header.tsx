@@ -56,19 +56,6 @@ const PAGE_CONFIGS: Record<string, PageHeaderConfig> = {
       },
     ],
   },
-  '/cetak-pengiriman': {
-    category: 'OPERASIONAL',
-    title: 'Cetak Fisik & Pengiriman',
-    subtitle: 'Kelola produksi cetak hingga foto tiba di tangan pelanggan.',
-    showSearch: false,
-    actions: [
-      {
-        label: 'Cetak label',
-        icon: 'Printer',
-        onClick: () => alert('Membuka antrean pencetakan label thermal...'),
-      },
-    ],
-  },
   '/katalog-jas': {
     category: 'KATALOG & PRODUK',
     title: 'Katalog Gaya Jas',

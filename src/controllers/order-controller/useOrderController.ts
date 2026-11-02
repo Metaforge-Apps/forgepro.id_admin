@@ -1,12 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { orderController } from './order.controller';
 import {
   OrderItem,
   PaymentStatus,
   PhotoGenerationStatus,
-  ShippingStatus,
   UpdateOrderStatusPayload,
-  UpdateShippingPayload,
 } from './order.types';
 
 export function useOrderController() {
@@ -21,20 +19,9 @@ export function useOrderController() {
     return unsubscribe;
   }, []);
 
-  const physicalPrintOrders = useMemo(
-    () => orders.filter((o) => o.hasPhysicalPrint),
-    [orders]
-  );
-
   const updateOrderStatus = useCallback(
     (id: string, payload: UpdateOrderStatusPayload) =>
       orderController.updateOrderStatus(id, payload),
-    []
-  );
-
-  const updateShipping = useCallback(
-    (id: string, payload: UpdateShippingPayload) =>
-      orderController.updateShipping(id, payload),
     []
   );
 
@@ -58,21 +45,13 @@ export function useOrderController() {
     []
   );
 
-  const getShippingBadgeStyle = useCallback(
-    (status: ShippingStatus) => orderController.getShippingBadgeStyle(status),
-    []
-  );
-
   return {
     orders,
-    physicalPrintOrders,
     updateOrderStatus,
-    updateShipping,
     deleteOrder,
     getOrderById,
     getPaymentBadgeStyle,
     getPhotoBadgeStyle,
-    getShippingBadgeStyle,
   };
 }
 

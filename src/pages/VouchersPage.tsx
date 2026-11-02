@@ -587,9 +587,8 @@ export function VouchersPage() {
             Penerapan diskon
           </h3>
           <p className="text-xs text-content-muted leading-relaxed">
-            Harga di Google Play ditentukan SKU produk. Agar potongan benar-benar
-            berlaku, isi SKU promo (<code>promo_product_id</code>) atau gunakan
-            bonus foto. Biaya cetak dan pengiriman tidak termasuk dasar diskon.
+            Harga di Google Play ditentukan SKU produk. Seluruh produk merupakan
+            foto studio digital 100% yang siap diunduh & dicetak mandiri oleh pelanggan.
           </p>
         </Card>
       </div>

@@ -104,9 +104,9 @@ export const INITIAL_PACKAGE_RULES: PackageRuleItem[] = [
     actionText: 'Ubah →',
   },
   {
-    title: 'Cetak fisik & pengiriman',
-    setting: 'Tambahan opsional; biaya cetak dan kirim terpisah',
-    actionText: 'Kelola →',
+    title: 'Format output digital',
+    setting: 'Resolusi Ultra-HD 300 DPI siap unduh & cetak mandiri',
+    badge: 'Aktif',
   },
   {
     title: 'Penerapan perubahan',

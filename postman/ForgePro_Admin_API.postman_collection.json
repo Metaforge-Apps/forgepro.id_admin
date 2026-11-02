@@ -1,0 +1,325 @@
+{
+  "info": {
+    "_postman_id": "forgepro-api-v1-collection",
+    "name": "ForgePro.id - Admin & Core REST API",
+    "description": "Koleksi Postman resmi untuk seluruh endpoint REST API Admin Panel dan Backend ForgePro.id (100% Produk Digital Studio Foto AI).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "demo_token_admin",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Pesanan & Transaksi Digital (/orders)",
+      "item": [
+        {
+          "name": "Ambil Daftar Semua Pesanan",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders?status=&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "status", "value": "", "description": "Filter: Dibayar, Menunggu, Gagal" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Mengambil daftar seluruh pesanan digital pelanggan dari aplikasi Flutter."
+          },
+          "response": [
+            {
+              "name": "200 OK - Daftar Pesanan",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/orders", "host": ["{{baseUrl}}"], "path": ["orders"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"ord_261019_001\",\n    \"orderNumber\": \"PRO-20261019-001\",\n    \"createdAt\": \"2026-10-19T16:12:00.000Z\",\n    \"timeDisplay\": \"19 Okt 16:12\",\n    \"customerEmail\": \"aditya@mail.com\",\n    \"customerName\": \"Aditya Pratama\",\n    \"packageTier\": \"profesional\",\n    \"packageName\": \"Profesional\",\n    \"amount\": 99000,\n    \"discount\": 0,\n    \"paymentMethod\": \"Google Play Billing (IAP)\",\n    \"photoCount\": 24,\n    \"templateIds\": [\"navy-eksekutif\"],\n    \"suitType\": \"Navy Eksekutif\",\n    \"paymentStatus\": \"Dibayar\",\n    \"photoStatus\": \"Selesai\",\n    \"downloadUrl\": \"https://storage.forgepro.id/downloads/PRO-20261019-001.zip\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Ambil Detail Pesanan by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [{ "key": "id", "value": "ord_261019_001" }]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Detail Pesanan",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"ord_261019_001\",\n  \"orderNumber\": \"PRO-20261019-001\",\n  \"customerEmail\": \"aditya@mail.com\",\n  \"customerName\": \"Aditya Pratama\",\n  \"customerPhone\": \"081234567890\",\n  \"packageName\": \"Profesional\",\n  \"amount\": 99000,\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\",\n  \"results\": [\n    { \"templateId\": \"navy-eksekutif\", \"variant\": 0, \"imageUrl\": \"https://storage.forgepro.id/photos/variant-0.jpg\" },\n    { \"templateId\": \"navy-eksekutif\", \"variant\": 1, \"imageUrl\": \"https://storage.forgepro.id/photos/variant-1.jpg\" }\n  ],\n  \"downloadUrl\": \"https://storage.forgepro.id/downloads/PRO-20261019-001.zip\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Status Pembayaran & Foto AI",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\",\n  \"creditsRemaining\": 90\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id", "status"],
+              "variable": [{ "key": "id", "value": "ord_261019_001" }]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Status Updated",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Status pesanan berhasil diperbarui\",\n  \"data\": {\n    \"id\": \"ord_261019_001\",\n    \"paymentStatus\": \"Dibayar\",\n    \"photoStatus\": \"Selesai\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Katalog Gaya Jas AI (/styles)",
+      "item": [
+        {
+          "name": "Ambil Daftar Template Jas",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/styles",
+              "host": ["{{baseUrl}}"],
+              "path": ["styles"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Daftar Gaya Jas",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"navy-eksekutif\",\n    \"name\": \"Navy Eksekutif\",\n    \"category\": \"Bisnis\",\n    \"status\": \"Tayang\",\n    \"stats\": \"1.420 pemotretan\",\n    \"image\": \"/images/jas-navy-eksekutif.jpg\",\n    \"prompt\": \"Pria mengenakan setelan jas single-breasted navy gelap dengan kemeja putih bersih dan dasi sutra biru tua, pencahayaan studio formal.\",\n    \"aspectRatio\": \"3:4\",\n    \"isPopular\": true\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Tambah Template Jas Baru",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\",\n  \"description\": \"Tuxedo pesta beludru hitam pekat untuk gala dinner dan foto karpet merah.\",\n  \"prompt\": \"Jas tuxedo satin velvet hitam dengan dasi kupu-kupu rapi, pencahayaan sinematik studio.\",\n  \"aspectRatio\": \"3:4\",\n  \"isPopular\": true,\n  \"tags\": [\"Formal\", \"Tuxedo\", \"Malam\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/styles",
+              "host": ["{{baseUrl}}"],
+              "path": ["styles"]
+            }
+          },
+          "response": [
+            {
+              "name": "201 Created - Gaya Baru",
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"id\": \"tuxedo-velvet-midnight\",\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\",\n  \"count\": 0\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Template Jas by ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Navy Eksekutif Modern\",\n  \"status\": \"Tayang\",\n  \"isPopular\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/styles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["styles", ":id"],
+              "variable": [{ "key": "id", "value": "navy-eksekutif" }]
+            }
+          }
+        },
+        {
+          "name": "Hapus Template Jas by ID",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/styles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["styles", ":id"],
+              "variable": [{ "key": "id", "value": "navy-eksekutif" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Paket & Harga IAP (/packages)",
+      "item": [
+        {
+          "name": "Ambil Daftar Paket & Harga",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/packages",
+              "host": ["{{baseUrl}}"],
+              "path": ["packages"]
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Daftar Paket",
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"pkg-esensial\",\n    \"tier\": \"esensial\",\n    \"name\": \"Esensial\",\n    \"price\": \"Rp59.000\",\n    \"priceValue\": 59000,\n    \"sku\": \"forgepro_esensial\",\n    \"photoCount\": 12,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"28%\"\n  },\n  {\n    \"id\": \"pkg-profesional\",\n    \"tier\": \"profesional\",\n    \"name\": \"Profesional\",\n    \"price\": \"Rp99.000\",\n    \"priceValue\": 99000,\n    \"sku\": \"forgepro_profesional\",\n    \"photoCount\": 24,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"54%\",\n    \"isFeatured\": true\n  },\n  {\n    \"id\": \"pkg-eksklusif\",\n    \"tier\": \"eksklusif\",\n    \"name\": \"Eksklusif\",\n    \"price\": \"Rp169.000\",\n    \"priceValue\": 169000,\n    \"sku\": \"forgepro_eksklusif\",\n    \"photoCount\": 48,\n    \"creditAmount\": 200,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"18%\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Update Paket & SKU Google Play",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceValue\": 99000,\n  \"sku\": \"forgepro_profesional_v2\",\n  \"photoCount\": 24,\n  \"creditAmount\": 100,\n  \"status\": \"Tayang\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/packages/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["packages", ":id"],
+              "variable": [{ "key": "id", "value": "pkg-profesional" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Voucher & Kode Promo (/vouchers)",
+      "item": [
+        {
+          "name": "Ambil Daftar Voucher",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/vouchers",
+              "host": ["{{baseUrl}}"],
+              "path": ["vouchers"]
+            }
+          }
+        },
+        {
+          "name": "Buat Kode Voucher Promo Baru",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"KARIRHEMAT\",\n  \"title\": \"Diskon Sukses Karir\",\n  \"description\": \"Potongan Rp15.000 untuk paket Profesional.\",\n  \"discountType\": \"amount\",\n  \"amountOff\": 15000,\n  \"quota\": 250,\n  \"perEmailLimit\": 1,\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"packageTarget\": \"profesional\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vouchers",
+              "host": ["{{baseUrl}}"],
+              "path": ["vouchers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Log Aktivitas & Webhook Event (/webhooks)",
+      "item": [
+        {
+          "name": "Ambil Log Audit Aktivitas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["logs"]
+            }
+          }
+        },
+        {
+          "name": "Retry Pengiriman Webhook",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/:id/retry",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhooks", ":id", "retry"],
+              "variable": [{ "key": "id", "value": "wh-4" }]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

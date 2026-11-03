@@ -30,14 +30,9 @@
               { "key": "Accept", "value": "application/json" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/orders?status=&page=1&limit=20",
+              "raw": "{{baseUrl}}/orders",
               "host": ["{{baseUrl}}"],
-              "path": ["orders"],
-              "query": [
-                { "key": "status", "value": "", "description": "Filter: Dibayar, Menunggu, Gagal" },
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" }
-              ]
+              "path": ["orders"]
             },
             "description": "Mengambil daftar seluruh pesanan digital pelanggan dari aplikasi Flutter."
           },
@@ -75,11 +70,21 @@
           "response": [
             {
               "name": "200 OK - Detail Pesanan",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/orders/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["orders", ":id"],
+                  "variable": [{ "key": "id", "value": "ord_261019_001" }]
+                }
+              },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"id\": \"ord_261019_001\",\n  \"orderNumber\": \"PRO-20261019-001\",\n  \"customerEmail\": \"aditya@mail.com\",\n  \"customerName\": \"Aditya Pratama\",\n  \"customerPhone\": \"081234567890\",\n  \"packageName\": \"Profesional\",\n  \"amount\": 99000,\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\",\n  \"results\": [\n    { \"templateId\": \"navy-eksekutif\", \"variant\": 0, \"imageUrl\": \"https://storage.forgepro.id/photos/variant-0.jpg\" },\n    { \"templateId\": \"navy-eksekutif\", \"variant\": 1, \"imageUrl\": \"https://storage.forgepro.id/photos/variant-1.jpg\" }\n  ],\n  \"downloadUrl\": \"https://storage.forgepro.id/downloads/PRO-20261019-001.zip\"\n}"
+              "body": "{\n  \"id\": \"ord_261019_001\",\n  \"orderNumber\": \"PRO-20261019-001\",\n  \"customerEmail\": \"aditya@mail.com\",\n  \"customerName\": \"Aditya Pratama\",\n  \"customerPhone\": \"081234567890\",\n  \"packageName\": \"Profesional\",\n  \"amount\": 99000,\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\",\n  \"results\": [\n    { \"templateId\": \"navy-eksekutif\", \"variant\": 0, \"imageUrl\": \"https://storage.forgepro.id/photos/variant-0.jpg\" }\n  ],\n  \"downloadUrl\": \"https://storage.forgepro.id/downloads/PRO-20261019-001.zip\"\n}"
             }
           ]
         },
@@ -93,7 +98,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\",\n  \"creditsRemaining\": 90\n}"
+              "raw": "{\n  \"paymentStatus\": \"Dibayar\",\n  \"photoStatus\": \"Selesai\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/orders/:id/status",
@@ -105,11 +110,21 @@
           "response": [
             {
               "name": "200 OK - Status Updated",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/orders/:id/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["orders", ":id", "status"],
+                  "variable": [{ "key": "id", "value": "ord_261019_001" }]
+                }
+              },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"success\": true,\n  \"message\": \"Status pesanan berhasil diperbarui\",\n  \"data\": {\n    \"id\": \"ord_261019_001\",\n    \"paymentStatus\": \"Dibayar\",\n    \"photoStatus\": \"Selesai\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"message\": \"Status pesanan berhasil diperbarui\"\n}"
             }
           ]
         }
@@ -134,11 +149,16 @@
           "response": [
             {
               "name": "200 OK - Daftar Gaya Jas",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/styles", "host": ["{{baseUrl}}"], "path": ["styles"] }
+              },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "[\n  {\n    \"id\": \"navy-eksekutif\",\n    \"name\": \"Navy Eksekutif\",\n    \"category\": \"Bisnis\",\n    \"status\": \"Tayang\",\n    \"stats\": \"1.420 pemotretan\",\n    \"image\": \"/images/jas-navy-eksekutif.jpg\",\n    \"prompt\": \"Pria mengenakan setelan jas single-breasted navy gelap dengan kemeja putih bersih dan dasi sutra biru tua, pencahayaan studio formal.\",\n    \"aspectRatio\": \"3:4\",\n    \"isPopular\": true\n  }\n]"
+              "body": "[\n  {\n    \"id\": \"navy-eksekutif\",\n    \"name\": \"Navy Eksekutif\",\n    \"category\": \"Bisnis\",\n    \"status\": \"Tayang\",\n    \"stats\": \"1.420 pemotretan\",\n    \"image\": \"https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500\",\n    \"prompt\": \"Pria mengenakan setelan jas single-breasted navy gelap dengan kemeja putih bersih dan dasi sutra biru tua, pencahayaan studio formal.\",\n    \"aspectRatio\": \"3:4\",\n    \"isPopular\": true\n  }\n]"
             }
           ]
         },
@@ -152,7 +172,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\",\n  \"description\": \"Tuxedo pesta beludru hitam pekat untuk gala dinner dan foto karpet merah.\",\n  \"prompt\": \"Jas tuxedo satin velvet hitam dengan dasi kupu-kupu rapi, pencahayaan sinematik studio.\",\n  \"aspectRatio\": \"3:4\",\n  \"isPopular\": true,\n  \"tags\": [\"Formal\", \"Tuxedo\", \"Malam\"]\n}"
+              "raw": "{\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/styles",
@@ -163,48 +183,18 @@
           "response": [
             {
               "name": "201 Created - Gaya Baru",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/styles", "host": ["{{baseUrl}}"], "path": ["styles"] }
+              },
               "status": "Created",
               "code": 201,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "{\n  \"id\": \"tuxedo-velvet-midnight\",\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\",\n  \"count\": 0\n}"
+              "body": "{\n  \"id\": \"tuxedo-velvet-midnight\",\n  \"name\": \"Tuxedo Velvet Midnight\",\n  \"category\": \"Formal\",\n  \"status\": \"Tayang\"\n}"
             }
           ]
-        },
-        {
-          "name": "Update Template Jas by ID",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Navy Eksekutif Modern\",\n  \"status\": \"Tayang\",\n  \"isPopular\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/styles/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["styles", ":id"],
-              "variable": [{ "key": "id", "value": "navy-eksekutif" }]
-            }
-          }
-        },
-        {
-          "name": "Hapus Template Jas by ID",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/styles/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["styles", ":id"],
-              "variable": [{ "key": "id", "value": "navy-eksekutif" }]
-            }
-          }
         }
       ]
     },
@@ -225,33 +215,18 @@
           "response": [
             {
               "name": "200 OK - Daftar Paket",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/packages", "host": ["{{baseUrl}}"], "path": ["packages"] }
+              },
               "status": "OK",
               "code": 200,
               "_postman_previewlanguage": "json",
               "header": [{ "key": "Content-Type", "value": "application/json" }],
-              "body": "[\n  {\n    \"id\": \"pkg-esensial\",\n    \"tier\": \"esensial\",\n    \"name\": \"Esensial\",\n    \"price\": \"Rp59.000\",\n    \"priceValue\": 59000,\n    \"sku\": \"forgepro_esensial\",\n    \"photoCount\": 12,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"28%\"\n  },\n  {\n    \"id\": \"pkg-profesional\",\n    \"tier\": \"profesional\",\n    \"name\": \"Profesional\",\n    \"price\": \"Rp99.000\",\n    \"priceValue\": 99000,\n    \"sku\": \"forgepro_profesional\",\n    \"photoCount\": 24,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"54%\",\n    \"isFeatured\": true\n  },\n  {\n    \"id\": \"pkg-eksklusif\",\n    \"tier\": \"eksklusif\",\n    \"name\": \"Eksklusif\",\n    \"price\": \"Rp169.000\",\n    \"priceValue\": 169000,\n    \"sku\": \"forgepro_eksklusif\",\n    \"photoCount\": 48,\n    \"creditAmount\": 200,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"18%\"\n  }\n]"
+              "body": "[\n  {\n    \"id\": \"pkg-esensial\",\n    \"tier\": \"esensial\",\n    \"name\": \"Esensial\",\n    \"price\": \"Rp59.000\",\n    \"priceValue\": 59000,\n    \"sku\": \"forgepro_esensial\",\n    \"photoCount\": 12,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"28%\"\n  },\n  {\n    \"id\": \"pkg-profesional\",\n    \"tier\": \"profesional\",\n    \"name\": \"Profesional\",\n    \"price\": \"Rp99.000\",\n    \"priceValue\": 99000,\n    \"sku\": \"forgepro_profesional\",\n    \"photoCount\": 24,\n    \"creditAmount\": 100,\n    \"status\": \"Tayang\",\n    \"salesShare\": \"54%\",\n    \"isFeatured\": true\n  }\n]"
             }
           ]
-        },
-        {
-          "name": "Update Paket & SKU Google Play",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"priceValue\": 99000,\n  \"sku\": \"forgepro_profesional_v2\",\n  \"photoCount\": 24,\n  \"creditAmount\": 100,\n  \"status\": \"Tayang\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/packages/:id",
-              "host": ["{{baseUrl}}"],
-              "path": ["packages", ":id"],
-              "variable": [{ "key": "id", "value": "pkg-profesional" }]
-            }
-          }
         }
       ]
     },
@@ -268,31 +243,27 @@
               "host": ["{{baseUrl}}"],
               "path": ["vouchers"]
             }
-          }
-        },
-        {
-          "name": "Buat Kode Voucher Promo Baru",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"KARIRHEMAT\",\n  \"title\": \"Diskon Sukses Karir\",\n  \"description\": \"Potongan Rp15.000 untuk paket Profesional.\",\n  \"discountType\": \"amount\",\n  \"amountOff\": 15000,\n  \"quota\": 250,\n  \"perEmailLimit\": 1,\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-11-30\",\n  \"packageTarget\": \"profesional\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/vouchers",
-              "host": ["{{baseUrl}}"],
-              "path": ["vouchers"]
+          },
+          "response": [
+            {
+              "name": "200 OK - Daftar Voucher",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/vouchers", "host": ["{{baseUrl}}"], "path": ["vouchers"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"v-karir20\",\n    \"code\": \"KARIRHEMAT\",\n    \"title\": \"Diskon Sukses Karir\",\n    \"discountType\": \"amount\",\n    \"amountOff\": 15000,\n    \"quota\": 250,\n    \"used\": 42,\n    \"status\": \"Aktif\"\n  }\n]"
             }
-          }
+          ]
         }
       ]
     },
     {
-      "name": "5. Log Aktivitas & Webhook Event (/webhooks)",
+      "name": "5. Log Aktivitas & Webhook Event (/logs & /webhooks)",
       "item": [
         {
           "name": "Ambil Log Audit Aktivitas",
@@ -304,20 +275,22 @@
               "host": ["{{baseUrl}}"],
               "path": ["logs"]
             }
-          }
-        },
-        {
-          "name": "Retry Pengiriman Webhook",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/webhooks/:id/retry",
-              "host": ["{{baseUrl}}"],
-              "path": ["webhooks", ":id", "retry"],
-              "variable": [{ "key": "id", "value": "wh-4" }]
+          },
+          "response": [
+            {
+              "name": "200 OK - Log Aktivitas",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/logs", "host": ["{{baseUrl}}"], "path": ["logs"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "[\n  {\n    \"id\": \"act-1\",\n    \"time\": \"19 Okt, 16:12:08\",\n    \"source\": \"Sistem\",\n    \"category\": \"Pesanan\",\n    \"activity\": \"Pembayaran dikonfirmasi · PRO-20261019-001\",\n    \"result\": \"Berhasil\"\n  }\n]"
             }
-          }
+          ]
         }
       ]
     }

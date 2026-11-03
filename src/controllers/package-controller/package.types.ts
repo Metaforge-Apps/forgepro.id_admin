@@ -62,6 +62,7 @@ export interface CreatePackagePayload {
   sku: string;
   priceValue: number;
   isFeatured?: boolean;
+  features?: string[];
 }
 
 export interface UpdatePackagePayload {
@@ -77,6 +78,7 @@ export interface UpdatePackagePayload {
   sku?: string;
   priceValue?: number;
   isFeatured?: boolean;
+  features?: string[];
 }
 
 export interface PackageRuleItem {

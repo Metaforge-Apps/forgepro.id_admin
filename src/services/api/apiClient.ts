@@ -5,7 +5,9 @@
  */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'https://forgepro-625134443444.asia-southeast1.run.app';
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : 'https://forgepro-625134443444.asia-southeast1.run.app';
 
 export const isMockMode = (): boolean => {
   return import.meta.env.VITE_USE_MOCK === 'true';

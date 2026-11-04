@@ -42,7 +42,10 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<BackendResponse<T>> {
-  const token = localStorage.getItem('forgepro_token') || 'demo_token_admin';
+  const token =
+    import.meta.env.VITE_API_TOKEN ||
+    localStorage.getItem('forgepro_token') ||
+    'demo_token_admin';
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   const method = (options.method || 'GET').toUpperCase();
